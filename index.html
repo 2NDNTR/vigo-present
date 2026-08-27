@@ -18193,25 +18193,55 @@ __def("lib/auth", function(module, exports, require){
 "use strict";
 'use client';
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.DEFAULT_USER = exports.AUTH_ENABLED = void 0;
 exports.currentUser = currentUser;
 exports.signIn = signIn;
 exports.signOut = signOut;
 const KEY = 'vigo.user.v1';
+/**
+ * Sign-in is OFF for now — the app opens straight on the dashboard.
+ * Flip this to true (and the /login route comes back into play) when SSO or a
+ * real account system is connected. Nothing else needs to change.
+ */
+exports.AUTH_ENABLED = false;
+exports.DEFAULT_USER = {
+    name: 'Vigo Team',
+    email: '',
+    org: 'Vigo Importing Company',
+};
+/**
+ * Returns whoever is signed in. With auth disabled this never returns null, so
+ * no screen has to guard against a missing user.
+ */
 function currentUser() {
     if (typeof window === 'undefined')
-        return null;
+        return exports.AUTH_ENABLED ? null : exports.DEFAULT_USER;
+    let stored = null;
     try {
-        return JSON.parse(window.localStorage.getItem(KEY) || 'null');
+        stored = JSON.parse(window.localStorage.getItem(KEY) || 'null');
     }
     catch {
-        return null;
+        stored = null;
     }
+    if (stored)
+        return stored;
+    return exports.AUTH_ENABLED ? null : exports.DEFAULT_USER;
 }
 function signIn(u) {
-    window.localStorage.setItem(KEY, JSON.stringify(u));
+    try {
+        window.localStorage.setItem(KEY, JSON.stringify(u));
+    }
+    catch {
+        /* storage may be unavailable; the default user still applies */
+    }
 }
 function signOut() {
-    window.localStorage.removeItem(KEY);
+    try {
+        window.localStorage.removeItem(KEY);
+    }
+    catch {
+        /* no-op */
+    }
 }
 
 });
@@ -21559,7 +21589,7 @@ function Dashboard() {
     const [user, setUser] = (0, react_1.useState)(null);
     (0, react_1.useEffect)(() => {
         const u = (0, auth_1.currentUser)();
-        if (!u) {
+        if (!u && auth_1.AUTH_ENABLED) {
             router.replace('/login');
             return;
         }
@@ -21616,10 +21646,10 @@ function Dashboard() {
                 : 'Link copied. This presentation is still a draft — publish it from the editor to make the link work.');
         }
     };
-    return ((0, jsx_runtime_1.jsxs)("div", { onMouseDown: () => setMenu(null), children: [(0, jsx_runtime_1.jsxs)("header", { className: "topbar", children: [(0, jsx_runtime_1.jsxs)("div", { className: "brandmark", children: [(0, jsx_runtime_1.jsx)("i", {}), "Vigo Present"] }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', alignItems: 'center', gap: 12 }, children: [(0, jsx_runtime_1.jsx)("span", { className: "tiny", children: user?.name }), (0, jsx_runtime_1.jsx)("button", { className: "btn ghost sm", onClick: () => {
+    return ((0, jsx_runtime_1.jsxs)("div", { onMouseDown: () => setMenu(null), children: [(0, jsx_runtime_1.jsxs)("header", { className: "topbar", children: [(0, jsx_runtime_1.jsxs)("div", { className: "brandmark", children: [(0, jsx_runtime_1.jsx)("i", {}), "Vigo Present"] }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', alignItems: 'center', gap: 12 }, children: [(0, jsx_runtime_1.jsx)("span", { className: "tiny", children: user?.org }), auth_1.AUTH_ENABLED && ((0, jsx_runtime_1.jsx)("button", { className: "btn ghost sm", onClick: () => {
                                     (0, auth_1.signOut)();
                                     router.push('/login');
-                                }, children: "Sign out" })] })] }), (0, jsx_runtime_1.jsxs)("div", { className: "wrap", children: [(0, jsx_runtime_1.jsxs)("div", { className: "dash-head", children: [(0, jsx_runtime_1.jsxs)("div", { children: [(0, jsx_runtime_1.jsx)("h1", { className: "dash-title", children: "Presentations" }), (0, jsx_runtime_1.jsxs)("p", { className: "dash-sub", children: [user?.org, " \u2014 every deck stays on brand automatically."] })] }), (0, jsx_runtime_1.jsx)("button", { className: "btn primary lg", onClick: () => setCreating(true), children: "+ New Presentation" })] }), (0, jsx_runtime_1.jsx)("div", { className: "filters", children: FILTERS.map((f) => ((0, jsx_runtime_1.jsx)("button", { className: 'chip' + (filter === f.id ? ' on' : ''), onClick: () => setFilter(f.id), children: f.label }, f.id))) }), items === null ? ((0, jsx_runtime_1.jsx)("div", { className: "empty-state", style: { marginTop: 32 }, children: "Loading\u2026" })) : shown.length === 0 ? ((0, jsx_runtime_1.jsxs)("div", { className: "empty-state", style: { marginTop: 32 }, children: [(0, jsx_runtime_1.jsx)("div", { style: { fontSize: 16, marginBottom: 8, color: 'var(--app-ink)' }, children: "Nothing here yet" }), (0, jsx_runtime_1.jsx)("div", { style: { marginBottom: 20 }, children: "Create your first presentation \u2014 it takes about a minute." }), (0, jsx_runtime_1.jsx)("button", { className: "btn primary", onClick: () => setCreating(true), children: "+ New Presentation" })] })) : ((0, jsx_runtime_1.jsx)("div", { className: "grid-cards", children: shown.map((p) => ((0, jsx_runtime_1.jsxs)("div", { className: "card", children: [(0, jsx_runtime_1.jsx)("div", { className: "card-thumb", onClick: () => router.push('/e/' + p.id), style: { cursor: 'pointer' }, children: (0, jsx_runtime_1.jsx)(Thumb_1.default, { page: p.pages[0], brand: p.brand }) }), (0, jsx_runtime_1.jsxs)("div", { className: 'card-actions' + (menu === p.id ? ' open' : ''), children: [(0, jsx_runtime_1.jsx)("button", { className: "icon-btn", onMouseDown: (e) => {
+                                }, children: "Sign out" }))] })] }), (0, jsx_runtime_1.jsxs)("div", { className: "wrap", children: [(0, jsx_runtime_1.jsxs)("div", { className: "dash-head", children: [(0, jsx_runtime_1.jsxs)("div", { children: [(0, jsx_runtime_1.jsx)("h1", { className: "dash-title", children: "Presentations" }), (0, jsx_runtime_1.jsxs)("p", { className: "dash-sub", children: [user?.org, " \u2014 every deck stays on brand automatically."] })] }), (0, jsx_runtime_1.jsx)("button", { className: "btn primary lg", onClick: () => setCreating(true), children: "+ New Presentation" })] }), (0, jsx_runtime_1.jsx)("div", { className: "filters", children: FILTERS.map((f) => ((0, jsx_runtime_1.jsx)("button", { className: 'chip' + (filter === f.id ? ' on' : ''), onClick: () => setFilter(f.id), children: f.label }, f.id))) }), items === null ? ((0, jsx_runtime_1.jsx)("div", { className: "empty-state", style: { marginTop: 32 }, children: "Loading\u2026" })) : shown.length === 0 ? ((0, jsx_runtime_1.jsxs)("div", { className: "empty-state", style: { marginTop: 32 }, children: [(0, jsx_runtime_1.jsx)("div", { style: { fontSize: 16, marginBottom: 8, color: 'var(--app-ink)' }, children: "Nothing here yet" }), (0, jsx_runtime_1.jsx)("div", { style: { marginBottom: 20 }, children: "Create your first presentation \u2014 it takes about a minute." }), (0, jsx_runtime_1.jsx)("button", { className: "btn primary", onClick: () => setCreating(true), children: "+ New Presentation" })] })) : ((0, jsx_runtime_1.jsx)("div", { className: "grid-cards", children: shown.map((p) => ((0, jsx_runtime_1.jsxs)("div", { className: "card", children: [(0, jsx_runtime_1.jsx)("div", { className: "card-thumb", onClick: () => router.push('/e/' + p.id), style: { cursor: 'pointer' }, children: (0, jsx_runtime_1.jsx)(Thumb_1.default, { page: p.pages[0], brand: p.brand }) }), (0, jsx_runtime_1.jsxs)("div", { className: 'card-actions' + (menu === p.id ? ' open' : ''), children: [(0, jsx_runtime_1.jsx)("button", { className: "icon-btn", onMouseDown: (e) => {
                                                 e.stopPropagation();
                                                 setMenu(menu === p.id ? null : p.id);
                                             }, "aria-label": "Actions", children: "\u22EF" }), menu === p.id && ((0, jsx_runtime_1.jsxs)("div", { className: "menu", onMouseDown: (e) => e.stopPropagation(), children: [(0, jsx_runtime_1.jsx)("button", { onClick: () => act(p, 'open'), children: "Open" }), (0, jsx_runtime_1.jsx)("button", { onClick: () => act(p, 'preview'), children: "Preview" }), (0, jsx_runtime_1.jsx)("button", { onClick: () => act(p, 'duplicate'), children: "Duplicate" }), (0, jsx_runtime_1.jsx)("button", { onClick: () => act(p, 'rename'), children: "Rename" }), (0, jsx_runtime_1.jsx)("button", { onClick: () => act(p, 'share'), children: "Copy share link" }), (0, jsx_runtime_1.jsx)("button", { className: "danger", onClick: () => act(p, 'delete'), children: "Delete" })] }))] }), (0, jsx_runtime_1.jsxs)("div", { className: "card-meta", children: [(0, jsx_runtime_1.jsx)("h3", { className: "card-name", children: p.title }), (0, jsx_runtime_1.jsxs)("div", { className: "card-line", children: [(0, jsx_runtime_1.jsx)("span", { children: themes_1.THEMES[p.brand].shortName }), (0, jsx_runtime_1.jsx)("span", { className: "dot" }), (0, jsx_runtime_1.jsxs)("span", { children: [p.pages.length, " pages"] }), (0, jsx_runtime_1.jsx)("span", { className: "dot" }), (0, jsx_runtime_1.jsx)("span", { children: ago(p.updatedAt) })] }), (0, jsx_runtime_1.jsxs)("div", { style: { marginTop: 10, display: 'flex', gap: 6, alignItems: 'center' }, children: [(0, jsx_runtime_1.jsx)("span", { className: 'pill ' + (p.status === 'published' ? 'live' : 'draft'), children: p.status === 'published' ? 'Live' : p.status === 'unpublished' ? 'Unpublished' : 'Draft' }), p.locked && (0, jsx_runtime_1.jsx)("span", { className: "pill", children: "Locked" }), (0, jsx_runtime_1.jsx)("span", { className: "tiny", children: p.createdBy })] })] })] }, p.id))) }))] }), creating && ((0, jsx_runtime_1.jsx)(NewPresentation_1.default, { createdBy: user?.name || 'Vigo team', onCancel: () => setCreating(false), onCreate: async (p) => {
