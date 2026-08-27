@@ -9,21 +9,48 @@ import 'server-only';
  *
  * Configured entirely by environment variables, so there are no credentials in
  * the codebase:
- *   POSTGRES_URL           set automatically by Vercel Postgres
+ *   <a Postgres URL>       set automatically by whichever Postgres provider is
+ *                          connected — see CONN_VARS below
  *   BLOB_READ_WRITE_TOKEN  set automatically by Vercel Blob
  *   AUTH_SECRET            any long random string — signs the session cookie
  *   ADMIN_EMAIL            the first account, created on first run
+ *
+ * PROVIDER-AGNOSTIC ON PURPOSE. Vercel no longer sells its own Postgres; the
+ * database now comes from a marketplace provider (Neon, Supabase, Prisma,
+ * Nile…) and each one names its connection string differently. Rather than
+ * pinning the app to one vendor, every known spelling is accepted in order of
+ * preference — pooled first, because serverless functions open and close
+ * connections constantly and a direct connection runs out of slots.
  */
 
-export const CONN =
-  process.env.POSTGRES_URL ||
-  process.env.POSTGRES_PRISMA_URL ||
-  process.env.DATABASE_URL ||
-  '';
+const CONN_VARS = [
+  'POSTGRES_URL',            // Vercel Postgres, Supabase, Neon (compat)
+  'DATABASE_URL',            // Neon native, Prisma Postgres, most others
+  'POSTGRES_PRISMA_URL',     // Supabase/Neon, pooled + pgbouncer flags
+  'POSTGRES_URL_NON_POOLING',
+  'DATABASE_URL_UNPOOLED',
+  'NEON_DATABASE_URL',
+  'DATABASE_POSTGRES_URL',
+] as const;
+
+/** Which env var the connection string came from — for /api/health only. */
+export const CONN_VAR = CONN_VARS.find((k) => (process.env[k] || '').trim()) || '';
+export const CONN = CONN_VAR ? String(process.env[CONN_VAR]).trim() : '';
 
 export const hasDatabase = () => Boolean(CONN);
 export const hasBlob = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 export const hasSecret = () => Boolean(process.env.AUTH_SECRET);
+
+/**
+ * Forces `sslmode=no-verify` — encrypted, but without the CA check that
+ * managed Postgres providers cannot satisfy. Leaves `sslmode=disable` alone so
+ * a local, unencrypted development database still works.
+ */
+function sslRelaxed(url: string): string {
+  if (!url || url.includes('sslmode=disable')) return url;
+  if (/[?&]sslmode=/.test(url)) return url.replace(/sslmode=[A-Za-z-]+/g, 'sslmode=no-verify');
+  return url + (url.includes('?') ? '&' : '?') + 'sslmode=no-verify';
+}
 
 let poolPromise: Promise<any> | null = null;
 let migrated: Promise<void> | null = null;
@@ -34,7 +61,20 @@ async function pool(): Promise<any> {
       const pg: any = await import('pg');
       const Pool = pg.Pool || pg.default?.Pool;
       return new Pool({
-        connectionString: CONN,
+        // `sslmode=require` is rewritten to `no-verify` on purpose.
+        //
+        // Supabase, Neon and friends terminate TLS with a certificate signed by
+        // their own internal CA, which is not in Node's trust store. Up to
+        // pg 8.13 `sslmode=require` meant "encrypt, don't verify" and this was
+        // a non-issue. pg 8.14 changed it to verify the chain, so the same
+        // connection string that used to work now dies with
+        // "self-signed certificate in certificate chain".
+        //
+        // The `ssl` option below does NOT rescue it: a `sslmode` in the
+        // connection string is parsed later and wins. So the mode is rewritten
+        // in the string itself. The traffic is still encrypted — only the CA
+        // check is skipped, which is what every managed provider expects.
+        connectionString: sslRelaxed(CONN),
         ssl: CONN.includes('sslmode=disable') ? false : { rejectUnauthorized: false },
         max: 3,
         idleTimeoutMillis: 10_000,
