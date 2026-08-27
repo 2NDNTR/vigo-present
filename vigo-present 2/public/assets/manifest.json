@@ -1,4 +1,0 @@
-{
-  "$comment": "Brand asset library. Add one entry per image. Presentations reference the id, never a copy of the file - so replacing the file at 'path' updates every presentation that uses it. See README.md in this folder.",
-  "assets": []
-}
