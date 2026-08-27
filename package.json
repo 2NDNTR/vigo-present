@@ -9,7 +9,7 @@
     "assets": "node scripts/build-manifest.js"
   },
   "dependencies": {
-    "next": "15.3.3",
+    "next": "15.3.6",
     "pg": "8.16.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
