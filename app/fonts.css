@@ -1,0 +1,81 @@
+/* =========================================================================
+   VIGO BRAND FONTS
+   Licensed faces supplied by Vigo Importing Company. Declared once here and
+   referenced only through lib/brand/themes.ts — no component ever names a
+   font directly.
+
+   The portable single-file build inlines these as base64 automatically;
+   the Next.js app serves them from /fonts/.
+   ========================================================================= */
+
+/* --- Sunborn Sans One — display, headline, subhead and metrics ---------- */
+
+/* NOTE: SunbornSansOne.otf (the upright solid weight) is the primary face.
+   Drop the file into public/fonts/ and uncomment this block — it is first in
+   every stack, so it takes over everywhere the moment it exists. */
+/*
+@font-face {
+  font-family: 'Sunborn Sans One';
+  src: url('/fonts/SunbornSansOne.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+*/
+
+/* Upright cut mechanically derived from the Slant file by removing its 15°
+   shear. A stand-in only — it is second in the stack, so the moment the real
+   SunbornSansOne.otf is dropped in, this stops being used. */
+@font-face {
+  font-family: 'Sunborn Sans One Upright';
+  src: url('/fonts/SunbornSansOneUpright.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Registered but deliberately NOT in any default stack — the brand calls for
+   upright display type. Available if a slanted treatment is ever wanted. */
+@font-face {
+  font-family: 'Sunborn Sans One Slant';
+  src: url('/fonts/SunbornSansOneSlant.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Sunborn Sans One Outline';
+  src: url('/fonts/SunbornSansOneOutline.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Sunborn Sans One Outline Slant';
+  src: url('/fonts/SunbornSansOneOutlineSlant.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* --- Futura Extra Bold — Alessi display, headline and subhead ----------- */
+
+@font-face {
+  font-family: 'Futura Extra Bold';
+  src: url('/fonts/FuturaExtraBold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* --- Trade Gothic LT Condensed No. 18 — body, captions, labels ---------- */
+
+@font-face {
+  font-family: 'TradeGothic Cond 18';
+  src: url('/fonts/TradeGothicCond18.ttf') format('truetype');
+  font-weight: 400 600;
+  font-style: normal;
+  font-display: swap;
+}
