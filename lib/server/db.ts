@@ -135,14 +135,31 @@ async function migrate(): Promise<void> {
       `);
 
       // The first account, so somebody can get in and add everyone else.
+      //
+      // The id is DERIVED FROM THE EMAIL rather than a fixed 'usr_admin'.
+      // With a fixed id, changing ADMIN_EMAIL made this insert collide on the
+      // primary key — the old row still held that id under the old address —
+      // and because the seed runs inside the migration, that single failure
+      // took down every database call in the app. A per-email id cannot
+      // collide: a new address is simply a new row.
+      //
+      // The whole seed is also non-fatal. Being unable to create the first
+      // account is worth logging, but it must never stop the app from serving
+      // people who already have one.
       const admin = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
       if (admin) {
-        await p.query(
-          `insert into users (id, email, name, role, created_at)
-           values ($1, $2, $3, 'admin', $4)
-           on conflict (email) do update set role = 'admin'`,
-          ['usr_admin', admin, 'Administrator', Date.now()]
-        );
+        const { createHash } = await import('crypto');
+        const adminId = 'usr_' + createHash('sha1').update(admin).digest('hex').slice(0, 16);
+        try {
+          await p.query(
+            `insert into users (id, email, name, role, created_at)
+             values ($1, $2, $3, 'admin', $4)
+             on conflict (email) do update set role = 'admin'`,
+            [adminId, admin, 'Administrator', Date.now()]
+          );
+        } catch (e) {
+          console.error('admin seed failed (continuing):', e);
+        }
       }
     })();
   }
