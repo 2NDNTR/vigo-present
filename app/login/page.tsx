@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { authRequired, backendStatus, fetchUser, login } from '@/lib/auth';
+import Brandmark from '@/components/ui/Brandmark';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -34,10 +35,7 @@ export default function LoginPage() {
   return (
     <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: 24 }}>
       <div style={{ width: '100%', maxWidth: 380 }}>
-        <div className="brandmark" style={{ marginBottom: 34 }}>
-          <i />
-          Vigo Present
-        </div>
+        <Brandmark size="lg" style={{ marginBottom: 34 }} />
         <h1 style={{ fontSize: 30, letterSpacing: '-0.03em', margin: '0 0 8px', fontWeight: 600 }}>
           Sign in
         </h1>
