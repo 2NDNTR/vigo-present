@@ -104,14 +104,11 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
   top: 0;
   z-index: 40;
 }
-.brandmark {
-  display: flex; align-items: center; gap: 10px;
-  font-size: 13px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase;
-}
-.brandmark i {
-  width: 22px; height: 22px; border-radius: 3px; background: var(--app-accent);
-  display: inline-block;
-}
+.brandmark { display: flex; align-items: center; }
+/* Height only — never width. The logo keeps its own proportions, so replacing
+   the file with artwork of different dimensions needs no CSS change. */
+.brandmark img { height: 24px; width: auto; display: block; }
+.brandmark.lg img { height: 30px; }
 
 /* ------------------------------------------------------------- dashboard  */
 
