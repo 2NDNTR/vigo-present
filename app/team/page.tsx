@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authRequired, fetchUser } from '@/lib/auth';
+import Brandmark from '@/components/ui/Brandmark';
 
 interface Member {
   id: string;
@@ -54,10 +55,7 @@ export default function TeamPage() {
   return (
     <div>
       <header className="topbar">
-        <div className="brandmark">
-          <i />
-          Vigo Present
-        </div>
+        <Brandmark />
         <button className="btn ghost sm" onClick={() => router.push('/dashboard')}>
           Back to presentations
         </button>
