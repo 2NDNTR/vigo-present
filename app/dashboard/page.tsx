@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Thumb from '@/components/ui/Thumb';
+import Brandmark from '@/components/ui/Brandmark';
 import NewPresentation from '@/components/NewPresentation';
 import { getStore } from '@/lib/store';
 import type { Presentation } from '@/lib/model/types';
@@ -111,10 +112,7 @@ export default function Dashboard() {
   return (
     <div onMouseDown={() => setMenu(null)}>
       <header className="topbar">
-        <div className="brandmark">
-          <i />
-          Vigo Present
-        </div>
+        <Brandmark />
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <span className="tiny">{user?.name || user?.org}</span>
           {needsAuth && (
