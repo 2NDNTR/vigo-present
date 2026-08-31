@@ -154,15 +154,23 @@ export default function Stage(props: StageProps) {
           className="page-chrome"
           style={{ padding: `calc(var(--u) * ${chromePad}px)`, height: `calc(var(--u) * ${chromePad + CHROME_H}px)` }}
         >
-          <BlockView
-            block={{ id: page.id + '-hd', type: 'text', text: page.headline || '', style: { role: 'eyebrow', color: 'auto', align: 'left' } }}
-            ctx={{
-              theme,
-              editable,
-              onDark,
-              onChange: (_id, patch) => props.onChangePage && props.onChangePage({ headline: patch.text }),
-            }}
-          />
+          {/* The eyebrow renders only when the page actually has one. Both it
+              and the logo used to appear together because each merely turned
+              the chrome band ON — so switching the logo on also produced an
+              empty "ENTER YOUR TEXT" field nobody asked for. They are two
+              independent toggles and now render independently; the band itself
+              appears if either is on. */}
+          {page.headline !== undefined ? (
+            <BlockView
+              block={{ id: page.id + '-hd', type: 'text', text: page.headline || '', style: { role: 'eyebrow', color: 'auto', align: 'left' } }}
+              ctx={{
+                theme,
+                editable,
+                onDark,
+                onChange: (_id, patch) => props.onChangePage && props.onChangePage({ headline: patch.text }),
+              }}
+            />
+          ) : null}
           {page.showLogo ? (
             <div className="page-chrome-logo">
               <BlockView block={{ id: page.id + '-lg', type: 'logo' }} ctx={{ theme, onDark, chrome: true }} />
