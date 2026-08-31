@@ -10,9 +10,10 @@ import type { CSSProperties } from 'react';
  * `size="lg"` is for the sign-in screen, where the mark stands alone above the
  * form rather than sitting in a 64px bar.
  *
- * The width is intentionally not fixed. The file is 762x128 and the CSS sets
- * the height only, so the aspect ratio is whatever the artwork actually is —
- * a new logo of different proportions drops in without touching any layout.
+ * The width is intentionally not fixed. The CSS sets the height only, so the
+ * aspect ratio is whatever the artwork happens to be — which is exactly what
+ * made swapping the wordmark a one-file change: the new mark is 733x128 where
+ * the old was 762x128, and nothing in any layout had to move.
  */
 export default function Brandmark({
   size = 'md',
@@ -25,7 +26,7 @@ export default function Brandmark({
   return (
     <div className={'brandmark' + (size === 'md' ? '' : ' ' + size)} style={style}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/presentor-logo.png" alt="Presentor" />
+      <img src="/presentor-logo.png" alt="presente" />
     </div>
   );
 }
