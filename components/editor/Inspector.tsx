@@ -14,7 +14,6 @@ import {
   getTheme,
 } from '@/lib/brand/themes';
 import type { ColorRole, TypeRole } from '@/lib/brand/themes';
-import { pageGuardrails } from '@/lib/guardrails';
 import { processFile } from '@/lib/media';
 
 const ROLES_FOR: Record<string, TypeRole[]> = {
@@ -54,7 +53,6 @@ export default function Inspector(props: InspectorProps) {
   const theme = getTheme(page.brandOverride || presentation.brand);
   const block =
     selected && (page.slots[selected.slotKey] || []).find((b) => b.id === selected.blockId);
-  const warnings = pageGuardrails(page, template, theme);
 
   /**
    * A square product frame is a fixed composition: 1:1, centred, evenly inset,
@@ -81,21 +79,14 @@ export default function Inspector(props: InspectorProps) {
 
   return (
     <div>
-      {warnings.length > 0 && (
-        <div className="panel-sec" style={{ paddingTop: 0 }}>
-          {warnings.slice(0, 3).map((w) => (
-            <div className="warn" key={w.id} style={w.tone === 'info' ? { background: '#f4f6f8', borderColor: '#e0e5ea', color: '#5f6368' } : undefined}>
-              <span>{w.tone === 'warn' ? '△' : 'ⓘ'}</span>
-              <span>{w.text}</span>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Page guidance is no longer drawn here — the editor renders it above
+          the panel's tab row, so it keeps the same position on every tab
+          instead of appearing only under Pages. */}
 
       {/* ------------------------------------------------- selected block */}
       {block ? (
         <>
-          <div className="panel-sec" style={warnings.length ? undefined : { paddingTop: 0 }}>
+          <div className="panel-sec" style={{ paddingTop: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
               <h4 className="panel-h" style={{ margin: 0 }}>
                 {block.type === 'text' ? 'Text' : block.type[0].toUpperCase() + block.type.slice(1)}
@@ -393,7 +384,7 @@ export default function Inspector(props: InspectorProps) {
       ) : null}
 
       {/* ------------------------------------------------------ page level */}
-      <div className="panel-sec" style={!block && !warnings.length ? { paddingTop: 0 } : undefined}>
+      <div className="panel-sec" style={!block ? { paddingTop: 0 } : undefined}>
         <h4 className="panel-h">Page</h4>
 
         <div className="label" style={{ marginBottom: 6 }}>Layout</div>

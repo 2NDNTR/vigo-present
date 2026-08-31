@@ -13,6 +13,8 @@ import SharePanel from './SharePanel';
 import type { Block, BlockType, Page, Presentation } from '@/lib/model/types';
 import { uid } from '@/lib/model/types';
 import { createPage, getTemplate } from '@/lib/templates/registry';
+import { pageGuardrails } from '@/lib/guardrails';
+import { getTheme } from '@/lib/brand/themes';
 import type { BrandId } from '@/lib/brand/themes';
 import { getStore, storeKindSync } from '@/lib/store';
 import { ConflictError } from '@/lib/store/api';
@@ -365,6 +367,10 @@ export default function Editor({ id }: { id: string }) {
   }
   if (!pres || !page) return <div style={{ padding: 60 }} className="muted">Loading…</div>;
 
+  // Guardrail notices moved up from the Inspector: the panel renders them above
+  // its tab row, so they are visible and fixed in place on every tab.
+  const warnings = pageGuardrails(page, getTemplate(page.templateId), getTheme(page.brandOverride || pres.brand));
+
   return (
     <div className="editor">
       <div className="ed-top">
@@ -410,14 +416,6 @@ export default function Editor({ id }: { id: string }) {
               ↷
             </button>
           </span>
-        </div>
-
-        <div className="ed-tabs">
-          {(['pages', 'add', 'assets', 'brand'] as Tab[]).map((t) => (
-            <button key={t} className={'tabbtn' + (tab === t ? ' on' : '')} onClick={() => setTab(t)}>
-              {t[0].toUpperCase() + t.slice(1)}
-            </button>
-          ))}
         </div>
 
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -580,6 +578,31 @@ export default function Editor({ id }: { id: string }) {
         </div>
 
         <div className="ed-right" onMouseDown={(e) => e.stopPropagation()}>
+          {/* Page guidance sits above the tabs, so it holds one position
+              whichever tab is open rather than appearing only under Pages. */}
+          {warnings.length > 0 && (
+            <div className="panel-notices">
+              {warnings.slice(0, 3).map((w) => (
+                <div
+                  className="warn"
+                  key={w.id}
+                  style={w.tone === 'info' ? { background: '#f4f6f8', borderColor: '#e0e5ea', color: '#5f6368' } : undefined}
+                >
+                  <span>{w.tone === 'warn' ? '△' : 'ⓘ'}</span>
+                  <span>{w.text}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="ed-tabs">
+            {(['pages', 'add', 'assets', 'brand'] as Tab[]).map((t) => (
+              <button key={t} className={'tabbtn' + (tab === t ? ' on' : '')} onClick={() => setTab(t)}>
+                {t[0].toUpperCase() + t.slice(1)}
+              </button>
+            ))}
+          </div>
+
           {tab === 'pages' && (
             <Inspector
               presentation={pres}
