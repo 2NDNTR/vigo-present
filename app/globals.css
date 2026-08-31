@@ -209,6 +209,21 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
    the file with artwork of different dimensions needs no CSS change. */
 .brandmark img { height: 24px; width: auto; display: block; }
 .brandmark.lg img { height: 30px; }
+.brandmark.sm img { height: 19px; }
+
+/* The mark as a home button. In the editor it is set tonal: the deck on the
+   canvas is the subject, and a solid black wordmark in the corner competes
+   with it. The artwork is pure black on transparent, so opacity alone tints
+   it — no second grey asset to keep in sync. It resolves to full strength on
+   hover, which is also the cue that it is a control and not decoration. */
+.ed-home {
+  border: 0; background: none; cursor: pointer; padding: 4px 6px;
+  border-radius: 6px; display: flex; align-items: center;
+}
+.ed-home .brandmark img { opacity: 0.42; transition: opacity 120ms ease; }
+.ed-home:hover { background: rgba(23,24,26,0.05); }
+.ed-home:hover .brandmark img { opacity: 0.9; }
+.ed-home:focus-visible { outline: 2px solid var(--app-focus); outline-offset: 1px; }
 
 /* ------------------------------------------------------------- dashboard  */
 
