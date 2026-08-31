@@ -56,12 +56,14 @@ export interface SlotDef {
   /** slot fills its cell edge to edge (media) */
   bleed?: boolean;
   /**
-   * Media sits in a centred 1:1 frame with even padding, contained rather than
-   * cropped. Packshots are shot square and have to be seen whole — a bleeding,
-   * cover-cropped product shot cuts the label, which is the one thing the page
-   * exists to show.
+   * 'square' — a centred 1:1 frame, contained rather than cropped. Packshots
+   * are shot square and have to be seen whole; a cover-cropped product shot
+   * cuts the label, which is the one thing the page exists to show.
+   *
+   * 'reel' — a 9:16 portrait frame, filled. Social creative is authored at that
+   * ratio, so filling loses nothing and a row reads as a row of phones.
    */
-  frame?: 'square';
+  frame?: 'square' | 'reel';
   /**
    * Inset around a square frame, in design units. Defaults to 102, which suits
    * a tall half-page cell. A short, wide cell needs far less: the square is
@@ -677,6 +679,36 @@ const templates: PageTemplate[] = [
       b: [M('18M', 'Impressions')],
       c: [M('6.1%', 'Engagement')],
       d: [M('$4.20', 'Earned Media Value / $1')],
+    }),
+  },
+
+  {
+    id: 'social-reels',
+    name: 'Social Reels',
+    category: 'Social',
+    hint: 'Four vertical 9:16 frames in a row. Sized the way reels and stories are shot.',
+    // framePad 0: the spacing between reels is the grid gap and nothing else,
+    // so the row reads as a filmstrip rather than four padded boxes.
+    layout: lay('1fr 1fr 1fr 1fr', 'auto 1fr auto', ['head head head head', 'a b c d', 'la lb lc ld'], 88, 26),
+    slots: [
+      { key: 'head', label: 'Heading', accepts: TEXT_TYPES, max: 2, hint: 'Heading', justify: 'start', maxWidth: 1200 },
+      { key: 'a', label: 'Reel 1', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a 9:16 clip or still', bleed: true, frame: 'reel', framePad: 0 },
+      { key: 'b', label: 'Reel 2', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a 9:16 clip or still', bleed: true, frame: 'reel', framePad: 0 },
+      { key: 'c', label: 'Reel 3', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a 9:16 clip or still', bleed: true, frame: 'reel', framePad: 0 },
+      { key: 'd', label: 'Reel 4', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a 9:16 clip or still', bleed: true, frame: 'reel', framePad: 0 },
+      { key: 'la', label: 'Reel 1 caption', accepts: TEXT_TYPES, max: 2, hint: 'Caption', justify: 'start', items: 'center', gap: 6 },
+      { key: 'lb', label: 'Reel 2 caption', accepts: TEXT_TYPES, max: 2, hint: 'Caption', justify: 'start', items: 'center', gap: 6 },
+      { key: 'lc', label: 'Reel 3 caption', accepts: TEXT_TYPES, max: 2, hint: 'Caption', justify: 'start', items: 'center', gap: 6 },
+      { key: 'ld', label: 'Reel 4 caption', accepts: TEXT_TYPES, max: 2, hint: 'Caption', justify: 'start', items: 'center', gap: 6 },
+    ],
+    guidance: 'Reels are shot at 9:16. Anything else is cropped to fit the frame.',
+    seed: () => ({
+      head: [T('Social', 'eyebrow'), T('Made for the feed', 'headline')],
+      a: [IMG()], b: [IMG()], c: [IMG()], d: [IMG()],
+      la: [{ ...T('Recipe reel', 'caption'), style: { role: 'caption' as const, color: 'auto' as const, align: 'center' as const } }],
+      lb: [{ ...T('Shelf story', 'caption'), style: { role: 'caption' as const, color: 'auto' as const, align: 'center' as const } }],
+      lc: [{ ...T('Behind the label', 'caption'), style: { role: 'caption' as const, color: 'auto' as const, align: 'center' as const } }],
+      ld: [{ ...T('Founder cut', 'caption'), style: { role: 'caption' as const, color: 'auto' as const, align: 'center' as const } }],
     }),
   },
 
