@@ -12,6 +12,14 @@ interface Props {
   onFocus?: () => void;
   /** shrink to fit rather than let a word break across lines */
   fit?: boolean;
+  /**
+   * Maximum multiplier the type may GROW by to fill its column, for the one
+   * case where the text is the page (the Single Metric layout). Measured
+   * against the real column rather than an estimate, because the display faces
+   * differ in width per brand — Alessi's runs wide enough that a figure fitted
+   * by arithmetic hung off both edges of the page.
+   */
+  growTo?: number;
 }
 
 const MIN_FIT = 0.55;
@@ -33,6 +41,7 @@ export default function EditableText({
   style,
   onFocus,
   fit = true,
+  growTo,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -50,6 +59,37 @@ export default function EditableText({
     el.style.setProperty('--tt-fit', '1');
     if (!el.textContent) return;
     let f = 1;
+
+    // GROW TO FILL — only when the caller asks for it, and only measured.
+    // A solo metric is shrink-to-fit, so its own clientWidth tells us nothing;
+    // the page's slot is the real column, and the whole metric group (value,
+    // label, context line) is what has to stay inside its height.
+    if (growTo && growTo > 1) {
+      const slot = el.closest('.slot') as HTMLElement | null;
+      const group = el.closest('.metric') as HTMLElement | null;
+      if (slot) {
+        const cs = getComputedStyle(slot);
+        const availW =
+          slot.clientWidth - parseFloat(cs.paddingLeft || '0') - parseFloat(cs.paddingRight || '0');
+        const availH =
+          slot.clientHeight - parseFloat(cs.paddingTop || '0') - parseFloat(cs.paddingBottom || '0');
+        if (availW > 0 && availH > 0) {
+          for (let i = 0; i < 60 && f < growTo; i++) {
+            const next = Math.min(growTo, f + 0.05);
+            el.style.setProperty('--tt-fit', String(next));
+            const tooWide = el.getBoundingClientRect().width > availW * 0.96;
+            const tooTall = !!group && group.getBoundingClientRect().height > availH * 0.98;
+            if (tooWide || tooTall) {
+              el.style.setProperty('--tt-fit', String(f));
+              break;
+            }
+            f = next;
+          }
+          return;
+        }
+      }
+    }
+
     // step down until the widest word stops overflowing its column
     for (let i = 0; i < 20; i++) {
       if (el.scrollWidth <= el.clientWidth + 1) break;
@@ -57,7 +97,7 @@ export default function EditableText({
       el.style.setProperty('--tt-fit', String(f));
       if (f <= MIN_FIT) break;
     }
-  }, [fit]);
+  }, [fit, growTo]);
 
   useLayoutEffect(() => {
     refit();
@@ -66,8 +106,10 @@ export default function EditableText({
   useEffect(() => {
     const el = ref.current;
     if (!el || !fit) return;
-    // observe the container, never the element being resized
-    const parent = el.parentElement;
+    // Observe the container, never the element being resized. When growing,
+    // the immediate parent is shrink-to-fit and moves WITH the text, so watch
+    // the page slot instead — otherwise each refit retriggers the observer.
+    const parent = (growTo && growTo > 1 ? el.closest('.slot') : null) || el.parentElement;
     const ro = new ResizeObserver(() => refit());
     if (parent) ro.observe(parent);
     let cancelled = false;
@@ -78,7 +120,7 @@ export default function EditableText({
       cancelled = true;
       ro.disconnect();
     };
-  }, [refit, fit]);
+  }, [refit, fit, growTo]);
 
   return (
     <div

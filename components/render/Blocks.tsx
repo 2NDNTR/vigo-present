@@ -32,7 +32,7 @@ const alignFor = (b: Block) => (b.style?.align === 'center' ? 'center' : 'left')
  * Metrics in a row share the width, so each one steps down as the count goes
  * up. These figures sit alongside headlines and images, so the role size is
  * the ceiling — the Single Metric page is the only place a number is allowed
- * to grow past it (see soloMetricScale).
+ * to grow past it (see the solo note below).
  */
 function metricScale(role: TypeRole, siblings: number, value: string): number {
   let s = 1;
@@ -48,27 +48,20 @@ function metricScale(role: TypeRole, siblings: number, value: string): number {
 /**
  * THE SINGLE METRIC PAGE
  * ---------------------------------------------------------------------------
- * When a metric is the only block on the page it is the page, so it is set to
- * FILL rather than to a fixed role size: the scale is solved from the value's
- * own width so that "38%" and "$1.24B" both land on the same optical measure
- * instead of one filling the spread and the other floating in the middle.
+ * When a metric is the only block on the page it IS the page, so it is set to
+ * fill rather than to a fixed role size — "38%" and "$1,250,000" both run to
+ * the same measure instead of one filling the spread and the other floating in
+ * the middle of it.
+ *
+ * The fitting is done by measurement in EditableText, not by arithmetic here.
+ * An earlier version estimated glyph widths at 0.62em, which held for Vigo and
+ * hung Alessi's wider display face off both edges of the page.
  *
  * Deliberately scoped to a solo block. Every other metric shares its page with
  * a headline, an image or its siblings, and growing those is what pushed three
  * figures into each other on the Sales Growth page.
  */
-const SOLO_MEASURE = 1180; // design units the figure should span
 const SOLO_MAX = 430; // ceiling on the figure's set size, in design units
-
-function soloMetricScale(baseSize: number, value: string): number {
-  const v = (value || '').trim();
-  if (!v || !baseSize) return 1;
-  // Digits and % run about 0.62em in both display faces; . and , far narrower.
-  const narrow = (v.match(/[.,\s]/g) || []).length;
-  const wide = Math.max(1, v.length - narrow);
-  const em = wide * 0.62 + narrow * 0.26;
-  return Math.max(1, Math.min(SOLO_MEASURE / (em * baseSize), SOLO_MAX / baseSize));
-}
 
 /** Long copy is nudged down a little — then the guardrail asks for fewer words. */
 function textScale(role: TypeRole, text: string): number {
@@ -109,9 +102,11 @@ export default function BlockView({ block, ctx }: { block: Block; ctx: RenderCtx
     /* ------------------------------------------------------------- metric */
     case 'metric': {
       const role = (block.style?.role || 'metricLarge') as TypeRole;
-      const scale = ctx.solo
-        ? soloMetricScale(ctx.theme.type[role]?.size || 0, block.value || '')
-        : metricScale(role, ctx.siblings || 1, block.value || '');
+      const solo = !!ctx.solo;
+      const scale = solo ? 1 : metricScale(role, ctx.siblings || 1, block.value || '');
+      const growTo = solo
+        ? Math.max(1, SOLO_MAX / (ctx.theme.type[role]?.size || SOLO_MAX))
+        : undefined;
       const center = alignFor(block) === 'center';
       return (
         <div {...wrapProps}>
@@ -120,6 +115,7 @@ export default function BlockView({ block, ctx }: { block: Block; ctx: RenderCtx
               <EditableText
                 className="tt"
                 style={typeVars(role, scale)}
+                growTo={growTo}
                 value={block.value || ''}
                 editable={ctx.editable}
                 placeholder="0%"
