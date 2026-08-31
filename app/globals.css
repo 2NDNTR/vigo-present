@@ -324,13 +324,33 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
   height: 56px; flex: none; display: flex; align-items: center; justify-content: space-between;
   padding: 0 14px 0 18px; background: #fff; border-bottom: 1px solid var(--app-line-soft); z-index: 30;
 }
-.ed-tabs { display: flex; gap: 2px; }
-.tabbtn {
-  height: 34px; padding: 0 14px; border-radius: 7px; border: 0; background: none; cursor: pointer;
-  font-size: 13.5px; color: var(--app-ink-2);
+/* The panel's own navigation, not a toolbar group: it spans the panel and the
+   four tabs share the width evenly, so it reads as a segmented control tied to
+   what is below it rather than as buttons floating in the header. It sticks to
+   the top of the scrolling panel — the panel is long, and losing the way back
+   to Assets after scrolling through the inspector would be its own small
+   frustration. */
+.ed-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+  position: sticky;
+  top: -18px; /* cancels .ed-right's own top padding */
+  z-index: 5;
+  margin: 0 0 14px;
+  padding: 3px;
+  background: rgba(23, 24, 26, 0.05);
+  border-radius: 9px;
 }
-.tabbtn:hover { background: rgba(23,24,26,0.05); }
-.tabbtn.on { background: rgba(23,24,26,0.08); color: var(--app-ink); font-weight: 550; }
+.tabbtn {
+  height: 30px; padding: 0 6px; border-radius: 6px; border: 0; background: none; cursor: pointer;
+  font-size: 13px; color: var(--app-ink-2); white-space: nowrap;
+}
+.tabbtn:hover { background: rgba(23,24,26,0.06); }
+.tabbtn.on { background: #fff; color: var(--app-ink); font-weight: 550; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+
+/* Notices sit above the tabs and scroll away with the content. */
+.panel-notices { padding-bottom: 4px; }
 
 /* The title field grows to fit its own text instead of sitting at a fixed
    width that chops the name mid-word. The wrapper's ::after draws the same
