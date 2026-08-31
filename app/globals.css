@@ -86,6 +86,106 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
   color: var(--app-ink-3);
 }
 
+/* ----------------------------------------------------------------- select
+
+   The menu drawn by a native <select> belongs to the operating system and
+   cannot be styled at all — on macOS it arrives dark and dense, in the middle
+   of an otherwise white, quiet application. Everything below dresses the
+   replacement in components/ui/Select.tsx.
+
+   It reads as one soft white sheet: a translucent panel over blurred backdrop,
+   a hairline edge, and two stacked shadows — one tight and dark to seat the
+   sheet on the surface, one wide and faint for the drop. A single heavy shadow
+   always looks either flat or muddy; the pair is what makes it float.         */
+
+.selecttrigger {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px 0 14px;
+  border: 1px solid var(--app-line);
+  border-radius: var(--radius);
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.selecttrigger:hover { border-color: rgba(23, 24, 26, 0.2); }
+.selecttrigger.open { border-color: rgba(23, 24, 26, 0.3); box-shadow: 0 0 0 3px rgba(23, 24, 26, 0.05); }
+.selecttrigger:focus-visible { border-color: var(--app-focus); box-shadow: 0 0 0 3px rgba(47, 109, 246, 0.16); }
+.selectvalue { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.selectvalue.placeholder { color: var(--app-ink-3); }
+.selectchev { width: 12px; height: 16px; flex: none; color: var(--app-ink-3); }
+
+.selectmenu {
+  position: fixed;
+  z-index: 200;
+  padding: 5px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: rgba(255, 255, 255, 0.92);
+  -webkit-backdrop-filter: saturate(1.8) blur(20px);
+  backdrop-filter: saturate(1.8) blur(20px);
+  border: 1px solid rgba(23, 24, 26, 0.08);
+  border-radius: 12px;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 8px 20px -6px rgba(0, 0, 0, 0.14),
+    0 24px 48px -12px rgba(0, 0, 0, 0.18);
+  transform-origin: top center;
+  animation: selectin 0.15s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.selectmenu.up { transform-origin: bottom center; animation-name: selectinup; }
+
+@keyframes selectin { from { opacity: 0; transform: scale(0.97) translateY(-4px); } }
+@keyframes selectinup { from { opacity: 0; transform: scale(0.97) translateY(4px); } }
+
+/* Indented to sit flush with the option labels, not the checkmark gutter. */
+.selectgroup {
+  padding: 11px 10px 5px 30px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--app-ink-3);
+}
+.selectmenu > div:first-child .selectgroup { padding-top: 3px; }
+
+.selectitem {
+  display: flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 10px 0 8px;
+  border-radius: 6px;
+  font-size: 13.5px;
+  color: var(--app-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: default;
+}
+.selectitem span { overflow: hidden; text-overflow: ellipsis; }
+.selectitem.active { background: rgba(23, 24, 26, 0.065); }
+.selectitem.on { font-weight: 550; }
+.selectcheck { width: 14px; height: 14px; flex: none; margin-right: 8px; opacity: 0; }
+.selectitem.on .selectcheck { opacity: 1; }
+
+.selectmenu::-webkit-scrollbar { width: 10px; }
+.selectmenu::-webkit-scrollbar-thumb {
+  background: rgba(23, 24, 26, 0.18);
+  border-radius: 10px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+.selectmenu::-webkit-scrollbar-thumb:hover { background: rgba(23, 24, 26, 0.3); background-clip: content-box; }
+
+@media (prefers-reduced-motion: reduce) {
+  .selectmenu { animation: none; }
+}
+
 .muted { color: var(--app-ink-2); }
 .mono-num { font-variant-numeric: tabular-nums; }
 
@@ -232,9 +332,37 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 .tabbtn:hover { background: rgba(23,24,26,0.05); }
 .tabbtn.on { background: rgba(23,24,26,0.08); color: var(--app-ink); font-weight: 550; }
 
+/* The title field grows to fit its own text instead of sitting at a fixed
+   width that chops the name mid-word. The wrapper's ::after draws the same
+   string invisibly in the same grid cell, so the cell is always exactly as
+   wide as the title; the input is laid on top of it. Past the cap the input
+   ellipses rather than cutting, and the full name is in the tooltip. */
+.ed-titlewrap {
+  display: inline-grid;
+  align-items: center;
+  min-width: 0;
+  max-width: min(420px, 32vw);
+  font-size: 14.5px;
+  font-weight: 550;
+  letter-spacing: -0.01em;
+}
+.ed-titlewrap::after,
+.ed-titlewrap > .ed-title {
+  grid-area: 1 / 1;
+  padding: 6px 8px;
+  font: inherit;
+  letter-spacing: inherit;
+  white-space: pre;
+  min-width: 0;
+}
+/* The trailing space keeps the caret from touching the edge at full length. */
+.ed-titlewrap::after { content: attr(data-value) ' '; visibility: hidden; }
+
 .ed-title {
-  border: 0; background: transparent; font-size: 14.5px; font-weight: 550; letter-spacing: -0.01em;
-  outline: none; padding: 6px 8px; border-radius: 6px; min-width: 120px; max-width: 340px;
+  width: 100%;
+  border: 0; background: transparent; outline: none;
+  padding: 6px 8px; border-radius: 6px;
+  text-overflow: ellipsis;
 }
 .ed-title:hover { background: rgba(23,24,26,0.05); }
 .ed-title:focus { background: rgba(23,24,26,0.07); }
