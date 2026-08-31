@@ -20,11 +20,13 @@ export default function AddPageModal({
 }) {
   const [cat, setCat] = useState<string>('All');
   const groups = useMemo(() => templatesByCategory(), []);
+  // Rebuilt per brand: the placeholder plates are baked in at creation, so a
+  // preview made for one brand would keep showing that brand's colours.
   const samples = useMemo(() => {
     const m: Record<string, any> = {};
-    groups.forEach((g) => g.items.forEach((t) => (m[t.id] = createPage(t.id))));
+    groups.forEach((g) => g.items.forEach((t) => (m[t.id] = createPage(t.id, undefined, brand))));
     return m;
-  }, [groups]);
+  }, [groups, brand]);
 
   const visible = groups.filter((g) => cat === 'All' || g.category === cat);
 

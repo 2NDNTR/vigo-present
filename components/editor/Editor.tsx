@@ -232,7 +232,7 @@ export default function Editor({ id }: { id: string }) {
   /* --------------------------------------------------------- page actions */
   const addPageAfter = (i: number, templateId: string) => {
     update((d) => {
-      const np = createPage(templateId);
+      const np = createPage(templateId, undefined, d.brand);
       d.pages.splice(i + 1, 0, np);
       setTimeout(() => setCurrentId(np.id), 0);
     });
@@ -356,7 +356,7 @@ export default function Editor({ id }: { id: string }) {
       if (!home || !target) return;
       const index = pageIndex;
       update((d) => {
-        const np = createPage(home);
+        const np = createPage(home, undefined, d.brand);
         np.slots[target.key] = [b];
         d.pages.splice(index + 1, 0, np);
         setTimeout(() => {
