@@ -676,18 +676,28 @@ const templates: PageTemplate[] = [
       { key: 'a', label: 'Product 1', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square' },
       { key: 'b', label: 'Product 2', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square' },
       { key: 'c', label: 'Product 3', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square' },
-      { key: 'la', label: 'Label 1', accepts: ['text'], max: 1, hint: 'Name', justify: 'start', items: 'center' },
-      { key: 'lb', label: 'Label 2', accepts: ['text'], max: 1, hint: 'Name', justify: 'start', items: 'center' },
-      { key: 'lc', label: 'Label 3', accepts: ['text'], max: 1, hint: 'Name', justify: 'start', items: 'center' },
+      // Room for a name and the detail beneath it, same as the comparison page.
+      { key: 'la', label: 'Product 1 detail', accepts: TEXT_TYPES, max: 3, hint: 'Name, then detail', justify: 'start', items: 'center', gap: 8 },
+      { key: 'lb', label: 'Product 2 detail', accepts: TEXT_TYPES, max: 3, hint: 'Name, then detail', justify: 'start', items: 'center', gap: 8 },
+      { key: 'lc', label: 'Product 3 detail', accepts: TEXT_TYPES, max: 3, hint: 'Name, then detail', justify: 'start', items: 'center', gap: 8 },
     ],
     seed: () => ({
       head: [T('The range', 'eyebrow'), T('Built to sit together on shelf', 'headline')],
       a: [IMG()],
       b: [IMG()],
       c: [IMG()],
-      la: [{ ...T('Balsamic Reduction', 'caption'), style: { role: 'caption', color: 'auto', align: 'center' } }],
-      lb: [{ ...T('Risotto Milanese', 'caption'), style: { role: 'caption', color: 'auto', align: 'center' } }],
-      lc: [{ ...T('Tuscan White Bean', 'caption'), style: { role: 'caption', color: 'auto', align: 'center' } }],
+      la: [
+        { ...T('Balsamic Reduction', 'subhead'), style: { role: 'subhead' as const, color: 'auto' as const, align: 'center' as const } },
+        { ...T('8.8 oz · 12 per case', 'caption'), style: { role: 'caption' as const, color: 'auto' as const, align: 'center' as const } },
+      ],
+      lb: [
+        { ...T('Risotto Milanese', 'subhead'), style: { role: 'subhead' as const, color: 'auto' as const, align: 'center' as const } },
+        { ...T('8.8 oz · 12 per case', 'caption'), style: { role: 'caption' as const, color: 'auto' as const, align: 'center' as const } },
+      ],
+      lc: [
+        { ...T('Tuscan White Bean', 'subhead'), style: { role: 'subhead' as const, color: 'auto' as const, align: 'center' as const } },
+        { ...T('15 oz · 12 per case', 'caption'), style: { role: 'caption' as const, color: 'auto' as const, align: 'center' as const } },
+      ],
     }),
   },
   {
@@ -716,15 +726,25 @@ const templates: PageTemplate[] = [
       { key: 'head', label: 'Heading', accepts: TEXT_TYPES, max: 2, hint: 'Heading', justify: 'start', maxWidth: 1100 },
       { key: 'a', label: 'Product A', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square' },
       { key: 'b', label: 'Product B', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square' },
-      { key: 'la', label: 'Detail A', accepts: TEXT_TYPES, max: 2, hint: 'Detail', justify: 'start' },
-      { key: 'lb', label: 'Detail B', accepts: TEXT_TYPES, max: 2, hint: 'Detail', justify: 'start' },
+      // Name first, then the detail under it. A single caption line forced the
+      // product name and its specs into one string, which is why these pages
+      // read as a list of footnotes rather than a comparison. The tight gap
+      // keeps the pair reading as one unit against the 36 between columns.
+      { key: 'la', label: 'Product A detail', accepts: TEXT_TYPES, max: 4, hint: 'Product name, then detail', justify: 'start', gap: 10 },
+      { key: 'lb', label: 'Product B detail', accepts: TEXT_TYPES, max: 4, hint: 'Product name, then detail', justify: 'start', gap: 10 },
     ],
     seed: () => ({
       head: [T('Comparison', 'eyebrow'), T('Standard vs Reserve', 'headline')],
       a: [IMG()],
       b: [IMG()],
-      la: [{ ...T('Standard — 8.8 oz', 'caption'), style: { role: 'caption', color: 'auto', align: 'left' } }],
-      lb: [{ ...T('Reserve — 12 oz, aged 12 years', 'caption'), style: { role: 'caption', color: 'auto', align: 'left' } }],
+      la: [
+        { ...T('Standard', 'subhead'), style: { role: 'subhead' as const, color: 'auto' as const, align: 'left' as const } },
+        { ...T('8.8 oz · 12 per case', 'caption'), style: { role: 'caption' as const, color: 'auto' as const, align: 'left' as const } },
+      ],
+      lb: [
+        { ...T('Reserve', 'subhead'), style: { role: 'subhead' as const, color: 'auto' as const, align: 'left' as const } },
+        { ...T('12 oz · aged 12 years · 6 per case', 'caption'), style: { role: 'caption' as const, color: 'auto' as const, align: 'left' as const } },
+      ],
     }),
   },
   {
