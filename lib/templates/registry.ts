@@ -732,12 +732,18 @@ const templates: PageTemplate[] = [
     // page padding or on the frame inset comes straight off the product. At the
     // old 110/36/102 the shots rendered about 150 units across on a 1600-unit
     // page and the labels sat marooned at the foot of a mostly empty page.
+    //
+    // framePad is 0 on the shots here, unlike the single-product pages. The
+    // frame's leading edge has to land on the same axis as the product name
+    // beneath it, and any inset pushes it off that axis by exactly its own
+    // width. Nothing is lost: the image is contained, so a packshot already
+    // carries its own margin inside the square.
     layout: lay('1fr 1fr', 'auto 1fr auto', ['head head', 'a b', 'la lb'], 92, 26),
     background: { kind: 'color', color: 'cream', overlay: 'none' },
     slots: [
       { key: 'head', label: 'Heading', accepts: TEXT_TYPES, max: 2, hint: 'Heading', justify: 'start', maxWidth: 1100 },
-      { key: 'a', label: 'Product A', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square', framePad: 20, items: 'start' },
-      { key: 'b', label: 'Product B', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square', framePad: 20, items: 'start' },
+      { key: 'a', label: 'Product A', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square', framePad: 0, items: 'start' },
+      { key: 'b', label: 'Product B', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square', framePad: 0, items: 'start' },
       // Name first, then the detail under it. A single caption line forced the
       // product name and its specs into one string, which is why these pages
       // read as a list of footnotes rather than a comparison. The tight gap
