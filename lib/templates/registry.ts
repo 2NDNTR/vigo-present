@@ -1,6 +1,7 @@
 import type { Block, BlockType, Page, PageBackground } from '@/lib/model/types';
 import { uid } from '@/lib/model/types';
 import { placeholderImage } from '@/lib/assets/placeholders';
+import type { BrandId } from '@/lib/brand/themes';
 
 /**
  * PAGE TEMPLATE ARCHITECTURE
@@ -1070,7 +1071,12 @@ export function hydratePage(page: Page): Page {
 }
 
 /** Creates a fully-formed page from a template — never a blank page. */
-export function createPage(templateId: string, sectionStart?: string): Page {
+/**
+ * `brand` only tints the placeholder plates. Everything else about a page is
+ * already brand-driven at render time, but the seeded placeholder images are
+ * baked into the page when it is created, so the brand has to be known here.
+ */
+export function createPage(templateId: string, sectionStart?: string, brand?: BrandId): Page {
   const t = getTemplate(templateId);
   const slots = t.seed();
   t.slots.forEach((s) => {
@@ -1084,7 +1090,7 @@ export function createPage(templateId: string, sectionStart?: string): Page {
   Object.keys(slots).forEach((k) => {
     slots[k].forEach((b) => {
       if ((b.type === 'image' || (b.type === 'card' && b.showImage !== false)) && (!b.media || !b.media.url)) {
-        b.media = { url: placeholderImage(t.id + k + n++, ''), width: 1200, height: 800, focalX: 0.5, focalY: 0.5, zoom: 1 };
+        b.media = { url: placeholderImage(t.id + k + n++, '', undefined, brand), width: 1200, height: 800, focalX: 0.5, focalY: 0.5, zoom: 1 };
       }
     });
   });
@@ -1094,7 +1100,7 @@ export function createPage(templateId: string, sectionStart?: string): Page {
     : { kind: 'theme', overlay: 'none' };
   if ((background.kind === 'image' || background.kind === 'video') && !background.media?.url) {
     background.kind = 'image';
-    background.media = { url: placeholderImage(t.id + 'bg', ''), width: 1200, height: 800, focalX: 0.5, focalY: 0.5, zoom: 1 };
+    background.media = { url: placeholderImage(t.id + 'bg', '', undefined, brand), width: 1200, height: 800, focalX: 0.5, focalY: 0.5, zoom: 1 };
   }
 
   return { id: pid, templateId: t.id, sectionStart, background, slots };
