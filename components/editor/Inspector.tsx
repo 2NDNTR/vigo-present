@@ -202,11 +202,15 @@ export default function Inspector(props: InspectorProps) {
                     <button className="btn sm" style={{ marginBottom: 8 }} onClick={() => fileRef.current?.click()}>
                       {block.media?.url ? 'Replace image' : 'Upload image'}
                     </button>
+                    {/* No framing controls: a card image is a fixed 1:1 frame,
+                        contained and centred, exactly like the product slots.
+                        Pan only means something when an image is being cropped
+                        to fill a box, and nothing here is. */}
                     {block.media?.url && (
-                      <>
-                        <Slider label="Horizontal" value={block.media.focalX ?? 0.5} onChange={(v) => patchMedia({ focalX: v })} />
-                        <Slider label="Vertical" value={block.media.focalY ?? 0.5} onChange={(v) => patchMedia({ focalY: v })} />
-                      </>
+                      <p className="tiny" style={{ marginTop: 2 }}>
+                        Card images sit in a fixed 1:1 frame — swap the file and it
+                        lands correctly.
+                      </p>
                     )}
                   </>
                 )}
