@@ -579,7 +579,8 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
    against the smaller axis of the slot's content box, which is exactly the
    largest square that fits inside the padding — measured, not inferred.       */
 
-.slot.sq {
+.slot.sq,
+.slot.reel {
   container-type: size;
   overflow: hidden;
   align-items: center;
@@ -592,6 +593,30 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
   width: 100cqmin;
   height: 100cqmin;
   min-height: 0;
+}
+
+/* 9:16, for social creative. Height is driven from whichever axis binds first,
+   so the frame always fits its cell and every frame in the row is identical. */
+.slot.reel .blockslot {
+  flex: 0 0 auto;
+  aspect-ratio: 9 / 16;
+  height: min(100cqh, calc(100cqw * 16 / 9));
+  width: auto;
+  min-height: 0;
+}
+
+/* THE FRAME IS THE CONSTANT, NOT THE PICTURE.
+   Contained images each sit at their own height inside the frame, so a row of
+   photographs with different aspects reads as a row of different-sized blocks —
+   the frames look like they break along the bottom even though they are
+   identical. A barely-there wash makes the frame itself visible, so the rhythm
+   holds whatever shape the photography happens to be. currentColor keeps it
+   correct on a dark page as well as a light one. */
+.slot.sq .blockslot,
+.slot.reel .blockslot {
+  background: color-mix(in srgb, currentColor 5%, transparent);
+  border-radius: calc(var(--u) * 4px);
+  overflow: hidden;
 }
 
 /* `!important` earns its place here. The renderer writes object-position and a
@@ -607,11 +632,21 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
   object-position: center center !important;
   transform: none !important;
 }
+/* A reel frame is already the native shape of the content, so filling it is
+   right — a 9:16 export fills edge to edge and nothing is lost. */
+.slot.reel .media-el img,
+.slot.reel .media-el video {
+  object-fit: cover;
+  object-position: center center !important;
+  transform: none !important;
+}
 
 /* Stacked (narrow) rendering: the cell has no meaningful height to measure, so
    size the square off the width and drop the min-height the bleed rule sets. */
-.stage.stacked .slot.sq { container-type: normal; min-height: 0; }
+.stage.stacked .slot.sq,
+.stage.stacked .slot.reel { container-type: normal; min-height: 0; }
 .stage.stacked .slot.sq .blockslot { width: 100%; height: auto; aspect-ratio: 1 / 1; }
+.stage.stacked .slot.reel .blockslot { width: 100%; height: auto; aspect-ratio: 9 / 16; }
 
 .tt {
   font-family: var(--tt-family);
@@ -719,8 +754,9 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
   overflow: hidden;
   margin-bottom: calc(var(--u) * 22px);
   padding: calc(var(--u) * 14px);
-  border-radius: calc(var(--u) * 3px);
+  border-radius: calc(var(--u) * 4px);
   flex: none;
+  background: color-mix(in srgb, currentColor 5%, transparent);
 }
 .card-el .cimg img {
   width: 100%;
