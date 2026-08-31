@@ -114,7 +114,7 @@ const BASE_TYPE: Record<TypeRole, TypeStyle> = {
   quote: { size: 52, tracking: 0, weight: 400, lineHeight: 1.24, family: 'display' },
   metricXl: { size: 200, tracking: 0, weight: 600, lineHeight: 0.86, family: 'display' },
   metricLarge: { size: 120, tracking: 0, weight: 600, lineHeight: 0.88, family: 'display' },
-  metricLabel: { size: 17, tracking: 0, weight: 600, lineHeight: 1.35, family: 'body', transform: 'uppercase' },
+  metricLabel: { size: 27, tracking: 0, weight: 600, lineHeight: 1.3, family: 'body', transform: 'uppercase' },
 };
 
 /**
@@ -235,7 +235,7 @@ export const THEMES: Record<BrandId, BrandTheme> = {
       quote: { size: 44, weight: 400, lineHeight: 1.2 },
       metricXl: { size: 156, weight: 400, lineHeight: 0.9 },
       metricLarge: { size: 94, weight: 400, lineHeight: 0.92 },
-      metricLabel: { size: 19, weight: 500 },
+      metricLabel: { size: 30, weight: 500 },
     }),
     rule: { color: 'accent', weight: 4 },
   },
