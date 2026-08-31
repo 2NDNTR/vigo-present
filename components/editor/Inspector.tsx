@@ -55,6 +55,18 @@ export default function Inspector(props: InspectorProps) {
   const block =
     selected && (page.slots[selected.slotKey] || []).find((b) => b.id === selected.blockId);
   const warnings = pageGuardrails(page, template, theme);
+
+  /**
+   * A square product frame is a fixed composition: 1:1, centred, evenly inset,
+   * and contained rather than cropped. Framing controls are therefore hidden
+   * for it — pan and zoom only mean something when the image is being cropped
+   * to fill a box, and "set as full bleed" is the exact thing the frame exists
+   * to prevent. Offering controls that cannot improve the page, and can only
+   * knock it off-brand, is the opposite of what this tool is for.
+   */
+  const selectedSlot = selected ? template.slots.find((s) => s.key === selected.slotKey) : undefined;
+  const fixedFrame = selectedSlot?.frame === 'square';
+
   const fileRef = useRef<HTMLInputElement>(null);
   const bgFileRef = useRef<HTMLInputElement>(null);
 
@@ -332,7 +344,7 @@ export default function Inspector(props: InspectorProps) {
                   <button className="btn sm" onClick={() => fileRef.current?.click()}>
                     {block.media?.url ? 'Replace' : 'Upload'}
                   </button>
-                  {block.media?.url && (
+                  {block.media?.url && !fixedFrame && (
                     <button
                       className="btn sm"
                       onClick={() =>
@@ -347,12 +359,18 @@ export default function Inspector(props: InspectorProps) {
                     </button>
                   )}
                 </div>
-                {block.media?.url && (
+                {block.media?.url && !fixedFrame && (
                   <>
                     <Slider label="Horizontal" value={block.media.focalX ?? 0.5} onChange={(v) => patchMedia({ focalX: v })} />
                     <Slider label="Vertical" value={block.media.focalY ?? 0.5} onChange={(v) => patchMedia({ focalY: v })} />
                     <Slider label="Zoom" min={1} max={2} value={block.media.zoom ?? 1} onChange={(v) => patchMedia({ zoom: v })} />
                   </>
+                )}
+                {block.media?.url && fixedFrame && (
+                  <p className="tiny" style={{ marginTop: 2 }}>
+                    Product images sit in a fixed 1:1 frame, so there is nothing to
+                    position — swap the file and it lands correctly.
+                  </p>
                 )}
                 {block.type === 'video' && block.media?.url && (
                   <div style={{ marginTop: 8, display: 'grid', gap: 6 }}>
