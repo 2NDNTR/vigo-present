@@ -537,7 +537,8 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
   overflow: hidden;
   align-items: center;
   justify-content: center;
-  padding: calc(var(--u) * 102px);
+  /* --sqpad is set per slot by the renderer; 102 suits a tall half-page cell. */
+  padding: calc(var(--u) * var(--sqpad, 102) * 1px);
 }
 .slot.sq .blockslot {
   flex: 0 0 auto;
