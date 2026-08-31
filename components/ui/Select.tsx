@@ -35,7 +35,9 @@ export interface SelectOption {
 }
 
 const MENU_MAX_H = 360;
+const MIN_MENU_H = 180;
 const MARGIN = 8;
+const GAP = 6;
 
 export default function Select({
   value,
@@ -54,7 +56,7 @@ export default function Select({
 }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
-  const [pos, setPos] = useState<{ left: number; top: number; width: number; up: boolean } | null>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; width: number; up: boolean; maxH: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -71,8 +73,15 @@ export default function Select({
     const above = r.top - MARGIN;
     // Flip up only when there is genuinely more room there — a menu that flips
     // for a few pixels of gain reads as a glitch.
-    const up = below < Math.min(MENU_MAX_H, options.length * 34 + 12) && above > below;
-    setPos({ left: r.left, top: up ? r.top - MARGIN : r.bottom + 6, width: r.width, up });
+    const desired = Math.min(MENU_MAX_H, options.length * 34 + 12);
+    const up = below < desired && above > below;
+    // Height is measured against the room actually available on the chosen
+    // side, not assumed. Pinning it to MENU_MAX_H let the menu run past the
+    // bottom of the window, so the last options were simply unreachable.
+    const room = (up ? above : below) - GAP;
+    const maxH = Math.max(MIN_MENU_H, Math.min(MENU_MAX_H, room));
+    const left = Math.max(MARGIN, Math.min(r.left, window.innerWidth - r.width - MARGIN));
+    setPos({ left, top: up ? r.top - GAP : r.bottom + GAP, width: r.width, up, maxH });
   }, [options.length]);
 
   useLayoutEffect(() => {
@@ -86,9 +95,22 @@ export default function Select({
       if (menuRef.current?.contains(t) || triggerRef.current?.contains(t)) return;
       setOpen(false);
     };
-    // `true` so a scroll inside the inspector closes the menu too — a menu that
-    // stays pinned while the panel behind it moves looks broken.
-    const onScroll = () => setOpen(false);
+    /**
+     * Scrolling the PAGE behind an open menu should move the menu with its
+     * trigger. Scrolling the MENU should do nothing else at all.
+     *
+     * This listener is capturing, so it also sees scrolls raised inside the
+     * menu itself — and the menu scrolls itself the instant it opens, because
+     * the current option is brought into view. Closing on any scroll therefore
+     * shut the menu the moment it was opened, on every list long enough to
+     * scroll and every selection far enough down it. Which read, fairly, as the
+     * menu refusing to open at all.
+     */
+    const onScroll = (e: Event) => {
+      const t = e.target as Node | null;
+      if (t && menuRef.current && (menuRef.current === t || menuRef.current.contains(t))) return;
+      place();
+    };
     document.addEventListener('mousedown', onDown);
     window.addEventListener('scroll', onScroll, true);
     window.addEventListener('resize', place);
@@ -168,7 +190,7 @@ export default function Select({
             style={{
               left: pos.left,
               width: pos.width,
-              maxHeight: MENU_MAX_H,
+              maxHeight: pos.maxH,
               ...(pos.up ? { bottom: window.innerHeight - pos.top } : { top: pos.top }),
             }}
           >
