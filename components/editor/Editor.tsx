@@ -595,12 +595,17 @@ export default function Editor({ id }: { id: string }) {
             </div>
           )}
 
-          <div className="ed-tabs">
-            {(['pages', 'add', 'assets', 'brand'] as Tab[]).map((t) => (
-              <button key={t} className={'tabbtn' + (tab === t ? ' on' : '')} onClick={() => setTab(t)}>
-                {t[0].toUpperCase() + t.slice(1)}
-              </button>
-            ))}
+          {/* The bar, not the track, is what sticks — it needs an opaque
+              background spanning the panel's full width, or content scrolls
+              visibly through the tabs. */}
+          <div className="ed-tabsbar">
+            <div className="ed-tabs">
+              {(['pages', 'add', 'assets', 'brand'] as Tab[]).map((t) => (
+                <button key={t} className={'tabbtn' + (tab === t ? ' on' : '')} onClick={() => setTab(t)}>
+                  {t[0].toUpperCase() + t.slice(1)}
+                </button>
+              ))}
+            </div>
           </div>
 
           {tab === 'pages' && (
