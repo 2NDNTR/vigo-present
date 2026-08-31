@@ -8,6 +8,7 @@ import Inspector from './Inspector';
 import AssetsPanel from './AssetsPanel';
 import BrandPanel from './BrandPanel';
 import AddPanel from './AddPanel';
+import Brandmark from '@/components/ui/Brandmark';
 import AddPageModal from './AddPageModal';
 import SharePanel from './SharePanel';
 import type { Block, BlockType, Page, Presentation } from '@/lib/model/types';
@@ -421,6 +422,18 @@ export default function Editor({ id }: { id: string }) {
     <div className="editor">
       <div className="ed-top">
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+          {/* The mark doubles as the way back to the dashboard, which is what a
+              product logo in a top-left corner already means. The bare ← stays
+              beside it: the logo is the habit, the arrow is the label for
+              anyone who has not learned it yet. */}
+          <button
+            className="ed-home"
+            onClick={() => router.push('/dashboard')}
+            title="All presentations"
+            aria-label="All presentations"
+          >
+            <Brandmark size="sm" />
+          </button>
           <button className="btn ghost sm" onClick={() => router.push('/dashboard')} title="All presentations">
             ←
           </button>
