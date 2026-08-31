@@ -372,12 +372,23 @@ export default function Editor({ id }: { id: string }) {
           <button className="btn ghost sm" onClick={() => router.push('/dashboard')} title="All presentations">
             ←
           </button>
-          <input
-            className="ed-title"
-            readOnly={!!pres.locked}
-            value={pres.title}
-            onChange={(e) => update((d) => { d.title = e.target.value; })}
-          />
+          {/* data-value drives the width: the wrapper's ::after renders the
+              same string invisibly, so the field is exactly as wide as its
+              title until it reaches the cap. See .ed-titlewrap. */}
+          <span className="ed-titlewrap" data-value={pres.title}>
+            <input
+              className="ed-title"
+              /* size=1 so the input contributes almost nothing to the grid
+                 track. Left at its default of 20 characters, every title —
+                 even "Q3 Review" — would sit in a field padded out to that
+                 width. The ::after string is what sets the width. */
+              size={1}
+              readOnly={!!pres.locked}
+              value={pres.title}
+              title={pres.title}
+              onChange={(e) => update((d) => { d.title = e.target.value; })}
+            />
+          </span>
           <span className={'savechip' + (saved === 'error' ? ' bad' : '')}>
             {saved === 'saving' ? 'Saving…' : saved === 'error' ? 'Not saved' : 'Saved'}
           </span>

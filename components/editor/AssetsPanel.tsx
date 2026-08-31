@@ -16,6 +16,7 @@ import { addUpload, exportAll, listUploads, removeUpload } from '@/lib/assets/up
 import { ASSET_CATEGORIES } from '@/lib/model/types';
 import type { AssetCategory } from '@/lib/model/types';
 import { BRAND_ORDER, THEMES } from '@/lib/brand/themes';
+import Select from '@/components/ui/Select';
 import type { BrandId } from '@/lib/brand/themes';
 
 const UPLOAD_CATEGORIES: AssetCategory[] = ASSET_CATEGORIES.filter((c) => c !== 'Logos');
@@ -88,14 +89,16 @@ export default function AssetsPanel({
             </button>
           ))}
         </div>
-        <select className="field" style={{ marginBottom: 8 }} value={cat} onChange={(e) => setCat(e.target.value as any)}>
-          <option value="All">All categories</option>
-          {ASSET_CATEGORIES.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
+        <Select
+          style={{ marginBottom: 8 }}
+          ariaLabel="Filter by category"
+          value={cat}
+          onChange={(v) => setCat(v as any)}
+          options={[
+            { value: 'All', label: 'All categories' },
+            ...ASSET_CATEGORIES.map((c) => ({ value: c, label: c })),
+          ]}
+        />
         <input className="field" placeholder="Search assets" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
 
@@ -104,18 +107,13 @@ export default function AssetsPanel({
         <div className="label" style={{ marginBottom: 6 }}>
           Add to {THEMES[b].shortName}
         </div>
-        <select
-          className="field"
+        <Select
           style={{ marginBottom: 8 }}
+          ariaLabel="Upload category"
           value={uploadCat}
-          onChange={(e) => setUploadCat(e.target.value as AssetCategory)}
-        >
-          {UPLOAD_CATEGORIES.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
+          onChange={(v) => setUploadCat(v as AssetCategory)}
+          options={UPLOAD_CATEGORIES.map((c) => ({ value: c, label: c }))}
+        />
 
         <input
           ref={fileRef}

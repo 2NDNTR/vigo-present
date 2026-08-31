@@ -4,6 +4,7 @@ import React, { useRef } from 'react';
 import type { Block, MediaRef, Page, PageBackground, Presentation } from '@/lib/model/types';
 import type { PageTemplate } from '@/lib/templates/registry';
 import { TEMPLATES, getTemplate } from '@/lib/templates/registry';
+import Select from '@/components/ui/Select';
 import {
   BRAND_ORDER,
   COLOR_LABELS,
@@ -378,18 +379,19 @@ export default function Inspector(props: InspectorProps) {
         <h4 className="panel-h">Page</h4>
 
         <div className="label" style={{ marginBottom: 6 }}>Layout</div>
-        <select
-          className="field"
+        {/* The category becomes a section heading rather than a prefix on every
+            row, so forty-five layouts read as six short lists. */}
+        <Select
           style={{ marginBottom: 14 }}
+          ariaLabel="Page layout"
           value={page.templateId}
-          onChange={(e) => props.onSwapTemplate(e.target.value)}
-        >
-          {TEMPLATES.map((t: PageTemplate) => (
-            <option key={t.id} value={t.id}>
-              {t.category} — {t.name}
-            </option>
-          ))}
-        </select>
+          onChange={props.onSwapTemplate}
+          options={TEMPLATES.map((t: PageTemplate) => ({
+            value: t.id,
+            label: t.name,
+            group: t.category,
+          }))}
+        />
 
         <div className="label" style={{ marginBottom: 6 }}>Page headline</div>
         <div className="seg" style={{ marginBottom: 8 }}>
