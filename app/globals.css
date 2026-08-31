@@ -758,6 +758,73 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 /* Narrow rendering has no fixed chrome band to pin against. */
 .stage.stacked .page-chrome-logo { position: static; }
 
+/* Column picker in the spreadsheet importer. */
+.colpick { display: grid; gap: 4px; }
+.colchip {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; border-radius: 7px; cursor: pointer;
+  border: 1px solid var(--app-line); background: #fff; font-size: 13px;
+}
+.colchip.on { border-color: rgba(23,24,26,0.32); background: rgba(23,24,26,0.035); }
+.colchip input { margin: 0; flex: none; accent-color: var(--app-accent); }
+.colchip span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.colchip i {
+  flex: none; font-style: normal; font-size: 10.5px; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--app-ink-3);
+}
+
+/* ------------------------------------------------------------ data table
+
+   A table ingested from a rep's spreadsheet. No vertical rules and no zebra
+   striping: a hairline under each row is enough to track across, and the
+   quieter the grid, the more the numbers read as the content. Numeric columns
+   are right-aligned with tabular figures so digits stack in columns — the one
+   thing that makes a column of money scannable at a glance.                  */
+
+.dtable {
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: calc(var(--u) * var(--tt-size) * var(--tt-scale, 1) * 1px);
+  line-height: 1.35;
+}
+.dt-row {
+  display: grid;
+  gap: calc(var(--u) * 20px);
+  padding: calc(var(--u) * 11px) 0;
+  border-bottom: 1px solid currentColor;
+  border-color: color-mix(in srgb, currentColor 14%, transparent);
+}
+.dt-row:last-child { border-bottom: 0; }
+.td {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+.dt-head { padding-top: 0; border-bottom-width: calc(var(--u) * 2px); }
+.dt-head .th {
+  font-size: calc(var(--u) * var(--tt-size) * var(--tt-scale, 1) * 0.78px);
+  font-weight: 650;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  opacity: 0.62;
+}
+/* The total is the row people look for; it gets the rule and the weight. */
+.dt-total {
+  font-weight: 650;
+  border-top: calc(var(--u) * 2px) solid currentColor;
+  border-bottom: 0;
+  margin-top: calc(var(--u) * 4px);
+}
+.dt-source {
+  margin-top: calc(var(--u) * 14px);
+  font-family: var(--font-body);
+  font-size: calc(var(--u) * 13px);
+  opacity: 0.55;
+}
+
 /* ---------------------------------------------------------------- gallery */
 
 .gallery { display: grid; gap: calc(var(--u) * 18px); width: 100%; height: 100%; }
