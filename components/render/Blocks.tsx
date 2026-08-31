@@ -15,6 +15,8 @@ export interface RenderCtx {
   onChange?: (blockId: string, patch: Partial<Block>) => void;
   /** number of sibling blocks in a horizontal slot — used for auto-sizing */
   siblings?: number;
+  /** true when this block is the only one on the page — the Single Metric case */
+  solo?: boolean;
   /** true when this page's surface is dark — drives the automatic logo variant */
   onDark?: boolean;
   /** true when rendering the running page-corner mark rather than a placed logo */
@@ -27,20 +29,45 @@ const colorFor = (b: Block) =>
 const alignFor = (b: Block) => (b.style?.align === 'center' ? 'center' : 'left');
 
 /**
- * Metrics are set oversized — a single figure is meant to fill the page the way
- * a magazine stat spread does. The per-count reduction had to come down with
- * that increase: at the old 0.62, four doubled metrics ran about 1630 design
- * units across a 1424-unit column and spilled off the page.
+ * Metrics in a row share the width, so each one steps down as the count goes
+ * up. These figures sit alongside headlines and images, so the role size is
+ * the ceiling — the Single Metric page is the only place a number is allowed
+ * to grow past it (see soloMetricScale).
  */
 function metricScale(role: TypeRole, siblings: number, value: string): number {
   let s = 1;
-  if (siblings >= 4) s = 0.4;
-  else if (siblings === 3) s = 0.55;
-  else if (siblings === 2) s = 0.8;
+  if (siblings >= 4) s = 0.62;
+  else if (siblings === 3) s = 0.8;
+  else if (siblings === 2) s = 0.92;
   const len = (value || '').length;
   if (len > 9) s *= 0.62;
   else if (len > 6) s *= 0.78;
   return s;
+}
+
+/**
+ * THE SINGLE METRIC PAGE
+ * ---------------------------------------------------------------------------
+ * When a metric is the only block on the page it is the page, so it is set to
+ * FILL rather than to a fixed role size: the scale is solved from the value's
+ * own width so that "38%" and "$1.24B" both land on the same optical measure
+ * instead of one filling the spread and the other floating in the middle.
+ *
+ * Deliberately scoped to a solo block. Every other metric shares its page with
+ * a headline, an image or its siblings, and growing those is what pushed three
+ * figures into each other on the Sales Growth page.
+ */
+const SOLO_MEASURE = 1180; // design units the figure should span
+const SOLO_MAX = 430; // ceiling on the figure's set size, in design units
+
+function soloMetricScale(baseSize: number, value: string): number {
+  const v = (value || '').trim();
+  if (!v || !baseSize) return 1;
+  // Digits and % run about 0.62em in both display faces; . and , far narrower.
+  const narrow = (v.match(/[.,\s]/g) || []).length;
+  const wide = Math.max(1, v.length - narrow);
+  const em = wide * 0.62 + narrow * 0.26;
+  return Math.max(1, Math.min(SOLO_MEASURE / (em * baseSize), SOLO_MAX / baseSize));
 }
 
 /** Long copy is nudged down a little — then the guardrail asks for fewer words. */
@@ -82,7 +109,9 @@ export default function BlockView({ block, ctx }: { block: Block; ctx: RenderCtx
     /* ------------------------------------------------------------- metric */
     case 'metric': {
       const role = (block.style?.role || 'metricLarge') as TypeRole;
-      const scale = metricScale(role, ctx.siblings || 1, block.value || '');
+      const scale = ctx.solo
+        ? soloMetricScale(ctx.theme.type[role]?.size || 0, block.value || '')
+        : metricScale(role, ctx.siblings || 1, block.value || '');
       const center = alignFor(block) === 'center';
       return (
         <div {...wrapProps}>

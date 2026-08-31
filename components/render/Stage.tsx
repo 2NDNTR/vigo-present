@@ -198,6 +198,11 @@ export default function Stage(props: StageProps) {
       >
         {template.slots.map((slot) => {
           const blocks = page.slots[slot.key] || [];
+          // A block that is alone on the page — no headline, no image, no
+          // siblings — is free to be set to fill it. Counted across every slot
+          // rather than within one, so a metric beside a headline is excluded.
+          const soloOnPage =
+            template.slots.reduce((n, s) => n + (page.slots[s.key] || []).length, 0) === 1;
           const horizontal = slot.dir === 'h';
           // A square frame is centred on BOTH axes, and that has to be decided
           // here rather than in CSS: a square slot is also a bleed slot, and the
@@ -343,6 +348,7 @@ export default function Stage(props: StageProps) {
                       onDark,
                       selectedId: props.selectedId,
                       siblings: Math.max(1, blocks.filter((x) => x.type === 'metric').length),
+                      solo: soloOnPage,
                       onSelect: (id) => props.onSelectBlock && props.onSelectBlock(id, slot.key),
                       onChange: props.onChangeBlock,
                     }}
