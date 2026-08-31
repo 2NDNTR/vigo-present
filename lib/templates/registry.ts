@@ -695,7 +695,7 @@ const templates: PageTemplate[] = [
       c: [IMG()],
       la: [
         { ...T('Balsamic Reduction', 'subhead'), style: { role: 'subhead' as const, color: 'auto' as const, align: 'center' as const } },
-        { ...T('8.8 oz · 12 per case', 'caption'), style: { role: 'caption' as const, color: 'auto' as const, align: 'center' as const } },
+        { ...T('8.8 oz · 12 per case', 'caption'), style: { role: 'caption' as const, color: 'auto' as const, align: 'left' as const } },
       ],
       lb: [
         { ...T('Risotto Milanese', 'subhead'), style: { role: 'subhead' as const, color: 'auto' as const, align: 'center' as const } },
@@ -736,28 +736,29 @@ const templates: PageTemplate[] = [
     background: { kind: 'color', color: 'cream', overlay: 'none' },
     slots: [
       { key: 'head', label: 'Heading', accepts: TEXT_TYPES, max: 2, hint: 'Heading', justify: 'start', maxWidth: 1100 },
-      { key: 'a', label: 'Product A', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square', framePad: 20 },
-      { key: 'b', label: 'Product B', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square', framePad: 20 },
+      { key: 'a', label: 'Product A', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square', framePad: 20, items: 'start' },
+      { key: 'b', label: 'Product B', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square', framePad: 20, items: 'start' },
       // Name first, then the detail under it. A single caption line forced the
       // product name and its specs into one string, which is why these pages
       // read as a list of footnotes rather than a comparison. The tight gap
       // keeps the pair reading as one unit against the 36 between columns.
-      // Centred under a centred shot, so each product reads as one stack rather
-      // than a picture with a caption stranded off to one side.
-      { key: 'la', label: 'Product A detail', accepts: TEXT_TYPES, max: 4, hint: 'Product name, then detail', justify: 'start', items: 'center', gap: 10 },
-      { key: 'lb', label: 'Product B detail', accepts: TEXT_TYPES, max: 4, hint: 'Product name, then detail', justify: 'start', items: 'center', gap: 10 },
+      // Shot and type share one leading edge, so each product reads as a spec
+      // sheet column. Centring the shot instead left it floating off-axis from
+      // its own name — and every deck already written has left-aligned labels.
+      { key: 'la', label: 'Product A detail', accepts: TEXT_TYPES, max: 4, hint: 'Product name, then detail', justify: 'start', gap: 10 },
+      { key: 'lb', label: 'Product B detail', accepts: TEXT_TYPES, max: 4, hint: 'Product name, then detail', justify: 'start', gap: 10 },
     ],
     seed: () => ({
       head: [T('Comparison', 'eyebrow'), T('Standard vs Reserve', 'headline')],
       a: [IMG()],
       b: [IMG()],
       la: [
-        { ...T('Standard', 'subhead'), style: { role: 'subhead' as const, color: 'auto' as const, align: 'center' as const } },
-        { ...T('8.8 oz · 12 per case', 'caption'), style: { role: 'caption' as const, color: 'auto' as const, align: 'center' as const } },
+        { ...T('Standard', 'subhead'), style: { role: 'subhead' as const, color: 'auto' as const, align: 'left' as const } },
+        { ...T('8.8 oz · 12 per case', 'caption'), style: { role: 'caption' as const, color: 'auto' as const, align: 'left' as const } },
       ],
       lb: [
-        { ...T('Reserve', 'subhead'), style: { role: 'subhead' as const, color: 'auto' as const, align: 'center' as const } },
-        { ...T('12 oz · aged 12 years · 6 per case', 'caption'), style: { role: 'caption' as const, color: 'auto' as const, align: 'center' as const } },
+        { ...T('Reserve', 'subhead'), style: { role: 'subhead' as const, color: 'auto' as const, align: 'left' as const } },
+        { ...T('12 oz · aged 12 years · 6 per case', 'caption'), style: { role: 'caption' as const, color: 'auto' as const, align: 'left' as const } },
       ],
     }),
   },
