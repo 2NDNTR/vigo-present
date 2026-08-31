@@ -28,8 +28,11 @@ const MAX_ROWS = 14;
 
 export default function SheetImport({
   onInsert,
+  canPlaceHere,
 }: {
   onInsert: (block: Block) => void;
+  /** true when the current layout has a slot that accepts a table */
+  canPlaceHere: boolean;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [table, setTable] = useState<SheetTable | null>(null);
@@ -180,6 +183,14 @@ export default function SheetImport({
               More than {MAX_COLS} columns will be tight on a page.
             </p>
           )}
+          {/* Says where it will land, because that depends on the current page
+              and guessing wrong is the difference between "it worked" and
+              "where did my table go". */}
+          <p className="tiny" style={{ marginTop: 8 }}>
+            {canPlaceHere
+              ? 'Lands on this page.'
+              : 'This layout has no table area, so a new Data Table page is added after this one.'}
+          </p>
           {truncated > 0 && (
             <p className="tiny" style={{ marginTop: 8 }}>
               The first {MAX_ROWS} rows go on the page; {truncated} more stay in your file.

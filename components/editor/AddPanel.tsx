@@ -87,7 +87,7 @@ export default function AddPanel({
         </div>
       </div>
 
-      <SheetImport onInsert={onInsertBlock} />
+      <SheetImport onInsert={onInsertBlock} canPlaceHere={template.slots.some((s) => s.accepts.includes('table'))} />
     </div>
   );
 }

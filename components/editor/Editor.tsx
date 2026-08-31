@@ -24,6 +24,9 @@ type Tab = 'pages' | 'add' | 'assets' | 'brand';
 
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
 
+/** Where a block goes when the current layout has no slot for it. */
+const FALLBACK_PAGE: Partial<Record<BlockType, string>> = { table: 'data-table' };
+
 function defaultBlock(type: BlockType, role?: string): Block {
   switch (type) {
     case 'metric':
@@ -341,12 +344,30 @@ export default function Editor({ id }: { id: string }) {
     const slot =
       template.slots.find((s) => s.key === activeSlot && s.accepts.includes(b.type)) ||
       template.slots.find((s) => s.accepts.includes(b.type));
+
+    // Nowhere on this layout takes the block — so build the page that does and
+    // put it there. The first version stopped and told the rep to go and change
+    // the layout themselves, which is a dead end at the worst possible moment:
+    // they have already chosen the file and the columns, and the answer to
+    // "where should this table go" is obviously "on a table page".
     if (!slot) {
-      // No slot on this layout takes a table; give the rep the page that does
-      // rather than silently dropping their upload.
-      window.alert('This layout has nowhere to put a table. Switch the page to the Data Table layout, then add it.');
+      const home = FALLBACK_PAGE[b.type];
+      const target = home && getTemplate(home).slots.find((s) => s.accepts.includes(b.type));
+      if (!home || !target) return;
+      const index = pageIndex;
+      update((d) => {
+        const np = createPage(home);
+        np.slots[target.key] = [b];
+        d.pages.splice(index + 1, 0, np);
+        setTimeout(() => {
+          setCurrentId(np.id);
+          setSelected({ blockId: b.id, slotKey: target.key });
+        }, 0);
+      });
+      setTab('pages');
       return;
     }
+
     update((d) => {
       const p = d.pages.find((x) => x.id === page.id);
       if (!p) return;
