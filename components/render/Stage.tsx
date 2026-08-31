@@ -203,7 +203,7 @@ export default function Stage(props: StageProps) {
           // here rather than in CSS: a square slot is also a bleed slot, and the
           // bleed branch below writes alignItems:'stretch' inline, which beats
           // any class rule and pins the frame to the left of its cell.
-          const squareFrame = slot.frame === 'square';
+          const squareFrame = slot.frame === 'square' || slot.frame === 'reel';
           const style: CSSProperties = {
             gridArea: slot.key,
             justifyContent: squareFrame
@@ -249,7 +249,7 @@ export default function Stage(props: StageProps) {
                 'slot' +
                 (horizontal ? ' h' : '') +
                 (slot.bleed ? ' bleed' : '') +
-                (slot.frame === 'square' ? ' sq' : '') +
+                (slot.frame === 'square' ? ' sq' : slot.frame === 'reel' ? ' reel' : '') +
                 (editable ? ' editable' : '') +
                 (dropSlot === slot.key ? ' dropping' : '')
               }
@@ -287,7 +287,7 @@ export default function Stage(props: StageProps) {
                   style={
                     horizontal
                       ? { flex: 1, minWidth: 0, ...(b.type === 'card' ? { alignSelf: 'stretch' } : {}) }
-                      : slot.frame === 'square'
+                      : slot.frame === 'square' || slot.frame === 'reel'
                       ? // Sizing is left entirely to .slot.sq .blockslot in CSS.
                         // The bleed branch below would force flex:1 + width:100%
                         // inline, and an inline style beats the class rule that

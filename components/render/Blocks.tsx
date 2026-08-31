@@ -26,11 +26,17 @@ const colorFor = (b: Block) =>
 
 const alignFor = (b: Block) => (b.style?.align === 'center' ? 'center' : 'left');
 
+/**
+ * Metrics are set oversized — a single figure is meant to fill the page the way
+ * a magazine stat spread does. The per-count reduction had to come down with
+ * that increase: at the old 0.62, four doubled metrics ran about 1630 design
+ * units across a 1424-unit column and spilled off the page.
+ */
 function metricScale(role: TypeRole, siblings: number, value: string): number {
   let s = 1;
-  if (siblings >= 4) s = 0.62;
-  else if (siblings === 3) s = 0.8;
-  else if (siblings === 2) s = 0.92;
+  if (siblings >= 4) s = 0.4;
+  else if (siblings === 3) s = 0.55;
+  else if (siblings === 2) s = 0.8;
   const len = (value || '').length;
   if (len > 9) s *= 0.62;
   else if (len > 6) s *= 0.78;
