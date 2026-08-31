@@ -517,6 +517,42 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 .slot.h { flex-direction: row; align-items: stretch; }
 .slot.bleed { overflow: hidden; }
 
+/* ------------------------------------------------------ square product frame
+
+   A packshot is not scenery. Bleeding one edge-to-edge and cropping it to the
+   cell means slicing the label off, which is the one thing a product page is
+   for. So the media sits in a centred 1:1 frame, inset evenly, and is
+   CONTAINED rather than cropped — a shot that is not square letterboxes inside
+   the frame instead of losing its edges.
+
+   The square is sized in CONTAINER UNITS, not percentages. `aspect-ratio` with
+   `height: 100%` and `max-width: 100%` does not work here: the height is
+   definite, so the derived width gets clamped without the height ever
+   recomputing, and the frame comes out a rectangle. `100cqmin` resolves
+   against the smaller axis of the slot's content box, which is exactly the
+   largest square that fits inside the padding — measured, not inferred.       */
+
+.slot.sq {
+  container-type: size;
+  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--u) * 72px);
+}
+.slot.sq .blockslot {
+  flex: 0 0 auto;
+  width: 100cqmin;
+  height: 100cqmin;
+  min-height: 0;
+}
+.slot.sq .media-el img,
+.slot.sq .media-el video { object-fit: contain; }
+
+/* Stacked (narrow) rendering: the cell has no meaningful height to measure, so
+   size the square off the width and drop the min-height the bleed rule sets. */
+.stage.stacked .slot.sq { container-type: normal; min-height: 0; }
+.stage.stacked .slot.sq .blockslot { width: 100%; height: auto; aspect-ratio: 1 / 1; }
+
 .tt {
   font-family: var(--tt-family);
   /* --tt-fit is set by the fit-to-column pass in EditableText */
