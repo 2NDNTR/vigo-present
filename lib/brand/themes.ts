@@ -262,13 +262,27 @@ export const THEMES: Record<BrandId, BrandTheme> = {
       terracotta: '#DF683F',
       paleCream: '#F7F7BF',
     },
-    textColors: ['brandPrimary', 'brandSecondary', 'accent', 'white', 'black', 'neutral'],
-    // Alessi page surfaces use these four and nothing else.
-    surfaceColors: ['brandYellow', 'terracotta', 'paleCream', 'black'],
+    /**
+     * ONE ALESSI PALETTE, used for both type and page surfaces.
+     *
+     * These lists were deliberately different at first — the reasoning being
+     * that a colour can be right behind type and wrong as type. For Alessi
+     * that split just meant the text swatches showed a generic grey-and-tan
+     * set that appears nowhere in the brand. Same five colours in the same
+     * order in both places is the clearer rule, and it makes the two rows of
+     * swatches legible as what they are: the brand palette.
+     *
+     * Nothing here prevents a pale colour being set on a pale background; the
+     * contrast guardrail already flags that on the page, which is the right
+     * place for it — a warning, not a colour the brand team cannot reach.
+     */
+    textColors: ['brandYellow', 'terracotta', 'paleCream', 'white', 'black'],
+    surfaceColors: ['brandYellow', 'terracotta', 'paleCream', 'white', 'black'],
     colorLabels: {
       brandYellow: 'Alessi Yellow',
       terracotta: 'Terracotta',
       paleCream: 'Pale Cream',
+      white: 'White',
       black: 'Black',
     },
     surface: { bg: 'cream', ink: 'brandPrimary', muted: 'rgba(26,24,21,0.6)' },
