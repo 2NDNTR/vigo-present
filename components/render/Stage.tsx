@@ -221,6 +221,7 @@ export default function Stage(props: StageProps) {
                 'slot' +
                 (horizontal ? ' h' : '') +
                 (slot.bleed ? ' bleed' : '') +
+                (slot.frame === 'square' ? ' sq' : '') +
                 (editable ? ' editable' : '') +
                 (dropSlot === slot.key ? ' dropping' : '')
               }
@@ -258,6 +259,12 @@ export default function Stage(props: StageProps) {
                   style={
                     horizontal
                       ? { flex: 1, minWidth: 0, ...(b.type === 'card' ? { alignSelf: 'stretch' } : {}) }
+                      : slot.frame === 'square'
+                      ? // Sizing is left entirely to .slot.sq .blockslot in CSS.
+                        // The bleed branch below would force flex:1 + width:100%
+                        // inline, and an inline style beats the class rule that
+                        // has to keep this box square.
+                        undefined
                       : slot.bleed
                       ? { flex: 1, minHeight: 0, width: '100%' }
                       : b.type === 'card'
