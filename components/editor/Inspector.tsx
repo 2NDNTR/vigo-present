@@ -406,11 +406,11 @@ export default function Inspector(props: InspectorProps) {
           }))}
         />
 
-        <div className="label" style={{ marginBottom: 6 }}>Page headline</div>
+        <div className="label" style={{ marginBottom: 6 }}>Page eyebrow</div>
         <div className="seg" style={{ marginBottom: 8 }}>
           <button
             className={page.headline !== undefined ? 'on' : ''}
-            onClick={() => props.onChangePage({ headline: page.headline ?? 'Section headline' })}
+            onClick={() => props.onChangePage({ headline: page.headline ?? 'Section eyebrow' })}
           >
             On
           </button>
