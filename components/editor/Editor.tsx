@@ -331,6 +331,31 @@ export default function Editor({ id }: { id: string }) {
     setTab('pages');
   };
 
+  /**
+   * Inserts an already-built block — the spreadsheet importer arrives with the
+   * table populated, so it cannot go through addBlock's defaultBlock path.
+   */
+  const insertBlock = (b: Block) => {
+    if (!page) return;
+    const template = getTemplate(page.templateId);
+    const slot =
+      template.slots.find((s) => s.key === activeSlot && s.accepts.includes(b.type)) ||
+      template.slots.find((s) => s.accepts.includes(b.type));
+    if (!slot) {
+      // No slot on this layout takes a table; give the rep the page that does
+      // rather than silently dropping their upload.
+      window.alert('This layout has nowhere to put a table. Switch the page to the Data Table layout, then add it.');
+      return;
+    }
+    update((d) => {
+      const p = d.pages.find((x) => x.id === page.id);
+      if (!p) return;
+      (p.slots[slot.key] = p.slots[slot.key] || []).push(b);
+    });
+    setSelected({ blockId: b.id, slotKey: slot.key });
+    setTab('pages');
+  };
+
   /* ------------------------------------------------------------- keyboard */
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
@@ -663,6 +688,7 @@ export default function Editor({ id }: { id: string }) {
               activeSlot={activeSlot}
               onAddPage={() => setAdding({ afterIndex: pageIndex })}
               onAddBlock={addBlock}
+              onInsertBlock={insertBlock}
             />
           )}
           {tab === 'assets' && <AssetsPanel brand={pres.brand} onUse={useAsset} />}

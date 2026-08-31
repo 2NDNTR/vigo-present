@@ -2,7 +2,8 @@
 
 import type { BlockType } from '@/lib/model/types';
 import { getTemplate } from '@/lib/templates/registry';
-import type { Page } from '@/lib/model/types';
+import type { Block, Page } from '@/lib/model/types';
+import SheetImport from './SheetImport';
 
 const ITEMS: { type: BlockType | 'page'; label: string; hint: string }[] = [
   { type: 'page', label: 'Page', hint: 'Choose from the layout library' },
@@ -26,11 +27,13 @@ export default function AddPanel({
   activeSlot,
   onAddPage,
   onAddBlock,
+  onInsertBlock,
 }: {
   page: Page;
   activeSlot: string | null;
   onAddPage: () => void;
   onAddBlock: (type: BlockType, role?: string) => void;
+  onInsertBlock: (block: Block) => void;
 }) {
   const template = getTemplate(page.templateId);
   const slot = template.slots.find((s) => s.key === activeSlot) || template.slots[0];
@@ -83,6 +86,8 @@ export default function AddPanel({
           })}
         </div>
       </div>
+
+      <SheetImport onInsert={onInsertBlock} />
     </div>
   );
 }
