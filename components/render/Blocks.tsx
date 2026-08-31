@@ -17,6 +17,8 @@ export interface RenderCtx {
   siblings?: number;
   /** true when this page's surface is dark — drives the automatic logo variant */
   onDark?: boolean;
+  /** true when rendering the running page-corner mark rather than a placed logo */
+  chrome?: boolean;
 }
 
 const colorFor = (b: Block) =>
@@ -166,7 +168,11 @@ export default function BlockView({ block, ctx }: { block: Block; ctx: RenderCtx
       // never be stretched, squashed or recoloured.
       const file = t.logo.files?.[variant] || t.logo.files?.primary;
       if (file) {
-        const h = Math.max(t.logo.height || 56, t.logo.minHeight || 0);
+        // The corner mark is page furniture, not a title-card logo: it runs at
+        // the brand's chromeHeight so it never competes with the page's own
+        // content. A placed logo — a cover, say — keeps its full size.
+        const base = ctx.chrome ? t.logo.chromeHeight || 44 : t.logo.height || 56;
+        const h = ctx.chrome ? base : Math.max(base, t.logo.minHeight || 0);
         return (
           <div {...wrapProps} style={{ ...wrapProps.style, width: 'auto' }}>
             <img

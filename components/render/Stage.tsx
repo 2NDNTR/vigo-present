@@ -165,7 +165,7 @@ export default function Stage(props: StageProps) {
           />
           {page.showLogo ? (
             <div className="page-chrome-logo">
-              <BlockView block={{ id: page.id + '-lg', type: 'logo' }} ctx={{ theme, onDark }} />
+              <BlockView block={{ id: page.id + '-lg', type: 'logo' }} ctx={{ theme, onDark, chrome: true }} />
             </div>
           ) : null}
         </div>
