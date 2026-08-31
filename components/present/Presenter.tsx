@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Stage from '@/components/render/Stage';
 import type { Presentation } from '@/lib/model/types';
 import { getTheme } from '@/lib/brand/themes';
+import { animateScrollTo, prefersReducedMotion } from '@/lib/present/scroll';
 
 /**
  * PRESENTATION MODE
@@ -28,6 +29,13 @@ export default function Presenter({
   const narrow = forceNarrow === undefined ? autoNarrow : forceNarrow;
   const [index, setIndex] = useState(0);
   const scroller = useRef<HTMLDivElement>(null);
+  const anim = useRef<{ cancel: () => void } | null>(null);
+  const animating = useRef(false);
+  const indexRef = useRef(0);
+  indexRef.current = index;
+  // The keyboard and wheel handlers are declared above goto; a ref keeps them
+  // pointed at the current one without re-binding listeners on every render.
+  const gotoRef = useRef<(i: number) => void>(() => {});
   const mode = presentation.share?.mode || 'scroll';
   const pages = presentation.pages;
   const theme = getTheme(presentation.brand);
@@ -44,6 +52,18 @@ export default function Presenter({
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && onExit) onExit();
+      if (mode === 'scroll' && !narrow) {
+        if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') {
+          e.preventDefault();
+          gotoRef.current(indexRef.current + 1);
+        }
+        if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+          e.preventDefault();
+          gotoRef.current(indexRef.current - 1);
+        }
+        if (e.key === 'Home') { e.preventDefault(); gotoRef.current(0); }
+        if (e.key === 'End') { e.preventDefault(); gotoRef.current(pages.length - 1); }
+      }
       if (mode === 'slide' && !narrow) {
         if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
           e.preventDefault();
@@ -65,11 +85,53 @@ export default function Presenter({
     const el = scroller.current;
     if (!el) return;
     const onScroll = () => {
+      // While a tween is running it is the authority on the index; reading it
+      // back from scrollTop mid-flight makes the progress bar and dots flicker
+      // through every slide the animation passes over.
+      if (animating.current) return;
       const i = Math.round(el.scrollTop / el.clientHeight);
       setIndex(Math.max(0, Math.min(pages.length - 1, i)));
     };
     el.addEventListener('scroll', onScroll, { passive: true });
     return () => el.removeEventListener('scroll', onScroll);
+  }, [mode, narrow, pages.length]);
+
+  /* --------------------------------------------- wheel: one slide per gesture
+
+     Native `scroll-snap` leaves the motion to the browser, and on a trackpad a
+     flick carries momentum across two or three slides before the snap catches
+     it. Taking the wheel lets one gesture mean exactly one slide, on our curve.
+
+     The cooldown is the important part: a trackpad emits a long tail of small
+     deltas after the fingers lift, and without it that tail reads as three more
+     page turns. Momentum is ignored until it has genuinely settled.            */
+  useEffect(() => {
+    if (mode !== 'scroll' || narrow) return;
+    const el = scroller.current;
+    if (!el || prefersReducedMotion()) return;
+
+    let cooling = false;
+    let settle: any;
+
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) return;                       // pinch-zoom, not a scroll
+      e.preventDefault();
+      clearTimeout(settle);
+      settle = setTimeout(() => (cooling = false), 220);
+      if (cooling || animating.current) return;
+      const dir = e.deltaY > 0 ? 1 : -1;
+      if (Math.abs(e.deltaY) < 4) return;          // ignore the faintest drift
+      const next = indexRef.current + dir;
+      if (next < 0 || next > pages.length - 1) return;
+      cooling = true;
+      gotoRef.current(next);
+    };
+
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+      clearTimeout(settle);
+    };
   }, [mode, narrow, pages.length]);
 
   /* ---------------------------------------------- reveal on entry (scroll) */
@@ -88,11 +150,27 @@ export default function Presenter({
   }, [pages.length, narrow, mode]);
 
   const goto = (i: number) => {
-    setIndex(i);
-    if (mode === 'scroll' && !narrow && scroller.current) {
-      scroller.current.scrollTo({ top: i * scroller.current.clientHeight, behavior: 'smooth' });
-    }
+    const clamped = Math.max(0, Math.min(pages.length - 1, i));
+    setIndex(clamped);
+    const el = scroller.current;
+    if (mode !== 'scroll' || narrow || !el) return;
+    anim.current?.cancel();
+    animating.current = true;
+    // Mandatory snap and a hand-rolled tween both want to own scrollTop; some
+    // engines re-snap on every programmatic write, which fights the curve.
+    // Snap is suspended for the duration and restored on arrival, so it is
+    // still there for touch and for the reduced-motion path.
+    el.style.scrollSnapType = 'none';
+    const a = animateScrollTo(el, clamped * el.clientHeight);
+    anim.current = a;
+    a.done.then(() => {
+      if (anim.current !== a) return;
+      animating.current = false;
+      el.style.scrollSnapType = '';
+    });
   };
+
+  gotoRef.current = goto;
 
   const chrome = (
     <>
