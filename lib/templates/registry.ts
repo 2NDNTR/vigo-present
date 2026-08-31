@@ -163,7 +163,15 @@ const LOGOGRID = (items: string[]): Block => ({
   style: { role: 'caption', color: 'auto', align: 'center' },
 });
 
+const TABLE = (): Block => ({
+  id: uid('b'),
+  type: 'table',
+  table: { headers: [], rows: [] },
+  style: { role: 'body', color: 'auto', align: 'left' },
+});
+
 const TEXT_TYPES: BlockType[] = ['text', 'checklist', 'bullets', 'quote', 'cta', 'divider', 'timeline'];
+const TABLE_TYPES: BlockType[] = ['table', 'text'];
 const CARD_TYPES: BlockType[] = ['card', 'image', 'metric'];
 const MEDIA_TYPES: BlockType[] = ['image', 'video'];
 const ANY: BlockType[] = [...TEXT_TYPES, ...MEDIA_TYPES, 'metric', 'logo', 'logoGrid'];
@@ -444,6 +452,23 @@ const templates: PageTemplate[] = [
       head: [T('2025 vs 2026', 'eyebrow'), T('Two years of distribution', 'headline')],
       left: [M('1,480', 'Doors in 2025')],
       right: [M('2,400', 'Doors in 2026')],
+    }),
+  },
+
+  {
+    id: 'data-table',
+    name: 'Data Table',
+    category: 'Data',
+    hint: 'A table straight from a spreadsheet. Upload the file; the page builds itself.',
+    layout: lay('1fr', 'auto 1fr', ['head', 'main'], 104, 30),
+    slots: [
+      { key: 'head', label: 'Heading', accepts: TEXT_TYPES, max: 2, hint: 'Heading', justify: 'start', maxWidth: 1200 },
+      { key: 'main', label: 'Table', accepts: TABLE_TYPES, max: 2, hint: 'Upload a spreadsheet from the Add panel', justify: 'start' },
+    ],
+    guidance: 'A table earns its place when the exact figures matter. If only the shape matters, a metric reads faster.',
+    seed: () => ({
+      head: [T('Q3 Performance', 'eyebrow'), T('The numbers behind the quarter', 'headline')],
+      main: [TABLE()],
     }),
   },
 
