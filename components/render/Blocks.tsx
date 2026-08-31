@@ -283,6 +283,53 @@ export default function BlockView({ block, ctx }: { block: Block; ctx: RenderCtx
     }
 
     /* ----------------------------------------------------------- timeline */
+    /* -------------------------------------------------------------- table */
+    case 'table': {
+      const t = block.table;
+      if (!t || !t.headers.length) {
+        return (
+          <div {...wrapProps}>
+            <div className="ph" style={{ minHeight: 0 }}>Upload a spreadsheet from the Add panel</div>
+          </div>
+        );
+      }
+      // Numeric columns are right-aligned with tabular figures so the digits
+      // line up in columns — the single thing that makes a table of numbers
+      // scannable rather than a wall of text.
+      const numeric = (i: number) => {
+        const k = t.types?.[i];
+        return k === 'number' || k === 'currency' || k === 'percent';
+      };
+      const cls = (i: number) => 'td' + (numeric(i) ? ' num' : '');
+      const scale = t.headers.length >= 7 ? 0.78 : t.headers.length >= 5 ? 0.88 : 1;
+      return (
+        <div {...wrapProps} style={{ ...wrapProps.style, width: '100%' }}>
+          <div className="dtable" style={typeVars('body', scale)}>
+            <div className="dt-row dt-head" style={{ gridTemplateColumns: `repeat(${t.headers.length}, minmax(0,1fr))` }}>
+              {t.headers.map((h, i) => (
+                <div key={i} className={cls(i) + ' th'}>{h}</div>
+              ))}
+            </div>
+            {t.rows.map((r, ri) => (
+              <div key={ri} className="dt-row" style={{ gridTemplateColumns: `repeat(${t.headers.length}, minmax(0,1fr))` }}>
+                {r.map((c, i) => (
+                  <div key={i} className={cls(i)}>{c}</div>
+                ))}
+              </div>
+            ))}
+            {t.total ? (
+              <div className="dt-row dt-total" style={{ gridTemplateColumns: `repeat(${t.headers.length}, minmax(0,1fr))` }}>
+                {t.total.map((c, i) => (
+                  <div key={i} className={cls(i)}>{c}</div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+          {t.source ? <div className="dt-source">{t.source}</div> : null}
+        </div>
+      );
+    }
+
     case 'timeline': {
       const items = block.items || [];
       const upd = (i: number, v: string) => {
