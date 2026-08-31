@@ -61,6 +61,13 @@ export interface SlotDef {
    * exists to show.
    */
   frame?: 'square';
+  /**
+   * Inset around a square frame, in design units. Defaults to 102, which suits
+   * a tall half-page cell. A short, wide cell needs far less: the square is
+   * capped by the cell's SHORT axis, so padding tuned for a tall cell eats most
+   * of a short one and leaves the product marooned in white space.
+   */
+  framePad?: number;
   maxWidth?: number;
   /** slot-level padding in design units, for layouts whose grid padding is 0 */
   pad?: number;
@@ -483,7 +490,7 @@ const templates: PageTemplate[] = [
     layout: lay('1fr 1fr', 'auto 1fr', ['head head', 'media main'], 110, 60),
     slots: [
       { key: 'head', label: 'Heading', accepts: TEXT_TYPES, max: 2, hint: 'Heading', justify: 'start', maxWidth: 1100 },
-      { key: 'media', label: 'Product', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square' },
+      { key: 'media', label: 'Product', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square', framePad: 36 },
       { key: 'main', label: 'Results', accepts: ['metric', 'checklist', 'text'], max: 4, hint: 'Add results', justify: 'center', gap: 34 },
     ],
     seed: () => ({
@@ -669,13 +676,13 @@ const templates: PageTemplate[] = [
     name: 'Product Family',
     category: 'Products',
     hint: 'Three or four products in a row.',
-    layout: lay('1fr 1fr 1fr', 'auto 1fr auto', ['head head head', 'a b c', 'la lb lc'], 110, 32),
+    layout: lay('1fr 1fr 1fr', 'auto 1fr auto', ['head head head', 'a b c', 'la lb lc'], 88, 24),
     background: { kind: 'color', color: 'cream', overlay: 'none' },
     slots: [
       { key: 'head', label: 'Heading', accepts: TEXT_TYPES, max: 2, hint: 'Heading', justify: 'start', maxWidth: 1100 },
-      { key: 'a', label: 'Product 1', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square' },
-      { key: 'b', label: 'Product 2', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square' },
-      { key: 'c', label: 'Product 3', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square' },
+      { key: 'a', label: 'Product 1', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square', framePad: 18 },
+      { key: 'b', label: 'Product 2', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square', framePad: 18 },
+      { key: 'c', label: 'Product 3', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square', framePad: 18 },
       // Room for a name and the detail beneath it, same as the comparison page.
       { key: 'la', label: 'Product 1 detail', accepts: TEXT_TYPES, max: 3, hint: 'Name, then detail', justify: 'start', items: 'center', gap: 8 },
       { key: 'lb', label: 'Product 2 detail', accepts: TEXT_TYPES, max: 3, hint: 'Name, then detail', justify: 'start', items: 'center', gap: 8 },
@@ -720,30 +727,37 @@ const templates: PageTemplate[] = [
     name: 'Product Comparison',
     category: 'Products',
     hint: 'Two products, honestly compared.',
-    layout: lay('1fr 1fr', 'auto 1fr auto', ['head head', 'a b', 'la lb'], 110, 36),
+    // Tighter page margin and column gap than the default, because the product
+    // squares are capped by the SHORT axis of their cell: every unit spent on
+    // page padding or on the frame inset comes straight off the product. At the
+    // old 110/36/102 the shots rendered about 150 units across on a 1600-unit
+    // page and the labels sat marooned at the foot of a mostly empty page.
+    layout: lay('1fr 1fr', 'auto 1fr auto', ['head head', 'a b', 'la lb'], 92, 26),
     background: { kind: 'color', color: 'cream', overlay: 'none' },
     slots: [
       { key: 'head', label: 'Heading', accepts: TEXT_TYPES, max: 2, hint: 'Heading', justify: 'start', maxWidth: 1100 },
-      { key: 'a', label: 'Product A', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square' },
-      { key: 'b', label: 'Product B', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square' },
+      { key: 'a', label: 'Product A', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square', framePad: 20 },
+      { key: 'b', label: 'Product B', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square', framePad: 20 },
       // Name first, then the detail under it. A single caption line forced the
       // product name and its specs into one string, which is why these pages
       // read as a list of footnotes rather than a comparison. The tight gap
       // keeps the pair reading as one unit against the 36 between columns.
-      { key: 'la', label: 'Product A detail', accepts: TEXT_TYPES, max: 4, hint: 'Product name, then detail', justify: 'start', gap: 10 },
-      { key: 'lb', label: 'Product B detail', accepts: TEXT_TYPES, max: 4, hint: 'Product name, then detail', justify: 'start', gap: 10 },
+      // Centred under a centred shot, so each product reads as one stack rather
+      // than a picture with a caption stranded off to one side.
+      { key: 'la', label: 'Product A detail', accepts: TEXT_TYPES, max: 4, hint: 'Product name, then detail', justify: 'start', items: 'center', gap: 10 },
+      { key: 'lb', label: 'Product B detail', accepts: TEXT_TYPES, max: 4, hint: 'Product name, then detail', justify: 'start', items: 'center', gap: 10 },
     ],
     seed: () => ({
       head: [T('Comparison', 'eyebrow'), T('Standard vs Reserve', 'headline')],
       a: [IMG()],
       b: [IMG()],
       la: [
-        { ...T('Standard', 'subhead'), style: { role: 'subhead' as const, color: 'auto' as const, align: 'left' as const } },
-        { ...T('8.8 oz · 12 per case', 'caption'), style: { role: 'caption' as const, color: 'auto' as const, align: 'left' as const } },
+        { ...T('Standard', 'subhead'), style: { role: 'subhead' as const, color: 'auto' as const, align: 'center' as const } },
+        { ...T('8.8 oz · 12 per case', 'caption'), style: { role: 'caption' as const, color: 'auto' as const, align: 'center' as const } },
       ],
       lb: [
-        { ...T('Reserve', 'subhead'), style: { role: 'subhead' as const, color: 'auto' as const, align: 'left' as const } },
-        { ...T('12 oz · aged 12 years · 6 per case', 'caption'), style: { role: 'caption' as const, color: 'auto' as const, align: 'left' as const } },
+        { ...T('Reserve', 'subhead'), style: { role: 'subhead' as const, color: 'auto' as const, align: 'center' as const } },
+        { ...T('12 oz · aged 12 years · 6 per case', 'caption'), style: { role: 'caption' as const, color: 'auto' as const, align: 'center' as const } },
       ],
     }),
   },
