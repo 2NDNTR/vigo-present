@@ -537,7 +537,7 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
   overflow: hidden;
   align-items: center;
   justify-content: center;
-  padding: calc(var(--u) * 72px);
+  padding: calc(var(--u) * 102px);
 }
 .slot.sq .blockslot {
   flex: 0 0 auto;
@@ -545,8 +545,20 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
   height: 100cqmin;
   min-height: 0;
 }
+
+/* `!important` earns its place here. The renderer writes object-position and a
+   zoom transform as INLINE styles from each image's stored focal point, and an
+   inline style outranks any class rule. Decks built before this frame existed
+   carry those values (0.62 horizontal, say), so without this the picture would
+   still sit off-centre inside a frame whose whole promise is that it doesn't.
+   The frame is fixed, so the stored values are overridden rather than migrated
+   — nothing is destroyed, and a slot that stops being square gets them back. */
 .slot.sq .media-el img,
-.slot.sq .media-el video { object-fit: contain; }
+.slot.sq .media-el video {
+  object-fit: contain;
+  object-position: center center !important;
+  transform: none !important;
+}
 
 /* Stacked (narrow) rendering: the cell has no meaningful height to measure, so
    size the square off the width and drop the min-height the bleed rule sets. */
