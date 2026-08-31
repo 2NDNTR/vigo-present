@@ -22,9 +22,23 @@ export type BlockType =
   | 'cta'
   | 'logoGrid'
   | 'timeline'
+  | 'table'
   | 'card';
 
 export type Align = 'left' | 'center';
+
+/** Column kind, inferred on ingest; drives alignment and number formatting. */
+export type CellType = 'text' | 'number' | 'currency' | 'percent' | 'date';
+
+export interface TableData {
+  headers: string[];
+  rows: string[][];
+  types?: CellType[];
+  /** a TOTAL row lifted out of the body so it can be ruled off and bolded */
+  total?: string[];
+  /** shown under the table — where the numbers came from */
+  source?: string;
+}
 
 export interface BlockStyle {
   role?: TypeRole;          // typography role — user picks the role, not the size
@@ -67,6 +81,8 @@ export interface Block {
   wholesale?: string;
   msrp?: string;
   showImage?: boolean;
+  // table — ingested from a spreadsheet, see lib/data/sheet.ts
+  table?: TableData;
   // logo grid
   columns?: number;
   // logo
