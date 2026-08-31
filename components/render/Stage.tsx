@@ -205,8 +205,14 @@ export default function Stage(props: StageProps) {
               : slot.justify === 'end'
               ? 'flex-end'
               : 'flex-start',
+            // A framed product may be centred in its column or aligned to the
+            // column's leading edge. Left-aligned, the shot lines up with the
+            // name and specs beneath it and the composition reads as a spec
+            // sheet; centred, it floats. Templates choose per slot.
             alignItems: squareFrame
-              ? 'center'
+              ? slot.items === 'start'
+                ? 'flex-start'
+                : 'center'
               : slot.bleed
               ? 'stretch'
               : slot.items === 'center'
@@ -216,6 +222,8 @@ export default function Stage(props: StageProps) {
               : 'flex-start',
             gap: `calc(var(--u) * ${slot.gap ?? 22}px)`,
             padding: (slot as any).pad ? `calc(var(--u) * ${(slot as any).pad}px)` : undefined,
+            // Read by .slot.sq's padding rule.
+            ...(squareFrame ? ({ ['--sqpad' as any]: String(slot.framePad ?? 102) } as CSSProperties) : {}),
           };
           if (slot.maxWidth) style.maxWidth = `calc(var(--u) * ${slot.maxWidth}px)`;
           const hasCards = blocks.some((b) => b.type === 'card');
