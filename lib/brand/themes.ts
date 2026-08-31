@@ -70,6 +70,14 @@ export interface BrandTheme {
     /** rendered height in design units, and the minimum it may ever appear at */
     height?: number;
     minHeight?: number;
+    /**
+     * Height for the running page-corner mark, which is page furniture rather
+     * than a title-card logo and reads far too heavy at full size. Set per
+     * brand rather than as a percentage: Alessi's badge carries the "Autentico"
+     * ribbon inside its bounds and needs more height than a plain wordmark to
+     * hold the same optical weight.
+     */
+    chromeHeight?: number;
   };
   fonts: { display: string; body: string };
   colors: Record<ColorRole, string>;
@@ -162,6 +170,10 @@ export const THEMES: Record<BrandId, BrandTheme> = {
     logo: {
       text: 'VIGO',
       mark: 'V',
+      // 0 per the brand rule that tracking is zero everywhere. It was simply
+      // absent, which was a type error; the value never rendered because Vigo
+      // supplies real artwork and the text wordmark is only a fallback.
+      tracking: 0,
       weight: 400,
       family: 'display',
       files: {
@@ -173,6 +185,7 @@ export const THEMES: Record<BrandId, BrandTheme> = {
       aspect: 2.5993,
       height: 62,
       minHeight: 34,
+      chromeHeight: 42,
     },
     fonts: {
       // Sunborn Sans One is the primary display face. Second in the stack is an
@@ -244,6 +257,7 @@ export const THEMES: Record<BrandId, BrandTheme> = {
       // more height than a plain wordmark to stay legible.
       height: 102,
       minHeight: 58,
+      chromeHeight: 54,
     },
     fonts: {
       display: "'Futura Extra Bold', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif",
