@@ -191,11 +191,23 @@ export default function Stage(props: StageProps) {
         {template.slots.map((slot) => {
           const blocks = page.slots[slot.key] || [];
           const horizontal = slot.dir === 'h';
+          // A square frame is centred on BOTH axes, and that has to be decided
+          // here rather than in CSS: a square slot is also a bleed slot, and the
+          // bleed branch below writes alignItems:'stretch' inline, which beats
+          // any class rule and pins the frame to the left of its cell.
+          const squareFrame = slot.frame === 'square';
           const style: CSSProperties = {
             gridArea: slot.key,
-            justifyContent:
-              slot.justify === 'center' ? 'center' : slot.justify === 'end' ? 'flex-end' : 'flex-start',
-            alignItems: slot.bleed
+            justifyContent: squareFrame
+              ? 'center'
+              : slot.justify === 'center'
+              ? 'center'
+              : slot.justify === 'end'
+              ? 'flex-end'
+              : 'flex-start',
+            alignItems: squareFrame
+              ? 'center'
+              : slot.bleed
               ? 'stretch'
               : slot.items === 'center'
               ? 'center'
