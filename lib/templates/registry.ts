@@ -54,6 +54,13 @@ export interface SlotDef {
   items?: 'start' | 'center' | 'stretch';
   /** slot fills its cell edge to edge (media) */
   bleed?: boolean;
+  /**
+   * Media sits in a centred 1:1 frame with even padding, contained rather than
+   * cropped. Packshots are shot square and have to be seen whole — a bleeding,
+   * cover-cropped product shot cuts the label, which is the one thing the page
+   * exists to show.
+   */
+  frame?: 'square';
   maxWidth?: number;
   /** slot-level padding in design units, for layouts whose grid padding is 0 */
   pad?: number;
@@ -476,7 +483,7 @@ const templates: PageTemplate[] = [
     layout: lay('1fr 1fr', 'auto 1fr', ['head head', 'media main'], 110, 60),
     slots: [
       { key: 'head', label: 'Heading', accepts: TEXT_TYPES, max: 2, hint: 'Heading', justify: 'start', maxWidth: 1100 },
-      { key: 'media', label: 'Product', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true },
+      { key: 'media', label: 'Product', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square' },
       { key: 'main', label: 'Results', accepts: ['metric', 'checklist', 'text'], max: 4, hint: 'Add results', justify: 'center', gap: 34 },
     ],
     seed: () => ({
@@ -650,7 +657,7 @@ const templates: PageTemplate[] = [
     background: { kind: 'color', color: 'cream', overlay: 'none' },
     slots: [
       { key: 'main', label: 'Copy', accepts: TEXT_TYPES, max: 4, hint: 'Product name and copy', justify: 'center', maxWidth: 620, pad: 110 },
-      { key: 'media', label: 'Product', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true },
+      { key: 'media', label: 'Product', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square' },
     ],
     seed: () => ({
       main: [T('New for 2027', 'eyebrow'), T('Balsamic Reduction', 'headline'), T('Aged in Modena, reduced slowly, finished thick enough to hold a line on the plate.', 'body')],
@@ -666,9 +673,9 @@ const templates: PageTemplate[] = [
     background: { kind: 'color', color: 'cream', overlay: 'none' },
     slots: [
       { key: 'head', label: 'Heading', accepts: TEXT_TYPES, max: 2, hint: 'Heading', justify: 'start', maxWidth: 1100 },
-      { key: 'a', label: 'Product 1', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true },
-      { key: 'b', label: 'Product 2', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true },
-      { key: 'c', label: 'Product 3', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true },
+      { key: 'a', label: 'Product 1', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square' },
+      { key: 'b', label: 'Product 2', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square' },
+      { key: 'c', label: 'Product 3', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square' },
       { key: 'la', label: 'Label 1', accepts: ['text'], max: 1, hint: 'Name', justify: 'start', items: 'center' },
       { key: 'lb', label: 'Label 2', accepts: ['text'], max: 1, hint: 'Name', justify: 'start', items: 'center' },
       { key: 'lc', label: 'Label 3', accepts: ['text'], max: 1, hint: 'Name', justify: 'start', items: 'center' },
@@ -690,7 +697,7 @@ const templates: PageTemplate[] = [
     hint: 'Product shot with specification-style detail.',
     layout: lay('1fr 1fr', '1fr', ['media main'], 0, 0),
     slots: [
-      { key: 'media', label: 'Product', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true },
+      { key: 'media', label: 'Product', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square' },
       { key: 'main', label: 'Detail', accepts: TEXT_TYPES, max: 5, hint: 'Describe the product', justify: 'center', maxWidth: 620, pad: 110 },
     ],
     seed: () => ({
@@ -707,8 +714,8 @@ const templates: PageTemplate[] = [
     background: { kind: 'color', color: 'cream', overlay: 'none' },
     slots: [
       { key: 'head', label: 'Heading', accepts: TEXT_TYPES, max: 2, hint: 'Heading', justify: 'start', maxWidth: 1100 },
-      { key: 'a', label: 'Product A', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true },
-      { key: 'b', label: 'Product B', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true },
+      { key: 'a', label: 'Product A', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square' },
+      { key: 'b', label: 'Product B', accepts: MEDIA_TYPES, max: 1, hint: 'Drop a product image', bleed: true, frame: 'square' },
       { key: 'la', label: 'Detail A', accepts: TEXT_TYPES, max: 2, hint: 'Detail', justify: 'start' },
       { key: 'lb', label: 'Detail B', accepts: TEXT_TYPES, max: 2, hint: 'Detail', justify: 'start' },
     ],
