@@ -105,7 +105,7 @@ export default function BlockView({ block, ctx }: { block: Block; ctx: RenderCtx
             {block.support || (ctx.editable && selected) ? (
               <EditableText
                 className="tt msupport"
-                style={{ ...typeVars('body', 0.78), textAlign: center ? 'center' : 'left' }}
+                style={{ ...typeVars('body', 0.95), textAlign: center ? 'center' : 'left' }}
                 value={block.support || ''}
                 editable={ctx.editable}
                 placeholder="Optional context"
