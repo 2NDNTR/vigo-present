@@ -18,11 +18,12 @@ export default function Brandmark({
   size = 'md',
   style,
 }: {
-  size?: 'md' | 'lg';
+  /** sm sits in the editor's 56px bar; lg stands alone above the sign-in form */
+  size?: 'sm' | 'md' | 'lg';
   style?: CSSProperties;
 }) {
   return (
-    <div className={'brandmark' + (size === 'lg' ? ' lg' : '')} style={style}>
+    <div className={'brandmark' + (size === 'md' ? '' : ' ' + size)} style={style}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/presentor-logo.png" alt="Presentor" />
     </div>
