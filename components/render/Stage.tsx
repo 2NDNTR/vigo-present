@@ -241,7 +241,23 @@ export default function Stage(props: StageProps) {
           if (slot.maxWidth) style.maxWidth = `calc(var(--u) * ${slot.maxWidth}px)`;
           const hasCards = blocks.some((b) => b.type === 'card');
           if (horizontal) {
-            style.alignItems = hasCards ? 'stretch' : 'flex-end';
+            // A row of figures sitting on a baseline near the foot of the page
+            // is an editorial device, and it reads as deliberate only when
+            // something above is holding the top — a headline, a hero figure,
+            // an image. With nothing up there but an eyebrow, the same rule
+            // opens a band of dead space and the page looks broken, so the row
+            // centres in its band instead. An eyebrow or a caption is a label,
+            // not mass, so neither counts as holding the top.
+            const massAbove = template.slots.some(
+              (s) =>
+                s.key !== slot.key &&
+                (page.slots[s.key] || []).some(
+                  (b) =>
+                    b.type !== 'text' ||
+                    !['eyebrow', 'caption'].includes((b.style?.role as string) || '')
+                )
+            );
+            style.alignItems = hasCards ? 'stretch' : massAbove ? 'flex-end' : 'center';
             style.justifyContent = 'space-between';
           }
 
