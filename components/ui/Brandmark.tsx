@@ -26,7 +26,7 @@ export default function Brandmark({
   return (
     <div className={'brandmark' + (size === 'md' ? '' : ' ' + size)} style={style}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/presentor-logo.png" alt="presente" />
+      <img src="/presentor-logo.png" alt="presents" />
     </div>
   );
 }
