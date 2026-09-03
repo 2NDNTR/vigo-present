@@ -106,6 +106,17 @@ export interface Page {
   templateId: string;
   /** starts a new named section in the navigator when present */
   sectionStart?: string;
+  /**
+   * Optional page chrome, independent of the template's own slots and
+   * available on every layout. Both are off by default.
+   *
+   * `headline` is the running eyebrow locked to the top-left. Presence is the
+   * toggle, not truthiness — an empty string is a deliberately blank running
+   * head that is still switched on, so this is tested with `!== undefined`.
+   */
+  headline?: string;
+  /** shows the approved brand logo locked to the top-right corner */
+  showLogo?: boolean;
   /** per-page brand styling for corporate / multi-brand decks */
   brandOverride?: BrandId;
   background: PageBackground;
