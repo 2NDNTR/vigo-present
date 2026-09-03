@@ -2,7 +2,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Vigo Present',
+  title: 'Vigo Presents',
   description: 'On-brand presentations for Vigo Importing Company, Vigo Foods and Alessi Foods.',
 };
 
