@@ -6,6 +6,9 @@ import { RETAILERS, retailerDef } from '@/lib/brand/retailers';
 import type { PageTemplate } from '@/lib/templates/registry';
 import { TEMPLATES, getTemplate } from '@/lib/templates/registry';
 import Select from '@/components/ui/Select';
+import LayoutPicker from './LayoutPicker';
+import Collapse from './Collapse';
+import Chart from '@/components/render/Chart';
 import {
   BRAND_ORDER,
   COLOR_LABELS,
@@ -482,21 +485,10 @@ export default function Inspector(props: InspectorProps) {
       <div className="panel-sec" style={!block ? { paddingTop: 0 } : undefined}>
         <h4 className="panel-h">Page</h4>
 
-        <div className="label" style={{ marginBottom: 6 }}>Layout</div>
-        {/* The category becomes a section heading rather than a prefix on every
-            row, so forty-five layouts read as six short lists. */}
-        <Select
-          style={{ marginBottom: 14 }}
-          ariaLabel="Page layout"
-          value={page.templateId}
-          onChange={props.onSwapTemplate}
-          options={TEMPLATES.map((t: PageTemplate) => ({
-            value: t.id,
-            label: t.name,
-            group: t.category,
-          }))}
-        />
+        {/* Shown, not named. See LayoutPicker for why. */}
+        <LayoutPicker brand={presentation.brand} templateId={page.templateId} onPick={props.onSwapTemplate} />
 
+        <Collapse title="Page chrome" note="eyebrow, logo">
         <div className="label" style={{ marginBottom: 6 }}>Page eyebrow</div>
         <div className="seg" style={{ marginBottom: 8 }}>
           <button
@@ -565,6 +557,9 @@ export default function Inspector(props: InspectorProps) {
           </button>
         </div>
 
+        </Collapse>
+
+        <Collapse title="Background" note="colour, image, overlay">
         <div className="label" style={{ marginBottom: 6 }}>Background</div>
         <div className="seg" style={{ marginBottom: 10 }}>
           {(['theme', 'color', 'image', 'video'] as const).map((k) => (
@@ -680,6 +675,8 @@ export default function Inspector(props: InspectorProps) {
           value={page.sectionStart || ''}
           onChange={(e) => props.onChangePage({ sectionStart: e.target.value || undefined })}
         />
+
+        </Collapse>
 
         {presentation.brand === 'corporate' && (
           <>
@@ -811,6 +808,47 @@ function ChartFromImage({ onInsert }: { onInsert: (page: Page) => void }) {
 }
 
 
+
+/**
+ * The little pictures on the chart-type buttons. Hand-drawn as SVG rather than
+ * rendered from the real chart: a thumbnail needs to say "ranked list" in
+ * forty pixels, which is a different drawing from an accurate one, and it must
+ * not re-render every time somebody edits a value.
+ */
+const CHART_KINDS = [
+  {
+    id: 'bar' as const,
+    name: 'Ranked',
+    hint: 'Brands or items in order — the category dashboard.',
+    art:
+      '<svg viewBox="0 0 48 34" aria-hidden="true">' +
+      '<rect x="2" y="3" width="40" height="5" rx="1"/>' +
+      '<rect x="2" y="11" width="30" height="5" rx="1"/>' +
+      '<rect x="2" y="19" width="22" height="5" rx="1" class="hi"/>' +
+      '<rect x="2" y="27" width="13" height="5" rx="1"/></svg>',
+  },
+  {
+    id: 'column' as const,
+    name: 'Columns',
+    hint: 'A few periods compared side by side.',
+    art:
+      '<svg viewBox="0 0 48 34" aria-hidden="true">' +
+      '<rect x="4" y="16" width="8" height="16" rx="1"/>' +
+      '<rect x="16" y="9" width="8" height="23" rx="1"/>' +
+      '<rect x="28" y="20" width="8" height="12" rx="1" class="hi"/>' +
+      '<rect x="40" y="5" width="6" height="27" rx="1"/></svg>',
+  },
+  {
+    id: 'donut' as const,
+    name: 'Share',
+    hint: 'Slices of one total — category share.',
+    art:
+      '<svg viewBox="0 0 48 34" aria-hidden="true">' +
+      '<path d="M24 4a13 13 0 1 1-12.3 17.2l6.2-2.1A6.5 6.5 0 1 0 24 10.5z"/>' +
+      '<path d="M11.7 21.2A13 13 0 0 1 24 4v6.5a6.5 6.5 0 0 0-6.1 8.6z" class="hi"/></svg>',
+  },
+];
+
 /* --------------------------------------------------------------- chart data */
 
 function ChartEditor({ block, onChange }: { block: Block; onChange: (patch: Partial<Block>) => void }) {
@@ -851,11 +889,19 @@ function ChartEditor({ block, onChange }: { block: Block; onChange: (patch: Part
     <div className="panel-sec">
       <h4 className="panel-h">Chart</h4>
 
+      {/* The chart types are shown as charts. A word like "Share" only means
+          something once you have seen what it draws. */}
       <div className="label" style={{ marginBottom: 6 }}>Type</div>
-      <div className="seg" style={{ marginBottom: 12 }}>
-        {(['bar', 'column', 'donut'] as const).map((k) => (
-          <button key={k} className={chart.kind === k ? 'on' : ''} onClick={() => patch({ kind: k })}>
-            {k === 'bar' ? 'Ranked' : k === 'column' ? 'Columns' : 'Share'}
+      <div className="chart-types">
+        {CHART_KINDS.map((k) => (
+          <button
+            key={k.id}
+            className={'chart-type' + (chart.kind === k.id ? ' on' : '')}
+            onClick={() => patch({ kind: k.id })}
+            title={k.hint}
+          >
+            <span className="ct-art" dangerouslySetInnerHTML={{ __html: k.art }} />
+            <span className="ct-name">{k.name}</span>
           </button>
         ))}
       </div>
