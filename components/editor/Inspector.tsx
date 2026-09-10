@@ -466,6 +466,18 @@ export default function Inspector(props: InspectorProps) {
         </>
       ) : null}
 
+      {/* ----------------------------------------------------- chart data
+          The chart is data, so this is the data — labels, values and colours,
+          edited in place. Every keystroke redraws the chart on the canvas,
+          because a number you cannot see the effect of is a number nobody
+          checks. The screenshot reader fills this in; a person corrects it. */}
+      {block && block.type === 'chart' ? (
+        <ChartEditor
+          block={block}
+          onChange={(patch) => props.onChangeBlock(block.id, patch)}
+        />
+      ) : null}
+
       {/* ------------------------------------------------------ page level */}
       <div className="panel-sec" style={!block ? { paddingTop: 0 } : undefined}>
         <h4 className="panel-h">Page</h4>
@@ -794,6 +806,124 @@ function ChartFromImage({ onInsert }: { onInsert: (page: Page) => void }) {
           Crop to one chart or table. The numbers come back as data and are drawn in Vigo styling — always check them against the source.
         </p>
       )}
+    </div>
+  );
+}
+
+
+/* --------------------------------------------------------------- chart data */
+
+function ChartEditor({ block, onChange }: { block: Block; onChange: (patch: Partial<Block>) => void }) {
+  const chart = block.chart || { kind: 'bar' as const, categories: [], values: [] };
+  const rows = chart.categories.length;
+
+  const patch = (p: Partial<typeof chart>) => onChange({ chart: { ...chart, ...p } });
+
+  const setRow = (i: number, next: { label?: string; value?: number; delta?: number | null; color?: string | null }) => {
+    const categories = [...chart.categories];
+    const values = [...chart.values];
+    const deltas = chart.deltas ? [...chart.deltas] : new Array(rows).fill(null);
+    const colors = chart.colors ? [...chart.colors] : new Array(rows).fill(null);
+    if (next.label !== undefined) categories[i] = next.label;
+    if (next.value !== undefined) values[i] = next.value;
+    if (next.delta !== undefined) deltas[i] = next.delta;
+    if (next.color !== undefined) colors[i] = next.color;
+    patch({ categories, values, deltas, colors });
+  };
+
+  const addRow = () =>
+    patch({
+      categories: [...chart.categories, 'New'],
+      values: [...chart.values, 0],
+      deltas: chart.deltas ? [...chart.deltas, null] : undefined,
+      colors: chart.colors ? [...chart.colors, null] : undefined,
+    });
+
+  const removeRow = (i: number) =>
+    patch({
+      categories: chart.categories.filter((_, x) => x !== i),
+      values: chart.values.filter((_, x) => x !== i),
+      deltas: chart.deltas?.filter((_, x) => x !== i),
+      colors: chart.colors?.filter((_, x) => x !== i),
+    });
+
+  return (
+    <div className="panel-sec">
+      <h4 className="panel-h">Chart</h4>
+
+      <div className="label" style={{ marginBottom: 6 }}>Type</div>
+      <div className="seg" style={{ marginBottom: 12 }}>
+        {(['bar', 'column', 'donut'] as const).map((k) => (
+          <button key={k} className={chart.kind === k ? 'on' : ''} onClick={() => patch({ kind: k })}>
+            {k === 'bar' ? 'Ranked' : k === 'column' ? 'Columns' : 'Share'}
+          </button>
+        ))}
+      </div>
+
+      <div className="label" style={{ marginBottom: 6 }}>Values are</div>
+      <div className="seg" style={{ marginBottom: 12 }}>
+        {(['currency', 'percent', 'number'] as const).map((u) => (
+          <button key={u} className={(chart.unit || 'currency') === u ? 'on' : ''} onClick={() => patch({ unit: u })}>
+            {u === 'currency' ? 'Dollars' : u === 'percent' ? 'Percent' : 'Count'}
+          </button>
+        ))}
+      </div>
+
+      <div className="label" style={{ marginBottom: 6 }}>Rows</div>
+      {chart.categories.map((cat, i) => (
+        <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6 }}>
+          <input
+            type="color"
+            aria-label={'Colour for ' + cat}
+            title="Colour on the chart and in the key"
+            value={chart.colors?.[i] || '#999999'}
+            onChange={(e) => setRow(i, { color: e.target.value })}
+            style={{ width: 26, height: 26, padding: 0, border: 0, background: 'none', flex: '0 0 auto' }}
+          />
+          <input
+            className="field"
+            style={{ flex: '1 1 auto', minWidth: 0 }}
+            value={cat}
+            aria-label="Label"
+            onChange={(e) => setRow(i, { label: e.target.value })}
+          />
+          <input
+            className="field mono-num"
+            style={{ width: 86, flex: '0 0 auto' }}
+            value={String(chart.values[i] ?? 0)}
+            aria-label="Value"
+            inputMode="decimal"
+            onChange={(e) => {
+              const v = parseFloat(e.target.value.replace(/[^0-9.\-]/g, ''));
+              setRow(i, { value: isFinite(v) ? v : 0 });
+            }}
+          />
+          <button className="btn sm" aria-label={'Remove ' + cat} onClick={() => removeRow(i)} style={{ flex: '0 0 auto' }}>
+            ×
+          </button>
+        </div>
+      ))}
+      <button className="btn sm" style={{ marginTop: 4 }} onClick={addRow}>+ Add row</button>
+
+      <div className="label" style={{ margin: '14px 0 6px' }}>Ours (drawn in the accent)</div>
+      <Select
+        ariaLabel="Highlighted row"
+        style={{ marginBottom: 12 }}
+        value={chart.highlight || ''}
+        onChange={(v) => patch({ highlight: v || undefined })}
+        options={[{ value: '', label: 'None' }, ...chart.categories.map((c) => ({ value: c, label: c }))]}
+      />
+
+      <div className="label" style={{ marginBottom: 6 }}>Source line</div>
+      <input
+        className="field"
+        value={chart.source || ''}
+        placeholder="Nielsen, Publix, L13 WE 1/24/26"
+        onChange={(e) => patch({ source: e.target.value })}
+      />
+      <p className="tiny" style={{ marginTop: 8 }}>
+        A colour set here is used on the chart and in the key together. Leave one alone and the theme picks it.
+      </p>
     </div>
   );
 }
