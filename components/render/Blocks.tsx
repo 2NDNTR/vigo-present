@@ -503,7 +503,12 @@ export default function BlockView({ block, ctx }: { block: Block; ctx: RenderCtx
       // there is anything to look at, and a mixed grid (three marks and one
       // "Private Label" set in type) stays one consistent set rather than
       // three logos next to a boxed word.
-      const art = logos.some((l) => !!l.media?.url);
+      //
+      // Resolved through mediaUrl, NOT `media.url`. The store keeps `assetId`
+      // and drops the URL — that is the whole "replace once, updates
+      // everywhere" promise — so a saved block always reads back with an empty
+      // url and testing it directly reports every real logo as absent.
+      const art = logos.some((l) => !!mediaUrl(l.media));
 
       const patch = (i: number, part: Partial<LogoEntry>) => {
         set(logosPatch(logos.map((l, n) => (n === i ? { ...l, ...part } : l))));
