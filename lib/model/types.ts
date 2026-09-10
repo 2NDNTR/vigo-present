@@ -1,4 +1,5 @@
 import type { BrandId, ColorRole, TypeRole } from '@/lib/brand/themes';
+import type { RetailerRef } from '@/lib/brand/retailers';
 
 /**
  * CRITICAL TECHNICAL PRINCIPLE
@@ -132,6 +133,14 @@ export interface Page {
   templateId: string;
   /** starts a new named section in the navigator when present */
   sectionStart?: string;
+  /**
+   * Page chrome. `headline` is the running head top-left — undefined means the
+   * page has none, which is different from an empty one. `showLogo` puts the
+   * brand lockup top-right. Both have been written by the editor since the
+   * chrome band existed; they belong in the type.
+   */
+  headline?: string;
+  showLogo?: boolean;
   /** per-page brand styling for corporate / multi-brand decks */
   brandOverride?: BrandId;
   background: PageBackground;
@@ -155,6 +164,12 @@ export interface Presentation {
   orgId: string;
   title: string;
   brand: BrandId;
+  /**
+   * The account this deck was built for. Set on the deck, not the page: a
+   * retailer deck is the same material addressed to one buyer, so the mark
+   * follows the brand lockup onto every page that shows one.
+   */
+  retailer?: RetailerRef;
   status: PresentationStatus;
   /** locked decks are read-only and their share settings are frozen */
   locked?: boolean;
