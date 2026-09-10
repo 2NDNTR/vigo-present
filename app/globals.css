@@ -1546,3 +1546,63 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 .collapse-caret { margin-left: auto; opacity: .55; font-size: 14px; line-height: 1; }
 .collapse-note + .collapse-caret { margin-left: 8px; }
 .collapse-body { padding-bottom: 14px; }
+
+/* ============================================================ export as PDF
+ * One renderer, two destinations. The print sheet is the same Stage the deck
+ * already draws, laid out at exactly 16:9 in inches so a page break lands
+ * between slides and never through one. 13.333in x 7.5in is 1280x720 at 96dpi
+ * — the shape every projector and every PowerPoint expects.
+ */
+.printroot { background: #0b0b0d; padding: 0 0 40px; }
+
+.printbar {
+  position: sticky; top: 0; z-index: 5;
+  display: flex; align-items: center; gap: 16px;
+  padding: 14px 20px; background: #16161a; color: #e9e7e3;
+  border-bottom: 1px solid rgba(255,255,255,0.10);
+  font-size: 12.5px; line-height: 1.5;
+}
+.printbar b { font-weight: 600; }
+.printbar span { opacity: .75; }
+.printbar button { margin-left: auto; flex: 0 0 auto; }
+
+.printpage {
+  width: 13.333in; height: 7.5in;
+  margin: 24px auto; overflow: hidden;
+  background: #fff;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.45);
+}
+.printpage > .stage { width: 100%; height: 100%; }
+
+@page { size: 13.333in 7.5in; margin: 0; }
+
+@media print {
+  /* Nothing but the slides. */
+  .printbar { display: none !important; }
+  .printroot { background: #fff; padding: 0; }
+
+  .printpage {
+    margin: 0; box-shadow: none;
+    break-after: page; page-break-after: always;
+    break-inside: avoid; page-break-inside: avoid;
+  }
+  .printpage:last-child { break-after: auto; page-break-after: auto; }
+
+  /* A deck is colour. Browsers drop backgrounds when printing unless asked
+   * not to — without this a dark slide prints as black text on white paper
+   * and the deck arrives unrecognisable. The checkbox in the dialog still
+   * wins, which is why the bar above says to leave it on. */
+  .printroot, .printroot * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Motion has no meaning on paper, and a page caught mid-transition prints
+   * half-faded. Anything the entrance would hide is forced visible. */
+  .stage .slot > *, .stage .tl-item, .stage .tl-rail::before {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+    animation: none !important;
+  }
+}

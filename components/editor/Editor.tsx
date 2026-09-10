@@ -491,6 +491,15 @@ export default function Editor({ id }: { id: string }) {
           <button className="btn sm" onClick={() => router.push('/present/' + pres.id)}>
             Preview
           </button>
+          {/* A new tab, not this one: the print sheet opens a dialog on load,
+              and taking someone's editor away to do it would lose their place. */}
+          <button
+            className="btn sm"
+            title="Open a print-ready copy and save it as a PDF"
+            onClick={() => window.open('/print/' + pres.id, '_blank', 'noopener')}
+          >
+            PDF
+          </button>
           <button className="btn sm primary" onClick={() => setSharing(true)}>
             Share
           </button>

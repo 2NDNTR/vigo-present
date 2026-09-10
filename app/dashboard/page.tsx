@@ -73,6 +73,9 @@ export default function Dashboard() {
     setMenu(null);
     if (action === 'open') router.push('/e/' + p.id);
     if (action === 'preview') router.push('/present/' + p.id);
+    /* A new tab: the print sheet opens a dialog as soon as it loads, and it
+       should not take the dashboard away to do it. */
+    if (action === 'pdf') window.open('/print/' + p.id, '_blank', 'noopener');
     if (action === 'duplicate') {
       const copy: Presentation = JSON.parse(JSON.stringify(p));
       copy.id = uid('pres');
@@ -194,6 +197,7 @@ export default function Dashboard() {
                     <div className="menu" onMouseDown={(e) => e.stopPropagation()}>
                       <button onClick={() => act(p, 'open')}>Open</button>
                       <button onClick={() => act(p, 'preview')}>Preview</button>
+                      <button onClick={() => act(p, 'pdf')}>Export as PDF</button>
                       <button onClick={() => act(p, 'duplicate')}>Duplicate</button>
                       <button onClick={() => act(p, 'rename')}>Rename</button>
                       <button onClick={() => act(p, 'share')}>Copy share link</button>
