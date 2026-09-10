@@ -78,11 +78,20 @@ input, textarea, select { font: inherit; color: inherit; }
 .field:focus { border-color: rgba(23,24,26,0.4); }
 textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height: 1.5; }
 
+/*
+ * ONE LABEL STYLE, AND IT IS NOT SHOUTING
+ * The panel had four type styles fighting on one screen: a section heading, an
+ * uppercase tracked label, a disclosure heading and a grey helper paragraph.
+ * Uppercase with 0.1em tracking is a display treatment — it belongs on a slide,
+ * where a word is read once and large. On a control panel it slows reading down
+ * and makes every label look like a warning. Sentence case, no tracking, one
+ * size up: the label steps back and the control it names steps forward.
+ */
 .label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--app-ink-3);
 }
 
@@ -147,10 +156,10 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 /* Indented to sit flush with the option labels, not the checkmark gutter. */
 .selectgroup {
   padding: 11px 10px 5px 30px;
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--app-ink-3);
 }
 .selectmenu > div:first-child .selectgroup { padding-top: 3px; }
@@ -462,7 +471,9 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 }
 .canvas-caption { display: flex; justify-content: space-between; align-items: center; padding: 0 2px 8px; font-size: 12px; color: var(--app-ink-3); }
 
-.panel-h { font-size: 12.5px; font-weight: 650; margin: 0 0 10px; letter-spacing: -0.005em; }
+/* The section heading and the disclosure heading are the same rank, so they
+ * are the same style. Two weights of the same face is the whole scale. */
+.panel-h { font-size: 13px; font-weight: 600; margin: 0 0 12px; letter-spacing: 0; }
 .panel-sec { padding: 14px 0; border-bottom: 1px solid var(--app-line-soft); }
 .panel-sec:last-child { border-bottom: 0; }
 .seg { display: flex; gap: 4px; background: rgba(23,24,26,0.05); padding: 3px; border-radius: 8px; }
@@ -1606,3 +1617,35 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
     animation: none !important;
   }
 }
+
+/* ------------------------------------------------- the panel, quietened down
+ * Everything below is subtraction. The controls are unchanged; what changed is
+ * how much they shout at each other.
+ */
+
+/* The disclosure heading matches the section heading exactly — same size,
+ * same weight, same case — because they are the same rank of thing. */
+.collapse-head {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  padding: 13px 0;
+}
+
+/* Helper text is a footnote, not a second paragraph: one size below the label,
+ * same colour, and never bold. Most of it was deleted outright — a line that
+ * explains a control the user has not touched yet is a line nobody reads. */
+.panel-sec .tiny { font-size: 11.5px; line-height: 1.45; color: var(--app-ink-3); }
+
+/* Fields in a 300px panel do not need to be 44px tall; that height belongs to
+ * a login form. Shorter fields put more of the page on screen at once, which
+ * is the actual complaint behind "clunky". */
+.panel-sec .field,
+.notes-panel .field { height: 36px; padding: 0 11px; font-size: 12.5px; }
+.notes-panel textarea.field { height: auto; padding: 8px 11px; }
+.panel-sec .seg { height: 32px; }
+.panel-sec .seg button { height: 26px; font-size: 12px; }
+
+/* A little more air between groups, a lot less ink in the rules between them. */
+.panel-sec { padding: 16px 0; }
+.collapse { border-top-color: var(--app-line-soft); }

@@ -51,8 +51,6 @@ export default function LayoutPicker({
 
   return (
     <div className="layout-picker">
-      <div className="label" style={{ marginBottom: 6 }}>Layout</div>
-
       {/* The current layout, shown rather than named. Clicking it is the way in. */}
       <button className={'lp-current' + (open ? ' open' : '')} onClick={() => setOpen(!open)}>
         <span className="lp-thumb">

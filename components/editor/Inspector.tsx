@@ -542,7 +542,7 @@ export default function Inspector(props: InspectorProps) {
               ]}
             />
             <p className="tiny" style={{ marginTop: 0, marginBottom: 14 }}>
-              Shows beside the brand lockup on every page with the logo on. Turn the logo on below.
+              Shows wherever the page logo is on.
             </p>
           </>
         ) : null}
@@ -560,7 +560,6 @@ export default function Inspector(props: InspectorProps) {
         </Collapse>
 
         <Collapse title="Background" note="colour, image, overlay">
-        <div className="label" style={{ marginBottom: 6 }}>Background</div>
         <div className="seg" style={{ marginBottom: 10 }}>
           {(['theme', 'color', 'image', 'video'] as const).map((k) => (
             <button key={k} className={(page.background?.kind || 'theme') === k ? 'on' : ''} onClick={() => setBg({ kind: k })}>
@@ -800,7 +799,7 @@ function ChartFromImage({ onInsert }: { onInsert: (page: Page) => void }) {
         <p className="tiny" style={{ marginTop: 8 }}>{done}</p>
       ) : (
         <p className="tiny" style={{ marginTop: 8 }}>
-          Crop to one chart or table. The numbers come back as data and are drawn in Vigo styling — always check them against the source.
+          Crop to one chart. Check the figures against the source.
         </p>
       )}
     </div>
@@ -968,7 +967,7 @@ function ChartEditor({ block, onChange }: { block: Block; onChange: (patch: Part
         onChange={(e) => patch({ source: e.target.value })}
       />
       <p className="tiny" style={{ marginTop: 8 }}>
-        A colour set here is used on the chart and in the key together. Leave one alone and the theme picks it.
+        A colour set here is used on the chart and in the key together.
       </p>
     </div>
   );
