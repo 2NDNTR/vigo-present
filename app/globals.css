@@ -1370,3 +1370,30 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
     transition: none !important;
   }
 }
+
+/* ------------------------------------------------------- retailer co-brand
+ * The account's mark sits beside ours in the page chrome, divided by a
+ * hairline. It is never recoloured, never tinted to the theme and never
+ * inverted: a retailer's mark is theirs, and it appears as supplied. Height
+ * is what is shared between the two, so a wide wordmark and a square one both
+ * sit on the same optical line.
+ */
+.page-chrome-logo { display: flex; align-items: center; gap: calc(var(--u) * 16px); }
+.cobrand-rule {
+  width: calc(var(--u) * 1px);
+  height: calc(var(--u) * 26px);
+  background: currentColor;
+  opacity: .28;
+  flex: 0 0 auto;
+}
+.cobrand-mark {
+  height: calc(var(--u) * 30px);
+  width: auto;
+  max-width: calc(var(--u) * 210px);
+  object-fit: contain;
+  display: block;
+}
+/* On a dark page a mark supplied on white needs a touch of separation rather
+ * than a box — the marks we ship are transparent, so this only ever affects
+ * an uploaded one that is not. */
+.stage .cobrand-mark { border-radius: calc(var(--u) * 3px); }
