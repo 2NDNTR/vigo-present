@@ -1,0 +1,22 @@
+# dependencies
+/node_modules
+
+# next.js build output
+/.next
+/out
+next-env.d.ts
+tsconfig.tsbuildinfo
+
+# secrets — AUTH_SECRET, POSTGRES_URL and BLOB_READ_WRITE_TOKEN live in Vercel's
+# environment variables and must never reach the repository
+.env
+.env.*
+!.env.example
+
+# vercel
+.vercel
+
+# os / editor noise
+.DS_Store
+*.pem
+npm-debug.log*
