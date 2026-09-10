@@ -15,6 +15,7 @@ import {
 } from '@/lib/brand/themes';
 import type { ColorRole, TypeRole } from '@/lib/brand/themes';
 import { processFile } from '@/lib/media';
+import { EMPTY_ENTRY, entriesOf, entriesPatch, showsMedia } from '@/lib/model/timeline';
 
 const ROLES_FOR: Record<string, TypeRole[]> = {
   text: ['display', 'headline', 'subhead', 'body', 'caption', 'eyebrow'],
@@ -22,7 +23,7 @@ const ROLES_FOR: Record<string, TypeRole[]> = {
   quote: ['quote', 'headline'],
   checklist: ['subhead', 'body', 'headline'],
   bullets: ['subhead', 'body'],
-  timeline: ['body', 'caption'],
+  timeline: ['body', 'caption'],  // the caption; the date is always the metric face
   logoGrid: ['caption', 'body'],
   card: ['subhead', 'headline', 'body'],
   cta: ['caption', 'body'],
@@ -278,7 +279,55 @@ export default function Inspector(props: InspectorProps) {
               </div>
             )}
 
-            {(block.type === 'checklist' || block.type === 'bullets' || block.type === 'timeline' || block.type === 'logoGrid') && (
+            {block.type === 'timeline' && (
+              <div style={{ marginTop: 14 }}>
+                <div className="label" style={{ marginBottom: 6 }}>Image cards</div>
+                <div className="seg">
+                  <button
+                    className={showsMedia(block) ? 'on' : ''}
+                    onClick={() => props.onChangeBlock(block.id, { showImage: true })}
+                  >
+                    Show
+                  </button>
+                  <button
+                    className={showsMedia(block) ? '' : 'on'}
+                    onClick={() => props.onChangeBlock(block.id, { showImage: false })}
+                  >
+                    Hide
+                  </button>
+                </div>
+                <p className="tiny" style={{ marginTop: 7 }}>
+                  Drag a photo from Assets onto any card. Milestones without one keep their space,
+                  so the dates stay on a single line.
+                </p>
+
+                <div className="label" style={{ marginTop: 14, marginBottom: 6 }}>Milestones</div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    className="btn sm"
+                    onClick={() =>
+                      props.onChangeBlock(
+                        block.id,
+                        entriesPatch([...entriesOf(block), { ...EMPTY_ENTRY }])
+                      )
+                    }
+                  >
+                    + Add milestone
+                  </button>
+                  <button
+                    className="btn sm"
+                    disabled={entriesOf(block).length <= 1}
+                    onClick={() =>
+                      props.onChangeBlock(block.id, entriesPatch(entriesOf(block).slice(0, -1)))
+                    }
+                  >
+                    Remove last
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {(block.type === 'checklist' || block.type === 'bullets' || block.type === 'logoGrid') && (
               <div style={{ marginTop: 14 }}>
                 <div className="label" style={{ marginBottom: 6 }}>Items</div>
                 <div style={{ display: 'flex', gap: 6 }}>
