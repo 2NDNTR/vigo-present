@@ -514,10 +514,17 @@ export default function BlockView({ block, ctx }: { block: Block; ctx: RenderCtx
         set(logosPatch(logos.map((l, n) => (n === i ? { ...l, ...part } : l))));
       };
 
+      // The block's own alignment control decides whether the marks sit centred
+      // in their cells or ranged left. A full page of partners wants centred; a
+      // brand block sitting under a paragraph wants to line up with the text
+      // above it, which is the difference between a designed column and two
+      // things that happen to be stacked.
+      const left = alignFor(block) === 'left';
+
       return (
         <div {...wrapProps}>
           <div
-            className={'logogrid' + (art ? ' has-art' : '')}
+            className={'logogrid' + (art ? ' has-art' : '') + (left ? ' left' : '')}
             style={{ gridTemplateColumns: `repeat(${block.columns || 4}, minmax(0, 1fr))` }}
           >
             {logos.map((l, i) => {
@@ -552,7 +559,7 @@ export default function BlockView({ block, ctx }: { block: Block; ctx: RenderCtx
                     ) : (
                       <EditableText
                         className="tt"
-                        style={{ ...typeVars('caption'), textAlign: 'center', width: '100%' }}
+                        style={{ ...typeVars('caption'), textAlign: left ? 'left' : 'center', width: '100%' }}
                         value={l.name || ''}
                         editable={ctx.editable}
                         placeholder="Name"
@@ -582,7 +589,7 @@ export default function BlockView({ block, ctx }: { block: Block; ctx: RenderCtx
                   {(l.caption || (ctx.editable && selected)) && (
                     <EditableText
                       className="tt logocap"
-                      style={{ ...typeVars('caption', 0.82), textAlign: 'center', width: '100%' }}
+                      style={{ ...typeVars('caption', 0.82), textAlign: left ? 'left' : 'center', width: '100%' }}
                       value={l.caption || ''}
                       editable={ctx.editable}
                       placeholder="What it is"
