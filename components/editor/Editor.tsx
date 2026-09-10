@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Stage from '@/components/render/Stage';
 import PageNav from './PageNav';
 import Inspector from './Inspector';
+import Presence from './Presence';
+import NotesPanel from './NotesPanel';
 import AssetsPanel from './AssetsPanel';
 import BrandPanel from './BrandPanel';
 import AddPanel from './AddPanel';
@@ -21,7 +23,7 @@ import { getStore, storeKindSync } from '@/lib/store';
 import { ConflictError } from '@/lib/store/api';
 import { processFile } from '@/lib/media';
 
-type Tab = 'pages' | 'add' | 'assets' | 'brand';
+type Tab = 'pages' | 'add' | 'assets' | 'brand' | 'notes';
 
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
 
@@ -478,6 +480,14 @@ export default function Editor({ id }: { id: string }) {
         </div>
 
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {/* Who else is in here. Sits before the actions because it is
+              information, not a control — and because the thing you want to
+              know before clicking Share is who is already looking. */}
+          <Presence
+            presentationId={pres.id}
+            pageId={page?.id}
+            pageTitleFor={(pid) => pres.pages.find((x) => x.id === pid)?.sectionStart || undefined}
+          />
           <button className="btn sm" onClick={() => router.push('/present/' + pres.id)}>
             Preview
           </button>
@@ -660,7 +670,7 @@ export default function Editor({ id }: { id: string }) {
               visibly through the tabs. */}
           <div className="ed-tabsbar">
             <div className="ed-tabs">
-              {(['pages', 'add', 'assets', 'brand'] as Tab[]).map((t) => (
+              {(['pages', 'add', 'assets', 'brand', 'notes'] as Tab[]).map((t) => (
                 <button key={t} className={'tabbtn' + (tab === t ? ' on' : '')} onClick={() => setTab(t)}>
                   {t[0].toUpperCase() + t.slice(1)}
                 </button>
@@ -739,6 +749,16 @@ export default function Editor({ id }: { id: string }) {
             />
           )}
           {tab === 'assets' && <AssetsPanel brand={pres.brand} onUse={useAsset} />}
+          {tab === 'notes' && (
+            <NotesPanel
+              presentationId={pres.id}
+              pageId={page?.id}
+              pageTitles={Object.fromEntries(
+                pres.pages.map((p, i) => [p.id, (i + 1) + '. ' + (p.sectionStart || getTemplate(p.templateId).name)])
+              )}
+            />
+          )}
+
           {tab === 'brand' && (
             <BrandPanel
               brand={pres.brand}

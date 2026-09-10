@@ -132,6 +132,27 @@ async function migrate(): Promise<void> {
           created_at  bigint not null
         );
         create index if not exists assets_brand_idx on assets(brand, category);
+
+        create table if not exists presence (
+          presentation_id text not null,
+          user_id         text not null,
+          page_id         text,
+          seen_at         bigint not null,
+          primary key (presentation_id, user_id)
+        );
+        create index if not exists presence_deck_idx on presence(presentation_id, seen_at);
+
+        create table if not exists notes (
+          id              text primary key,
+          presentation_id text not null,
+          page_id         text,
+          author_id       text not null,
+          body            text not null,
+          mentions        jsonb not null default '[]'::jsonb,
+          resolved        boolean not null default false,
+          created_at      bigint not null
+        );
+        create index if not exists notes_deck_idx on notes(presentation_id, created_at);
       `);
 
       // The first account, so somebody can get in and add everyone else.

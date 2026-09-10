@@ -1411,3 +1411,54 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 .chart .ch-val { font-size: 26px; font-variant-numeric: tabular-nums; font-weight: 600; }
 .chart .ch-delta { font-size: 24px; font-variant-numeric: tabular-nums; font-weight: 600; }
 .ch-source { opacity: .55; margin-top: calc(var(--u) * 18px); }
+
+/* ------------------------------------------------------- presence + notes
+ * Two letters and a colour derived from the person's own name: a row of
+ * identical grey circles says someone is here, which is not the question.
+ */
+.presence { display: flex; align-items: center; gap: -6px; margin-right: 4px; }
+.pres-dot {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: 10.5px; font-weight: 700; letter-spacing: .02em;
+  color: #fff; margin-left: -6px;
+  border: 2px solid var(--panel, #16161a);
+  cursor: default; user-select: none;
+}
+.pres-dot:first-child { margin-left: 0; }
+/* Someone on the same slide as you is the one worth noticing. */
+.pres-dot.same { box-shadow: 0 0 0 2px rgba(255,255,255,0.55); }
+.pres-dot.more { background: rgba(255,255,255,0.18); }
+
+.notes-panel .notes-count {
+  font-size: 11px; font-weight: 600; opacity: .7; margin-left: 8px;
+}
+.mention-menu {
+  display: flex; flex-direction: column; gap: 2px;
+  border: 1px solid rgba(255,255,255,0.12); border-radius: 6px;
+  padding: 4px; margin-top: 4px;
+}
+.mention-menu button {
+  text-align: left; background: none; border: 0; color: inherit;
+  padding: 5px 7px; border-radius: 4px; cursor: pointer; font-size: 12.5px;
+}
+.mention-menu button:hover { background: rgba(255,255,255,0.09); }
+
+.notes-summary {
+  margin-top: 10px; padding: 10px 12px;
+  border-left: 2px solid var(--accent, #9E2B22);
+  background: rgba(255,255,255,0.04);
+  border-radius: 0 6px 6px 0;
+  font-size: 12.5px; line-height: 1.55;
+}
+.notes-summary p { margin: 0 0 7px; }
+
+.notes-list { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+.note { border-top: 1px solid rgba(255,255,255,0.09); padding-top: 9px; }
+.note-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.note-head b { font-size: 12.5px; }
+.note-head .tiny { opacity: .55; }
+.note-body { font-size: 12.5px; line-height: 1.5; margin: 4px 0 6px; white-space: pre-wrap; }
+/* A resolved note stays readable — struck through would make the record of
+   what was asked for harder to read than the thing nobody asked for. */
+.note.done { opacity: .5; }
