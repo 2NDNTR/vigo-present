@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Thumb from '@/components/ui/Thumb';
 import Brandmark from '@/components/ui/Brandmark';
 import NewPresentation from '@/components/NewPresentation';
+import PdfImport from '@/components/PdfImport';
 import { getStore } from '@/lib/store';
 import type { Presentation } from '@/lib/model/types';
 import { uid, slugify } from '@/lib/model/types';
@@ -32,6 +33,7 @@ export default function Dashboard() {
   const [items, setItems] = useState<Presentation[] | null>(null);
   const [filter, setFilter] = useState('all');
   const [creating, setCreating] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [menu, setMenu] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
   const [needsAuth, setNeedsAuth] = useState(false);
@@ -142,9 +144,14 @@ export default function Dashboard() {
               {user?.org} — every deck stays on brand automatically.
             </p>
           </div>
-          <button className="btn primary lg" onClick={() => setCreating(true)}>
-            + New Presentation
-          </button>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button className="btn lg" onClick={() => setImporting(true)}>
+              Build from a PDF
+            </button>
+            <button className="btn primary lg" onClick={() => setCreating(true)}>
+              + New Presentation
+            </button>
+          </div>
         </div>
 
         <div className="filters">
@@ -221,6 +228,18 @@ export default function Dashboard() {
         <NewPresentation
           createdBy={user?.name || 'Vigo team'}
           onCancel={() => setCreating(false)}
+          onCreate={async (p) => {
+            const s = await getStore();
+            await s.save(p);
+            router.push('/e/' + p.id);
+          }}
+        />
+      )}
+
+      {importing && (
+        <PdfImport
+          createdBy={user?.name || 'Vigo team'}
+          onCancel={() => setImporting(false)}
           onCreate={async (p) => {
             const s = await getStore();
             await s.save(p);
