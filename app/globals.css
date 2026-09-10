@@ -1167,3 +1167,88 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
   .wrap { padding: 0 20px; }
   .dash-head { padding: 40px 0 24px; flex-direction: column; align-items: flex-start; }
 }
+
+/* ------------------------------------------------------- six-card grid ----
+ * Two rows of three, ruled like a contents page, with a check mark on each
+ * cell. Everything here is scoped to the layout: the cards themselves are
+ * ordinary cards, and moving them to another template leaves no trace of this.
+ *
+ * The rules are drawn as cell borders rather than as grid gaps so they stop
+ * cleanly at the outer edge — a gap-drawn rule needs a wrapper to clip it and
+ * always leaves a stub hanging off the last column.
+ */
+.tpl-cards-six .slot[data-slot="main"] {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  column-gap: 0;
+  row-gap: 0;
+}
+.tpl-cards-six .slot[data-slot="main"] > * {
+  padding: calc(var(--u) * 40px) calc(var(--u) * 46px) calc(var(--u) * 44px);
+  border-left: calc(var(--u) * 1px) solid currentColor;
+  border-top: calc(var(--u) * 1px) solid currentColor;
+  min-width: 0;
+}
+/* Only the interior rules are drawn — no box around the outside. */
+.tpl-cards-six .slot[data-slot="main"] > *:nth-child(3n + 1) { border-left: 0; padding-left: 0; }
+.tpl-cards-six .slot[data-slot="main"] > *:nth-child(-n + 3) { border-top: 0; }
+.tpl-cards-six .slot[data-slot="main"] > * { border-color: color-mix(in srgb, currentColor 18%, transparent); }
+
+/* The check mark belongs to this page, not to the card. */
+.tpl-cards-six .slot[data-slot="main"] > *::before {
+  content: '';
+  display: block;
+  width: calc(var(--u) * 30px);
+  height: calc(var(--u) * 30px);
+  margin-bottom: calc(var(--u) * 26px);
+  border-radius: 50%;
+  border: calc(var(--u) * 1.5px) solid var(--rule-color);
+  background:
+    linear-gradient(45deg, transparent calc(50% - var(--u) * 0.8px), var(--rule-color) calc(50% - var(--u) * 0.8px), var(--rule-color) calc(50% + var(--u) * 0.8px), transparent calc(50% + var(--u) * 0.8px))
+      no-repeat center / calc(var(--u) * 11px) calc(var(--u) * 2px),
+    linear-gradient(-45deg, transparent calc(50% - var(--u) * 0.8px), var(--rule-color) calc(50% - var(--u) * 0.8px), var(--rule-color) calc(50% + var(--u) * 0.8px), transparent calc(50% + var(--u) * 0.8px))
+      no-repeat 44% 58% / calc(var(--u) * 7px) calc(var(--u) * 2px);
+}
+
+.stage.stacked.tpl-cards-six .slot[data-slot="main"] { grid-template-columns: 1fr; }
+.stage.stacked.tpl-cards-six .slot[data-slot="main"] > *:nth-child(n) {
+  border-left: 0; padding-left: 0; border-top: calc(var(--u) * 1px) solid color-mix(in srgb, currentColor 18%, transparent);
+}
+.stage.stacked.tpl-cards-six .slot[data-slot="main"] > *:first-child { border-top: 0; }
+
+/* ------------------------------------------------- four metrics, quartered
+ * Same ruled-grid idea as the six-card layout: borders on the cells rather
+ * than gaps, so the rules stop at the outer edge instead of hanging off it.
+ */
+.tpl-metrics-quad .slot[data-slot="main"] {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 0;
+}
+.tpl-metrics-quad .slot[data-slot="main"] > * {
+  padding: calc(var(--u) * 44px) calc(var(--u) * 56px);
+  border-left: calc(var(--u) * 1px) solid color-mix(in srgb, currentColor 16%, transparent);
+  border-top: calc(var(--u) * 1px) solid color-mix(in srgb, currentColor 16%, transparent);
+  min-width: 0;
+  display: flex; align-items: center;
+}
+.tpl-metrics-quad .slot[data-slot="main"] > *:nth-child(odd) { border-left: 0; padding-left: 0; }
+.tpl-metrics-quad .slot[data-slot="main"] > *:nth-child(-n + 2) { border-top: 0; }
+
+/* The label is a sentence here, not a tag — it gets room and normal case. */
+.tpl-metrics-quad .mlabel {
+  text-transform: none;
+  letter-spacing: 0;
+  max-width: calc(var(--u) * 330px);
+}
+.tpl-metrics-quad .foot, .tpl-metrics-quad .slot[data-slot="foot"] { opacity: .88; }
+
+.stage.stacked .tpl-metrics-quad .slot[data-slot="main"],
+.stage.stacked.tpl-metrics-quad .slot[data-slot="main"] { grid-template-columns: 1fr; }
+.stage.stacked.tpl-metrics-quad .slot[data-slot="main"] > * {
+  border-left: 0; padding-left: 0;
+  border-top: calc(var(--u) * 1px) solid color-mix(in srgb, currentColor 16%, transparent);
+}
+.stage.stacked.tpl-metrics-quad .slot[data-slot="main"] > *:first-child { border-top: 0; }
