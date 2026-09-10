@@ -308,11 +308,49 @@ const templates: PageTemplate[] = [
     layout: lay('1fr 1fr', '1fr', ['media main'], 0, 0),
     slots: [
       { key: 'media', label: 'Image', accepts: MEDIA_TYPES, max: 1, hint: 'Drop an image here', bleed: true },
-      { key: 'main', label: 'Copy', accepts: TEXT_TYPES, max: 5, hint: 'Headline and copy', justify: 'center', maxWidth: 620, pad: 110 },
+      { key: 'main', label: 'Copy', accepts: [...TEXT_TYPES, 'logoGrid'], max: 5, hint: 'Headline and copy', justify: 'center', maxWidth: 620, pad: 110 },
     ],
     seed: () => ({
       media: [IMG()],
       main: [T('Sourcing', 'eyebrow'), T('We buy where the food is best.', 'headline'), T('Direct relationships with growers in Italy, Spain, Greece and Peru — no brokers between the field and the jar.', 'body')],
+    }),
+  },
+  {
+    /**
+     * THE COMPANY STATEMENT
+     * -----------------------------------------------------------------------
+     * The headline runs the full width and the picture sits BELOW it, which is
+     * the one thing `split-image-text` cannot do — there the headline lives
+     * inside the right-hand column and is therefore half the width, so a
+     * statement written to land across a spread arrives cramped in a gutter.
+     *
+     * The band underneath is a photograph, the copy, and the brands the copy is
+     * talking about. That last part is why `main` accepts a logo grid: a
+     * company page says who it is and then shows the marks, and until now the
+     * marks could only be typed out as words.
+     */
+    id: 'company-statement',
+    name: 'Statement + Company',
+    category: 'Storytelling',
+    hint: 'A full-width statement, then a photograph beside the story and the brands.',
+    layout: lay('minmax(0, 0.92fr) minmax(0, 1fr)', 'auto 1fr', ['head head', 'media main'], 110, 52),
+    slots: [
+      { key: 'head', label: 'Statement', accepts: TEXT_TYPES, max: 3, hint: 'Eyebrow and statement', justify: 'start' },
+      { key: 'media', label: 'Photograph', accepts: MEDIA_TYPES, max: 1, hint: 'Drop an image here' },
+      { key: 'main', label: 'Story and brands', accepts: [...TEXT_TYPES, 'logoGrid'], max: 5, hint: 'Copy, then the brands', justify: 'start' },
+    ],
+    guidance: 'The statement is the page. Two or three lines read best.',
+    seed: () => ({
+      head: [
+        T('The Company', 'eyebrow'),
+        T('Enriching people\u2019s lives with quality, affordable food.', 'display'),
+        { id: uid('b'), type: 'divider' as const },
+      ],
+      media: [IMG()],
+      main: [
+        T('Founded in Tampa in 1947 and still privately held \u2014 today headed by the founder\u2019s two sons.', 'body'),
+        LOGOGRID(['Vigo', 'Alessi', 'Bella', 'Private Label']),
+      ],
     }),
   },
   {
