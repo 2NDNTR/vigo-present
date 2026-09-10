@@ -34,9 +34,16 @@ export function logosPatch(logos: LogoEntry[]): Partial<Block> {
   return { logos, items: undefined };
 }
 
-/** True once at least one cell carries real artwork. */
+/**
+ * True once at least one cell carries real artwork.
+ *
+ * Checks `assetId` as well as `url` because a block that has been through the
+ * store has only the id — the URL is resolved from the asset record at render
+ * time. Anything asking "is there a logo here?" that looks at `url` alone gets
+ * the wrong answer for every saved deck.
+ */
 export function hasArtwork(block: Block): boolean {
-  return logosOf(block).some((l) => !!l.media?.url);
+  return logosOf(block).some((l) => !!(l.media?.assetId || l.media?.url));
 }
 
 export const EMPTY_LOGO: LogoEntry = { name: 'Name' };
