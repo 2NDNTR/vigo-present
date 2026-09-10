@@ -3,7 +3,7 @@
 import type { Block, Page } from '@/lib/model/types';
 import { uid } from '@/lib/model/types';
 import { createPage, getTemplate } from '@/lib/templates/registry';
-import type { BrandId } from '@/lib/brand/themes';
+import type { BrandId, TypeRole } from '@/lib/brand/themes';
 import type { PageReading } from './interpret';
 import type { ExtractedImage } from './extract';
 
@@ -159,17 +159,28 @@ function fill(page: Page, r: PageReading, opts: ComposeOptions) {
     page.slots[slot.key] = kept;
   }
 
-  // Anything the page still has to say, said in body copy rather than lost.
-  if (body.length) {
-    const target = template.slots.find((s) => s.accepts.includes('text'));
-    if (target) {
-      const list = page.slots[target.key] || [];
-      const model = list.find((b) => b.type === 'text' && b.style?.role === 'body');
-      if (model && list.length < target.max) {
-        list.push({ ...model, id: uid('b'), text: body.join(' ') });
-        page.slots[target.key] = list;
-      }
-    }
+  // Whatever the template had no block for still has to appear. Several of the
+  // data layouts seed only an eyebrow in their heading slot, so a page's actual
+  // title lands here — and silently dropping the heading is the worst thing an
+  // import can do, worse than any layout mistake, because the reader cannot
+  // tell it happened.
+  const leftovers: { text: string; role: TypeRole }[] = [
+    ...titles.map((t) => ({ text: t, role: 'headline' as TypeRole })),
+    ...(body.length ? [{ text: body.join(' '), role: 'body' as TypeRole }] : []),
+  ];
+  for (const item of leftovers) {
+    const target = template.slots.find(
+      (s) => s.accepts.includes('text') && (page.slots[s.key] || []).length < s.max
+    );
+    if (!target) break;
+    const list = page.slots[target.key] || [];
+    list.push({
+      id: uid('b'),
+      type: 'text',
+      text: item.text,
+      style: { role: item.role, color: 'auto', align: 'left' },
+    });
+    page.slots[target.key] = list;
   }
 
   /* -- the picture -------------------------------------------------------- */
