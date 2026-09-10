@@ -37,8 +37,19 @@ export default function AssetsPanel({
   const fileRef = useRef<HTMLInputElement>(null);
   useAssetRegistry();
 
-  const all = assetsFor(b, cat);
-  const items = (q ? all.filter((a) => a.name.toLowerCase().includes(q.toLowerCase())) : all).slice(0, 120);
+  // A search should find the picture wherever it happens to be filed. Nobody
+  // remembers whether the chili crisp shot went into Product Photography or
+  // Packaging, so once there is a query the category filter steps aside and the
+  // whole brand is searched — including the category name itself.
+  const searching = q.trim().length > 0;
+  const needle = q.trim().toLowerCase();
+  const pool = assetsFor(b, searching ? 'All' : cat);
+  const matched = searching
+    ? pool.filter(
+        (a) => a.name.toLowerCase().includes(needle) || a.category.toLowerCase().includes(needle)
+      )
+    : pool;
+  const items = matched.slice(0, 120);
   const placeholders = isPlaceholderLibrary();
   const shared = isSharedLibrary();
   const mine = uploadedAssets();
@@ -99,7 +110,21 @@ export default function AssetsPanel({
             ...ASSET_CATEGORIES.map((c) => ({ value: c, label: c })),
           ]}
         />
-        <input className="field" placeholder="Search assets" value={q} onChange={(e) => setQ(e.target.value)} />
+        <input
+          className="field"
+          placeholder="Search by product name"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+        />
+        {searching && (
+          <p className="tiny" style={{ marginTop: 6 }}>
+            {matched.length === 0
+              ? `Nothing matches “${q.trim()}” in ${THEMES[b].shortName}.`
+              : `${matched.length} match${matched.length === 1 ? '' : 'es'} across every category${
+                  matched.length > 120 ? ' — showing the first 120' : ''
+                }.`}
+          </p>
+        )}
       </div>
 
       {/* ------------------------------------------------------- upload ---- */}
