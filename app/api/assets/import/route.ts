@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server';
 import { del, put } from '@vercel/blob';
 import { q, hasBlob } from '@/lib/server/db';
 import { currentUser, unauthorized } from '@/lib/server/auth';
-import { CATEGORY_FOLDER, slug } from '@/lib/assets/uploads';
+// NOT from '@/lib/assets/uploads' — that module is 'use client' (it owns the
+// IndexedDB store), so importing it here builds fine and then 500s at request
+// time. The naming helpers live in ./paths precisely so both sides share them.
+import { CATEGORY_FOLDER, slug } from '@/lib/assets/paths';
 import { ASSET_CATEGORIES } from '@/lib/model/types';
 import type { AssetCategory } from '@/lib/model/types';
 
