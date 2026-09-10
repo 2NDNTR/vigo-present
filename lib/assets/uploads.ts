@@ -59,38 +59,11 @@ async function tx<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBReq
   });
 }
 
-export const slug = (s: string) =>
-  s
-    .toLowerCase()
-    .replace(/\.[^.]+$/, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 60) || 'asset';
+// Naming and foldering live in ./paths so the server-side importer can share
+// them without dragging this module's IndexedDB code into a route handler.
+export { slug, prettyName, CATEGORY_FOLDER, assetPathFor } from './paths';
+import { CATEGORY_FOLDER, assetPathFor, prettyName, slug } from './paths';
 
-export const prettyName = (s: string) =>
-  s
-    .replace(/\.[^.]+$/, '')
-    .replace(/[-_]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-
-/** Folder a file belongs in, matching the repository layout. */
-export const CATEGORY_FOLDER: Record<string, string> = {
-  'Product Photography': 'product',
-  Lifestyle: 'lifestyle',
-  Recipes: 'recipes',
-  Retail: 'retail',
-  Social: 'social',
-  Packaging: 'packaging',
-  Backgrounds: 'backgrounds',
-  Logos: 'logos',
-  Icons: 'icons',
-};
-
-export function assetPathFor(a: { brand: string; category: string; fileName: string }): string {
-  return `/assets/${a.brand}/${CATEGORY_FOLDER[a.category] || 'misc'}/${a.fileName}`;
-}
 
 export async function listUploads(): Promise<UploadedAsset[]> {
   try {
