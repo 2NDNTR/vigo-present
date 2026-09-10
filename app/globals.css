@@ -777,6 +777,9 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
  * a page on its own. The cell keeps its height so the marks still share a
  * baseline; only the artwork inside it moves to the left edge. */
 .logogrid.left .logocell { justify-content: flex-start; }
+/* Ranged-left grids sit under body copy in a column, where a 5:2 plate is
+ * taller than the marks need. Contain keeps every mark whole regardless. */
+.logogrid.left .logocell { aspect-ratio: 5 / 1.7; }
 .logogrid.left.has-art .logocell { padding-left: 0; }
 
 .logo-el { display: inline-flex; align-items: center; gap: calc(var(--u) * 12px); }
