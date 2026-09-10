@@ -1177,6 +1177,9 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
  * cleanly at the outer edge — a gap-drawn rule needs a wrapper to clip it and
  * always leaves a stub hanging off the last column.
  */
+.tpl-cards-six {
+  --tick-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='11'/><path d='M6.6 12.5l3.5 3.5 7.3-7.9'/></svg>");
+}
 .tpl-cards-six .slot[data-slot="main"] {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1195,20 +1198,20 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 .tpl-cards-six .slot[data-slot="main"] > *:nth-child(-n + 3) { border-top: 0; }
 .tpl-cards-six .slot[data-slot="main"] > * { border-color: color-mix(in srgb, currentColor 18%, transparent); }
 
-/* The check mark belongs to this page, not to the card. */
+/* The check mark belongs to this page, not to the card.
+ * Drawn as a mask rather than as crossed gradients — two rotated gradients
+ * meet at whatever angle the box happens to be, which reads as a comma at
+ * small sizes. A mask keeps the stroke shape exact and still takes its colour
+ * from the theme token, which a data-URI background could not. */
 .tpl-cards-six .slot[data-slot="main"] > *::before {
   content: '';
   display: block;
   width: calc(var(--u) * 30px);
   height: calc(var(--u) * 30px);
   margin-bottom: calc(var(--u) * 18px);
-  border-radius: 50%;
-  border: calc(var(--u) * 1.5px) solid var(--rule-color);
-  background:
-    linear-gradient(45deg, transparent calc(50% - var(--u) * 0.8px), var(--rule-color) calc(50% - var(--u) * 0.8px), var(--rule-color) calc(50% + var(--u) * 0.8px), transparent calc(50% + var(--u) * 0.8px))
-      no-repeat center / calc(var(--u) * 11px) calc(var(--u) * 2px),
-    linear-gradient(-45deg, transparent calc(50% - var(--u) * 0.8px), var(--rule-color) calc(50% - var(--u) * 0.8px), var(--rule-color) calc(50% + var(--u) * 0.8px), transparent calc(50% + var(--u) * 0.8px))
-      no-repeat 44% 58% / calc(var(--u) * 7px) calc(var(--u) * 2px);
+  background: var(--rule-color);
+  -webkit-mask: var(--tick-mask) no-repeat center / contain;
+  mask: var(--tick-mask) no-repeat center / contain;
 }
 
 .stage.stacked.tpl-cards-six .slot[data-slot="main"] { grid-template-columns: 1fr; }
