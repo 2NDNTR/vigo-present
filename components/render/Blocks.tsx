@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
-import type { Block, TimelineEntry } from '@/lib/model/types';
+import type { Block, LogoEntry, TimelineEntry } from '@/lib/model/types';
 import { entriesOf, entriesPatch, showsMedia } from '@/lib/model/timeline';
+import { logosOf, logosPatch } from '@/lib/model/logos';
 import type { BrandTheme, TypeRole } from '@/lib/brand/themes';
 import { typeVars, u } from './typeVars';
 import EditableText from './EditableText';
@@ -496,27 +497,96 @@ export default function BlockView({ block, ctx }: { block: Block; ctx: RenderCtx
 
     /* ---------------------------------------------------------- logo grid */
     case 'logoGrid': {
-      const items = block.items || [];
-      const upd = (i: number, v: string) => {
-        const next = [...items];
-        next[i] = v;
-        set({ items: next });
+      const logos = logosOf(block);
+      // A grid of real marks needs no boxes — the artwork carries itself. The
+      // outline exists to give TYPESET names presence, so it goes as soon as
+      // there is anything to look at, and a mixed grid (three marks and one
+      // "Private Label" set in type) stays one consistent set rather than
+      // three logos next to a boxed word.
+      const art = logos.some((l) => !!l.media?.url);
+
+      const patch = (i: number, part: Partial<LogoEntry>) => {
+        set(logosPatch(logos.map((l, n) => (n === i ? { ...l, ...part } : l))));
       };
+
       return (
         <div {...wrapProps}>
-          <div className="logogrid" style={{ gridTemplateColumns: `repeat(${block.columns || 4}, 1fr)` }}>
-            {items.map((it, i) => (
-              <div className="logocell" key={i}>
-                <EditableText
-                  className="tt"
-                  style={{ ...typeVars('caption'), textAlign: 'center', width: '100%' }}
-                  value={it}
-                  editable={ctx.editable}
-                  placeholder="Account"
-                  onChange={(v) => upd(i, v)}
-                />
-              </div>
-            ))}
+          <div
+            className={'logogrid' + (art ? ' has-art' : '')}
+            style={{ gridTemplateColumns: `repeat(${block.columns || 4}, minmax(0, 1fr))` }}
+          >
+            {logos.map((l, i) => {
+              const resolved = mediaUrl(l.media);
+              return (
+                <div className="logoitem" key={i}>
+                  <div
+                    className={'logocell' + (resolved ? ' art' : '')}
+                    onDragOver={ctx.editable ? (ev) => ev.preventDefault() : undefined}
+                    onDrop={
+                      ctx.editable
+                        ? (ev) => {
+                            const url = ev.dataTransfer.getData('application/x-vigo-asset');
+                            if (!url) return;
+                            // Handled here so the drop does not bubble up and
+                            // become a full-bleed page background instead.
+                            ev.preventDefault();
+                            ev.stopPropagation();
+                            const assetId =
+                              ev.dataTransfer.getData('application/x-vigo-asset-id') || undefined;
+                            patch(i, { media: { url, assetId } });
+                          }
+                        : undefined
+                    }
+                  >
+                    {resolved ? (
+                      // CONTAIN, never cover. A cropped or stretched logo is a
+                      // broken logo, and this is the one block in the product
+                      // whose whole job is showing other people's marks
+                      // correctly.
+                      <img src={resolved} alt={l.name || ''} />
+                    ) : (
+                      <EditableText
+                        className="tt"
+                        style={{ ...typeVars('caption'), textAlign: 'center', width: '100%' }}
+                        value={l.name || ''}
+                        editable={ctx.editable}
+                        placeholder="Name"
+                        onChange={(v) => patch(i, { name: v })}
+                      />
+                    )}
+                    {resolved && ctx.editable && (
+                      <button
+                        className="tl-clear"
+                        title="Remove this logo"
+                        onMouseDown={(ev) => ev.stopPropagation()}
+                        onClick={(ev) => {
+                          ev.stopPropagation();
+                          patch(i, { media: undefined });
+                        }}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+
+                  {/* The caption field appears only where there is one to show,
+                      or while the block is selected. Fifteen "What it is"
+                      placeholders under a partner grid is noise, not an
+                      affordance — the same reason a metric's support line is
+                      gated this way. */}
+                  {(l.caption || (ctx.editable && selected)) && (
+                    <EditableText
+                      className="tt logocap"
+                      style={{ ...typeVars('caption', 0.82), textAlign: 'center', width: '100%' }}
+                      value={l.caption || ''}
+                      editable={ctx.editable}
+                      placeholder="What it is"
+                      onChange={(v) => patch(i, { caption: v })}
+                    />
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       );
