@@ -1,4 +1,4 @@
-import type { Block, BlockType, Page, PageBackground } from '@/lib/model/types';
+import type { Block, BlockType, Page, PageBackground, TimelineEntry } from '@/lib/model/types';
 import { uid } from '@/lib/model/types';
 import { placeholderImage } from '@/lib/assets/placeholders';
 import type { BrandId } from '@/lib/brand/themes';
@@ -152,10 +152,10 @@ const QUOTE = (text: string, label: string): Block => ({
   style: { role: 'quote', color: 'auto', align: 'left' },
 });
 
-const TIMELINE = (items: string[]): Block => ({
+const TIMELINE = (entries: TimelineEntry[]): Block => ({
   id: uid('b'),
   type: 'timeline',
-  items,
+  entries,
   style: { role: 'body', color: 'auto', align: 'left' },
 });
 
@@ -329,7 +329,7 @@ const templates: PageTemplate[] = [
     id: 'timeline',
     name: 'Timeline',
     category: 'Storytelling',
-    hint: 'Milestones across one horizontal line. Four to six entries.',
+    hint: 'Milestones on one line, dates set large. Optional photo per date.',
     layout: lay('1fr', 'auto 1fr', ['head', 'main'], 120, 40),
     slots: [
       { key: 'head', label: 'Heading', accepts: TEXT_TYPES, max: 2, hint: 'Heading', justify: 'start', maxWidth: 1000 },
@@ -338,7 +338,15 @@ const templates: PageTemplate[] = [
     guidance: 'Timelines read best with four to six milestones.',
     seed: () => ({
       head: [T('Heritage', 'eyebrow'), T('Eighty years in the making', 'headline')],
-      main: [TIMELINE(['1946 — Founded in Tampa', '1978 — First national listing', '1999 — Alessi acquired', '2019 — New Tampa facility', '2026 — 12,000 doors'])],
+      main: [
+        TIMELINE([
+          { date: '1946', text: 'Founded in Tampa' },
+          { date: '1978', text: 'First national listing' },
+          { date: '1999', text: 'Alessi acquired' },
+          { date: '2019', text: 'New Tampa facility' },
+          { date: '2026', text: '12,000 doors' },
+        ]),
+      ],
     }),
   },
 
