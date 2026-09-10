@@ -183,23 +183,23 @@ export const THEMES: Record<BrandId, BrandTheme> = {
       weight: 600,
       family: 'body',
       /**
-       * ARTWORK IS ONE FILE AWAY.
-       *
-       * The Vigo | Alessi lockup the capabilities site uses — red Vigo
-       * wordmark, gold-and-dark Alessi badge, transparent ground — has been
-       * prepared at 1000px wide and lives in the project folder as
-       * `_vigo-present-commit/public-logos/corporate-lockup.webp`. Drop that
-       * file into `public/logos/` and uncomment the line below; the text
-       * wordmark disappears and every corporate page picks up the real mark.
+       * The Vigo | Alessi lockup, served from the app's own Blob storage — the
+       * same store the asset library uses, imported from the capabilities site
+       * by `/api/assets/import-urls`. It is a URL rather than a file under
+       * `public/logos/` only because binaries cannot be committed from a cloud
+       * session; the file is OWNED, not hotlinked, so it will not rot. Moving it
+       * into `public/logos/` later is a one-line change here.
        *
        * Only a primary variant is offered on purpose: the source site already
        * places this artwork on both cream and near-black, and a `white` entry
        * would have to be a recolour of someone else's mark rather than a
        * supplied file. `auto` falls back to primary on dark pages, which is
        * the right behaviour here.
-       *
-       * files: { primary: '/logos/corporate-lockup.webp' },
        */
+      files: {
+        primary:
+          'https://iqaxvlc63ef0zefa.public.blob.vercel-storage.com/assets/corporate/logos/vigo-alessi-logo-lockup-4x.png',
+      },
       aspect: 3.8866,
       height: 74,
       minHeight: 40,
