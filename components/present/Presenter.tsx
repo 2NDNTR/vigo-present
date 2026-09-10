@@ -125,7 +125,7 @@ export default function Presenter({
       <div className="present-root" ref={root}>
         {pages.map((p) => (
           <section key={p.id}>
-            <Stage page={p} brand={presentation.brand} mode="stacked" />
+            <Stage page={p} brand={presentation.brand} retailer={presentation.retailer} mode="stacked" />
           </section>
         ))}
         <div style={{ padding: '26px 20px 40px', textAlign: 'center', color: 'rgba(255,255,255,0.45)', fontSize: 12 }}>
@@ -141,7 +141,7 @@ export default function Presenter({
       <div className="present-root" ref={root} style={{ height: '100vh', overflow: 'hidden' }}>
         <div className="slidewrap">
           <div style={{ width: 'min(100vw, calc(100vh * 16 / 9))' }}>
-            <Stage page={pages[index]} brand={presentation.brand} mode="fixed" />
+            <Stage page={pages[index]} brand={presentation.brand} retailer={presentation.retailer} mode="fixed" />
           </div>
         </div>
         <button className="parrow left" onClick={() => goto(Math.max(0, index - 1))} aria-label="Previous">
@@ -161,7 +161,7 @@ export default function Presenter({
       <div className="scrollmode hide-scroll" ref={scroller}>
         {pages.map((p) => (
           <section key={p.id} style={{ height: '100vh' }}>
-            <Stage page={p} brand={presentation.brand} mode="fill" />
+            <Stage page={p} brand={presentation.brand} retailer={presentation.retailer} mode="fill" />
           </section>
         ))}
       </div>
