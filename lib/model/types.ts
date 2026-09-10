@@ -62,6 +62,12 @@ export interface MediaRef {
   height?: number;
 }
 
+export interface TimelineEntry {
+  date: string;
+  text?: string;
+  media?: MediaRef;
+}
+
 export interface Block {
   id: string;
   type: BlockType;
@@ -77,6 +83,12 @@ export interface Block {
   media?: MediaRef;
   // list-ish
   items?: string[];
+  /**
+   * Timeline milestones as structured data — date, copy and an optional
+   * picture. Blocks authored before this existed still carry `items`;
+   * `lib/model/timeline.ts` reads either and writes this one.
+   */
+  entries?: TimelineEntry[];
   // card / product card
   wholesale?: string;
   msrp?: string;
