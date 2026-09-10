@@ -108,6 +108,11 @@ export default function Stage(props: StageProps) {
         'stage ' +
         (mode === 'stacked' ? 'stacked ' : '') +
         (editable ? 'editable ' : '') +
+        // A layout-specific hook. Most templates need nothing beyond their grid,
+        // but a few carry an ornament that belongs to the LAYOUT rather than to
+        // any block — the check mark on the capabilities grid, for instance,
+        // which is part of that page's design and not a property of a card.
+        'tpl-' + template.id + ' ' +
         (props.className || '')
       }
       style={{ ...vars, ...sizing, ...(props.style || {}) }}
