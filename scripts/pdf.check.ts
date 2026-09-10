@@ -36,7 +36,16 @@ interface Expect {
 const EXPECTED: Expect[] = [
   { page: 1, template: 'cover', contains: ['Sell the Box'], absent: ['Confidential'] },
   { page: 2, template: 'section-divider', contains: ['Performance'] },
-  { page: 3, template: 'metric-three', metrics: 3, contains: ['6.2x', 'Order volume'] },
+  // The heading is asserted here because it was once lost: metric-three seeds
+  // only an eyebrow in its heading slot, so the page's actual title had no
+  // block to land in and vanished without a trace. A dropped heading is the
+  // worst failure this tool can have — nothing in the output shows it happened.
+  {
+    page: 3,
+    template: 'metric-three',
+    metrics: 3,
+    contains: ['6.2x', 'Order volume', 'The quarter in three numbers'],
+  },
   { page: 4, template: 'key-takeaways', bullets: 4, contains: ['Gift boxes live by 15 October'] },
   { page: 5, template: 'quote', contains: ['understand the category'] },
   { page: 6, template: 'data-table', contains: ['Shopify', 'Channel'] },
