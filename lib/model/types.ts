@@ -66,6 +66,13 @@ export interface ChartData {
   unit?: 'currency' | 'percent' | 'number';
   /** highlighted category, drawn in the accent — normally ours */
   highlight?: string;
+  /**
+   * Per-category colour. Empty or null means "let the theme decide", which is
+   * the right answer almost always; an explicit value is here because a buyer
+   * sometimes wants their own brand colour on their own slice, and arguing
+   * with them costs more than a field.
+   */
+  colors?: (string | null)[];
   /** attribution, set under the chart: "Nielsen, Publix, L13 WE 1/24/26" */
   source?: string;
 }
