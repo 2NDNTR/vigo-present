@@ -68,6 +68,14 @@ export interface TimelineEntry {
   media?: MediaRef;
 }
 
+export interface LogoEntry {
+  /** the brand's name — alt text, fallback wordmark, and searchable copy */
+  name: string;
+  /** an optional line under the mark saying what it is */
+  caption?: string;
+  media?: MediaRef;
+}
+
 export interface Block {
   id: string;
   type: BlockType;
@@ -97,6 +105,12 @@ export interface Block {
   table?: TableData;
   // logo grid
   columns?: number;
+  /**
+   * Logo grid cells as structured data — mark, name and an optional caption.
+   * Blocks authored before this existed still carry `items`;
+   * `lib/model/logos.ts` reads either and writes this one.
+   */
+  logos?: LogoEntry[];
   // logo
   variant?: 'auto' | 'primary' | 'white' | 'black' | 'mark';
   brand?: BrandId;
