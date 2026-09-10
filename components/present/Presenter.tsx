@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useEntrance } from '@/components/present/Motion';
 import Stage from '@/components/render/Stage';
 import type { Presentation } from '@/lib/model/types';
 import { getTheme } from '@/lib/brand/themes';
@@ -72,20 +73,13 @@ export default function Presenter({
     return () => el.removeEventListener('scroll', onScroll);
   }, [mode, narrow, pages.length]);
 
-  /* ---------------------------------------------- reveal on entry (scroll) */
-  useEffect(() => {
-    const els = Array.from(document.querySelectorAll('.reveal'));
-    if (!els.length) return;
-    const io = new IntersectionObserver(
-      (entries) =>
-        entries.forEach((e) => {
-          if (e.isIntersecting) e.target.classList.add('in');
-        }),
-      { threshold: 0.18 }
-    );
-    els.forEach((e) => io.observe(e));
-    return () => io.disconnect();
-  }, [pages.length, narrow, mode]);
+  /* ------------------------------------------------------ entrance motion
+   * Every composition gets the same treatment — the phone stack, the slide
+   * deck and the scroll story all arrive the same way, so the deck feels like
+   * one thing at three sizes. In slides the key changes with the index, which
+   * is what replays the arrival on each new slide. */
+  const root = useRef<HTMLDivElement>(null);
+  useEntrance(root, scroller, mode === 'slide' && !narrow ? index : pages.length + ':' + narrow + mode);
 
   const goto = (i: number) => {
     setIndex(i);
@@ -128,9 +122,9 @@ export default function Presenter({
   /* ------------------------------------------------------------ mobile */
   if (narrow) {
     return (
-      <div className="present-root">
+      <div className="present-root" ref={root}>
         {pages.map((p) => (
-          <section key={p.id} className="reveal">
+          <section key={p.id}>
             <Stage page={p} brand={presentation.brand} mode="stacked" />
           </section>
         ))}
@@ -144,7 +138,7 @@ export default function Presenter({
   /* ------------------------------------------------------------- slides */
   if (mode === 'slide') {
     return (
-      <div className="present-root" style={{ height: '100vh', overflow: 'hidden' }}>
+      <div className="present-root" ref={root} style={{ height: '100vh', overflow: 'hidden' }}>
         <div className="slidewrap">
           <div style={{ width: 'min(100vw, calc(100vh * 16 / 9))' }}>
             <Stage page={pages[index]} brand={presentation.brand} mode="fixed" />
@@ -163,7 +157,7 @@ export default function Presenter({
 
   /* ------------------------------------------------------------- scroll */
   return (
-    <div className="present-root">
+    <div className="present-root" ref={root}>
       <div className="scrollmode hide-scroll" ref={scroller}>
         {pages.map((p) => (
           <section key={p.id} style={{ height: '100vh' }}>
