@@ -175,6 +175,26 @@ const TABLE = (): Block => ({
 
 const TEXT_TYPES: BlockType[] = ['text', 'checklist', 'bullets', 'quote', 'cta', 'divider', 'timeline'];
 const TABLE_TYPES: BlockType[] = ['table', 'text'];
+
+/**
+ * A chart seeded with shape rather than with data — the numbers are obviously
+ * placeholder so nobody presents them by accident, and the shape shows what
+ * the layout is for.
+ */
+const CHART = (): Block => ({
+  id: uid('b'),
+  type: 'chart',
+  chart: {
+    kind: 'bar',
+    unit: 'currency',
+    categories: ['Brand A', 'Brand B', 'Vigo', 'Brand D', 'Brand E'],
+    values: [4200000, 3100000, 2600000, 1800000, 1200000],
+    deltas: [-5.2, -7.6, 42.7, -1.8, 2.1],
+    highlight: 'Vigo',
+    source: 'Source: replace with the source line from the report',
+  },
+});
+
 const CARD_TYPES: BlockType[] = ['card', 'image', 'metric'];
 const MEDIA_TYPES: BlockType[] = ['image', 'video'];
 const ANY: BlockType[] = [...TEXT_TYPES, ...MEDIA_TYPES, 'metric', 'logo', 'logoGrid'];
@@ -951,6 +971,54 @@ const templates: PageTemplate[] = [
         CARD('Balsamic Reduction', 'Aged in Modena, reduced slowly, thick enough to hold a line on the plate.'),
         CARD('Risotto Milanese', 'Carnaroli rice and real saffron. On the table in eighteen minutes.'),
       ],
+    }),
+  },
+  {
+    /**
+     * A category review is a chart plus the three things it means. The chart
+     * gets the room and the commentary sits beside it, because a buyer reads
+     * the picture first and the sentences second — and because the sentences
+     * are what the salesperson actually says out loud.
+     */
+    id: 'chart-story',
+    name: 'Chart + Findings',
+    category: 'Data',
+    hint: 'A chart with the takeaways beside it. The category-review workhorse.',
+    layout: lay('minmax(0, 1.25fr) minmax(0, 1fr)', 'auto minmax(0, 1fr)', ['head head', 'main aside'], 104, 46),
+    slots: [
+      { key: 'head', label: 'Heading', accepts: TEXT_TYPES, max: 2, hint: 'Heading', justify: 'start', maxWidth: 1250 },
+      { key: 'main', label: 'Chart', accepts: ['chart', 'table', 'image'], max: 1, hint: 'Add a chart', justify: 'center' },
+      { key: 'aside', label: 'What it means', accepts: [...TEXT_TYPES, 'metric'], max: 4, hint: 'The takeaways', justify: 'center', maxWidth: 620 },
+    ],
+    guidance: 'One chart, and no more than three things it means.',
+    seed: () => ({
+      head: [T('Category review', 'eyebrow'), T('Where we sit in the category', 'headline')],
+      main: [CHART()],
+      aside: [
+        T('The category is flat while the value-added segment grows — and we are the growth.', 'subhead'),
+        T('Ranked #2 in the segment, outpacing the market by double digits.', 'body'),
+      ],
+    }),
+  },
+  {
+    /**
+     * The chart IS the page. For the dashboard slide that carries a ranked
+     * field of ten brands, where a commentary column would only squeeze the
+     * one thing the room came to see.
+     */
+    id: 'chart-full',
+    name: 'Chart, Full Width',
+    category: 'Data',
+    hint: 'One chart across the page, with a source line under it.',
+    layout: lay('1fr', 'auto minmax(0, 1fr)', ['head', 'main'], 104, 40),
+    slots: [
+      { key: 'head', label: 'Heading', accepts: TEXT_TYPES, max: 2, hint: 'Heading', justify: 'start', maxWidth: 1300 },
+      { key: 'main', label: 'Chart', accepts: ['chart', 'table'], max: 1, hint: 'Add a chart', justify: 'center' },
+    ],
+    guidance: 'Ten brands ranked, or four periods compared. More than twelve rows stops being readable.',
+    seed: () => ({
+      head: [T('Brand dashboard', 'eyebrow'), T('Top brands in the category', 'headline')],
+      main: [CHART()],
     }),
   },
   {
