@@ -333,10 +333,16 @@ const templates: PageTemplate[] = [
     name: 'Statement + Company',
     category: 'Storytelling',
     hint: 'A full-width statement, then a photograph beside the story and the brands.',
-    layout: lay('minmax(0, 0.92fr) minmax(0, 1fr)', 'auto 1fr', ['head head', 'media main'], 110, 52),
+    // `minmax(0, 1fr)` on the second row, never `1fr`: a grid track's implicit
+    // minimum is its content, so a tall portrait beside two paragraphs and a
+    // brand block grows the row and the page runs off the bottom of the slide.
+    // The zero minimum makes the row obey the stage instead.
+    layout: lay('minmax(0, 0.92fr) minmax(0, 1fr)', 'auto minmax(0, 1fr)', ['head head', 'media main'], 110, 52),
     slots: [
       { key: 'head', label: 'Statement', accepts: TEXT_TYPES, max: 3, hint: 'Eyebrow and statement', justify: 'start' },
-      { key: 'media', label: 'Photograph', accepts: MEDIA_TYPES, max: 1, hint: 'Drop an image here' },
+      // bleed: the photograph fills whatever height is left rather than
+      // dictating it, which is what stops a portrait from setting the page.
+      { key: 'media', label: 'Photograph', accepts: MEDIA_TYPES, max: 1, hint: 'Drop an image here', bleed: true },
       { key: 'main', label: 'Story and brands', accepts: [...TEXT_TYPES, 'logoGrid'], max: 5, hint: 'Copy, then the brands', justify: 'start' },
     ],
     guidance: 'The statement is the page. Two or three lines read best.',
