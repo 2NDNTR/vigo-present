@@ -64,18 +64,58 @@ function palette(theme: BrandTheme, onDark: boolean) {
   return {
     ink,
     accent: theme.colors.accent,
-    /* Every bar that is not ours is the same neutral. A category review is a
-     * comparison, not a rainbow — colour is reserved for the one bar the
-     * reader is meant to find. */
     neutral: onDark ? 'rgba(255,255,255,0.30)' : 'rgba(17,17,17,0.20)',
     rule: onDark ? 'rgba(255,255,255,0.16)' : 'rgba(17,17,17,0.14)',
     /* There is no green in this brand, and inventing one for a chart would be
      * the first unapproved colour in the system. So growth is set in the page's
-     * own ink and decline in the accent — the sign and the caret carry the
-     * meaning, and colour only emphasises the half worth arguing about. */
+     * own ink and decline in the accent — the sign carries the meaning, and
+     * colour only emphasises the half worth arguing about. */
     up: ink,
     down: theme.colors.accent,
   };
+}
+
+/**
+ * SLICE COLOURS
+ * A share chart needs every slice told apart, and the legend beside it has to
+ * agree — one function decides both, so they cannot drift. The ramp is built
+ * from approved brand colours rather than from a generic chart palette, and
+ * steps down in weight when it runs out of hues, which keeps ten slices
+ * separable without inventing an eleventh brand colour.
+ *
+ * Ours is always the accent, wherever it lands in the order. An explicit
+ * colour on the block wins over all of it.
+ */
+const RAMP_ROLES = ['brandPrimary', 'terracotta', 'brandYellow', 'brandSecondary', 'brandRed', 'neutral'] as const;
+
+export function sliceColors(data: ChartData, theme: BrandTheme, onDark: boolean): string[] {
+  const base = RAMP_ROLES.map((r) => theme.colors[r]).filter(Boolean) as string[];
+  return data.categories.map((cat, i) => {
+    const chosen = data.colors?.[i];
+    if (chosen) return chosen;
+    if (data.highlight && cat === data.highlight) return theme.colors.accent;
+    const hue = base[i % base.length];
+    const tier = Math.floor(i / base.length); // second time round, lighter
+    if (!hue) return onDark ? 'rgba(255,255,255,0.35)' : 'rgba(17,17,17,0.3)';
+    return tier === 0 ? hue : mix(hue, onDark ? '#000000' : '#ffffff', 0.34 * tier);
+  });
+}
+
+/** blend two hex colours — used to extend the ramp without new brand colours */
+function mix(a: string, b: string, t: number): string {
+  const p = (h: string) => {
+    const v = h.replace('#', '');
+    const n = v.length === 3 ? v.split('').map((c) => c + c).join('') : v;
+    return [parseInt(n.slice(0, 2), 16), parseInt(n.slice(2, 4), 16), parseInt(n.slice(4, 6), 16)];
+  };
+  try {
+    const [r1, g1, b1] = p(a);
+    const [r2, g2, b2] = p(b);
+    const c = (x: number, y: number) => Math.round(x + (y - x) * t).toString(16).padStart(2, '0');
+    return '#' + c(r1, r2) + c(g1, g2) + c(b1, b2);
+  } catch {
+    return a;
+  }
 }
 
 /* --------------------------------------------------------------------- bars */
@@ -87,6 +127,7 @@ function Bars({
   column,
 }: Props & { column: boolean }) {
   const c = palette(theme, onDark);
+  const fills = sliceColors(data, theme, onDark);
   const n = data.categories.length;
   const max = Math.max(...data.values.map((v) => Math.abs(v)), 1);
   const hasDelta = !!data.deltas?.some((d) => d !== null && d !== undefined);
@@ -105,11 +146,10 @@ function Bars({
           const v = data.values[i] ?? 0;
           const h = (Math.abs(v) / max) * (floor - 46);
           const x = i * (bw + gap);
-          const mine = data.highlight && cat === data.highlight;
           const d = data.deltas?.[i];
           return (
             <g key={i}>
-              <rect x={x} y={floor - h} width={bw} height={h} fill={mine ? c.accent : c.neutral} />
+              <rect x={x} y={floor - h} width={bw} height={h} fill={fills[i]} />
               <text x={x + bw / 2} y={floor - h - 14} textAnchor="middle" className="ch-val" fill={c.ink}>
                 {formatValue(v, data.unit)}
               </text>
@@ -148,7 +188,7 @@ function Bars({
             <text x={0} y={y + rowH / 2 + 5} className={'ch-cat' + (mine ? ' mine' : '')} fill={c.ink}>
               {clip(cat, 26)}
             </text>
-            <rect x={labelW} y={y + (rowH - barH) / 2} width={Math.max(2, w)} height={barH} fill={mine ? c.accent : c.neutral} />
+            <rect x={labelW} y={y + (rowH - barH) / 2} width={Math.max(2, w)} height={barH} fill={fills[i]} />
             <text x={labelW + Math.max(2, w) + 14} y={y + rowH / 2 + 5} className="ch-val" fill={c.ink}>
               {formatValue(v, data.unit)}
             </text>
@@ -169,12 +209,18 @@ function Bars({
 function Donut({ data, theme, onDark }: Props) {
   const c = palette(theme, onDark);
   const total = data.values.reduce((a, b) => a + Math.abs(b), 0) || 1;
-  const H = 420;
+  const n = data.categories.length;
+  /* Ten brands is a normal share chart in this category, and a legend of ten
+   * at generous spacing runs off the slide. The rows tighten and the page
+   * grows instead of the type shrinking to nothing. */
+  const row = n > 7 ? 40 : n > 5 ? 46 : 52;
+  const H = Math.max(420, n * row + 70);
   const cx = 210;
   const cy = H / 2;
-  const r = 150;
-  const ring = 46;
+  const r = Math.min(150, (H - 90) / 2);
+  const ring = Math.max(30, r * 0.31);
 
+  const fills = sliceColors(data, theme, onDark);
   let acc = 0;
   const arcs = data.categories.map((cat, i) => {
     const v = Math.abs(data.values[i] ?? 0);
@@ -182,15 +228,7 @@ function Donut({ data, theme, onDark }: Props) {
     const a0 = acc * Math.PI * 2 - Math.PI / 2;
     acc += frac;
     const a1 = acc * Math.PI * 2 - Math.PI / 2;
-    const mine = data.highlight && cat === data.highlight;
-    /* Shares step down in weight rather than across in hue, so the ring reads
-     * as one category divided up instead of as four unrelated things. */
-    const fill = mine
-      ? c.accent
-      : onDark
-        ? `rgba(255,255,255,${0.42 - i * 0.08})`
-        : `rgba(17,17,17,${0.34 - i * 0.07})`;
-    return { cat, v, frac, a0, a1, fill };
+    return { cat, v, frac, a0, a1, fill: fills[i] };
   });
 
   return (
@@ -199,7 +237,7 @@ function Donut({ data, theme, onDark }: Props) {
         <path key={i} d={arc(cx, cy, r, ring, a.a0, a.a1)} fill={a.fill} />
       ))}
       {data.categories.map((cat, i) => {
-        const y = cy - (data.categories.length - 1) * 26 + i * 52;
+        const y = cy - ((n - 1) * row) / 2 + i * row;
         const a = arcs[i];
         return (
           <g key={i}>
