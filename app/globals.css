@@ -1397,3 +1397,17 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
  * than a box — the marks we ship are transparent, so this only ever affects
  * an uploaded one that is not. */
 .stage .cobrand-mark { border-radius: calc(var(--u) * 3px); }
+
+/* ---------------------------------------------------------------- charts
+ * The SVG is laid out in the same reference pixels as the stage, so it scales
+ * with everything else instead of being sized in absolute type. Labels are set
+ * in the deck's own faces — a chart that arrives in Helvetica is a chart that
+ * looks pasted in.
+ */
+.chart { width: 100%; height: auto; display: block; overflow: visible; }
+.chart text { font-family: var(--font-body); }
+.chart .ch-cat { font-size: 26px; opacity: .82; }
+.chart .ch-cat.mine { opacity: 1; font-weight: 600; }
+.chart .ch-val { font-size: 26px; font-variant-numeric: tabular-nums; font-weight: 600; }
+.chart .ch-delta { font-size: 24px; font-variant-numeric: tabular-nums; font-weight: 600; }
+.ch-source { opacity: .55; margin-top: calc(var(--u) * 18px); }
