@@ -1252,3 +1252,22 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
   border-top: calc(var(--u) * 1px) solid color-mix(in srgb, currentColor 16%, transparent);
 }
 .stage.stacked.tpl-metrics-quad .slot[data-slot="main"] > *:first-child { border-top: 0; }
+
+/* ------------------------------------------- statement + company, at 16:9
+ * The statement is allowed to run three lines, and on a 16:9 stage those
+ * three lines leave the story column short — the brand block was falling off
+ * the bottom of the slide. The page reclaims the height from its own margins
+ * and from the brand plates rather than shrinking the statement, because the
+ * statement is the page. The stage grid takes its padding inline from the
+ * layout, so these two have to say `!important` out loud to reach it.
+ */
+.tpl-company-statement .stage-grid {
+  padding-block: calc(var(--u) * 78px) !important;
+  row-gap: calc(var(--u) * 34px) !important;
+}
+.tpl-company-statement .slot[data-slot="main"] { min-height: 0; }
+/* A shorter plate under a paragraph: the marks are contained either way, so
+ * the height is clear space, and clear space is what there is least of here. */
+.tpl-company-statement .logogrid { gap: calc(var(--u) * 8px) calc(var(--u) * 26px); }
+.tpl-company-statement .logogrid.left .logocell { aspect-ratio: 5 / 1.05; }
+.tpl-company-statement .logocap { margin-top: calc(var(--u) * 4px); }
