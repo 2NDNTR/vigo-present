@@ -437,6 +437,41 @@ const templates: PageTemplate[] = [
     }),
   },
   {
+    /**
+     * FOUR METRICS, QUARTERED
+     * -----------------------------------------------------------------------
+     * The same four figures as `metric-four`, but quartered and ruled rather
+     * than run across in a row, and with room for a paragraph underneath.
+     *
+     * A row of four forces every label down to two or three words — "SQ FT
+     * UNDER ROOF" — and the page ends up a caption strip with a lot of empty
+     * air above it. Quartering gives each figure a real column, so the label
+     * can be the sentence it wants to be, and the footnote can carry the
+     * context that makes the numbers mean something.
+     */
+    id: 'metrics-quad',
+    name: 'Four Metrics, Quartered',
+    category: 'Data',
+    hint: 'Four figures in a ruled 2x2, with room for a closing paragraph.',
+    layout: lay('1fr', 'auto minmax(0, 1fr) auto', ['head', 'main', 'foot'], 110, 34),
+    slots: [
+      { key: 'head', label: 'Heading', accepts: TEXT_TYPES, max: 2, hint: 'Heading', justify: 'start', maxWidth: 1100 },
+      { key: 'main', label: 'Metrics', accepts: ['metric'], max: 4, hint: 'Add statistic', justify: 'start' },
+      { key: 'foot', label: 'Context', accepts: TEXT_TYPES, max: 2, hint: 'What the numbers mean', justify: 'end', maxWidth: 1150 },
+    ],
+    guidance: 'Four figures, and one short paragraph saying what they add up to.',
+    seed: () => ({
+      head: [T('Manufacturing & Distribution', 'eyebrow'), T('Built to make it, and move it', 'headline')],
+      main: [
+        M('11', 'Buildings on the corporate campus'),
+        M('500,000+', 'Square feet of manufacturing & storage'),
+        M('1,000+', 'Metric tons of edible oil stored on site'),
+        M('200+', 'Tons of rice held on site at any time'),
+      ],
+      foot: [T('Most production lines are fully automated with the latest technology.', 'body')],
+    }),
+  },
+  {
     id: 'metric-four',
     name: 'Four Metrics',
     category: 'Data',
@@ -915,6 +950,41 @@ const templates: PageTemplate[] = [
       main: [
         CARD('Balsamic Reduction', 'Aged in Modena, reduced slowly, thick enough to hold a line on the plate.'),
         CARD('Risotto Milanese', 'Carnaroli rice and real saffron. On the table in eighteen minutes.'),
+      ],
+    }),
+  },
+  {
+    /**
+     * SIX CARDS
+     * -----------------------------------------------------------------------
+     * Two rows of three, ruled like a table of contents, with a check mark on
+     * each cell. It exists because six reasons-to-believe belong on ONE page:
+     * split across two `cards-three` pages they read as two weaker lists, and
+     * the audience loses the sense that this is a complete set.
+     *
+     * The check mark is drawn by the layout, not stored on the card, because it
+     * is an ornament of this page rather than a property of the content. Move
+     * these cards to another layout and they are just cards again.
+     */
+    id: 'cards-six',
+    name: 'Six Cards',
+    category: 'Cards & Grids',
+    hint: 'Six reasons to believe, two rows of three, ruled and check-marked.',
+    layout: lay('1fr', 'auto minmax(0, 1fr)', ['head', 'main'], 110, 40),
+    slots: [
+      { key: 'head', label: 'Heading', accepts: TEXT_TYPES, max: 2, hint: 'Heading', justify: 'start', maxWidth: 1250 },
+      { key: 'main', label: 'Cards', accepts: CARD_TYPES, max: 6, hint: 'Add a card', justify: 'start', gap: 0 },
+    ],
+    guidance: 'Six is the point of this layout — with fewer, Three Cards reads better.',
+    seed: () => ({
+      head: [T('Strengths & Capabilities', 'eyebrow'), T('What seventy years of doing it ourselves makes possible', 'headline')],
+      main: [
+        CARD('Global sourcing', 'Partnerships with global suppliers of raw materials and finished goods dating back more than seventy years.', { image: false }),
+        CARD('Agile by design', 'A cross-functional team lets ideas move freely across departments \u2014 key decisions are made on premise, in a timely manner.', { image: false }),
+        CARD('We control the line', 'Vigo controls the manufacturing process for most of its offerings \u2014 which safeguards a level of quality we stand behind, and opens a wide range of private-label opportunities.', { image: false }),
+        CARD('Diet-conscious', 'A growing range of vegan, gluten-free, organic and Non-GMO products \u2014 made with natural colors and ingredients wherever available.', { image: false }),
+        CARD('Test Kitchen & R&D', 'Our own Test Kitchen explores new flavors daily, and we cook-test product off the line every day. Every proprietary formula is developed in house.', { image: false }),
+        CARD('Curated offerings', 'We develop tailored products that fit unique customer needs \u2014 from concept to finished case.', { image: false }),
       ],
     }),
   },
