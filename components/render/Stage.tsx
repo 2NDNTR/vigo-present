@@ -3,6 +3,8 @@
 import React, { CSSProperties, useEffect, useRef, useState } from 'react';
 import type { Block, Page } from '@/lib/model/types';
 import type { BrandId } from '@/lib/brand/themes';
+import type { RetailerRef } from '@/lib/brand/retailers';
+import { retailerSrc } from '@/lib/brand/retailers';
 import { getTheme, themeVars } from '@/lib/brand/themes';
 import { getTemplate } from '@/lib/templates/registry';
 import BlockView from './Blocks';
@@ -39,6 +41,11 @@ function luminance(hex: string): number {
 export interface StageProps {
   page: Page;
   brand: BrandId;
+  /**
+   * The account this deck is addressed to. Passed down from the deck rather
+   * than stored on the page, so one setting co-brands the whole deck.
+   */
+  retailer?: RetailerRef;
   mode?: 'fixed' | 'fill' | 'stacked';
   editable?: boolean;
   selectedId?: string;
@@ -54,7 +61,7 @@ export interface StageProps {
 }
 
 export default function Stage(props: StageProps) {
-  const { page, brand, mode = 'fixed', editable } = props;
+  const { page, brand, retailer, mode = 'fixed', editable } = props;
   const [ref, w] = useWidth<HTMLDivElement>();
   const [dropSlot, setDropSlot] = useState<string | null>(null);
   const [dragBlock, setDragBlock] = useState<{ slot: string; index: number } | null>(null);
@@ -98,6 +105,7 @@ export default function Stage(props: StageProps) {
   // Optional page chrome: a running headline top-left, the brand logo top-right.
   // Available on every layout, off by default.
   const chromeOn = !!(page.headline !== undefined || page.showLogo);
+  const retailerMark = retailerSrc(retailer);
   const chromePad = Math.max(template.layout.pad, 74);
   const CHROME_H = 92;
 
@@ -184,6 +192,21 @@ export default function Stage(props: StageProps) {
           {page.showLogo ? (
             <div className="page-chrome-logo">
               <BlockView block={{ id: page.id + '-lg', type: 'logo' }} ctx={{ theme, onDark, chrome: true }} />
+              {/* The account's mark sits after ours, divided by a hairline —
+                  the same lockup a salesperson would draw on a title slide.
+                  It is never tinted or recoloured: a retailer's mark is theirs,
+                  and the rule is that it appears exactly as they supply it. */}
+              {retailerMark ? (
+                <>
+                  <span className="cobrand-rule" aria-hidden="true" />
+                  <img
+                    className="cobrand-mark"
+                    src={retailerMark}
+                    alt={retailer?.name || 'Retailer'}
+                    draggable={false}
+                  />
+                </>
+              ) : null}
             </div>
           ) : null}
         </div>
