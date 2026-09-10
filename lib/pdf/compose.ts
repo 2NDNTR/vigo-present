@@ -3,6 +3,7 @@
 import type { Block, Page } from '@/lib/model/types';
 import { uid } from '@/lib/model/types';
 import { createPage, getTemplate } from '@/lib/templates/registry';
+import { parseMilestone } from '@/lib/model/timeline';
 import type { BrandId, TypeRole } from '@/lib/brand/themes';
 import type { PageReading } from './interpret';
 import type { ExtractedImage } from './extract';
@@ -252,7 +253,12 @@ function fillBlock(b: Block, q: Queues): boolean {
 
     case 'timeline': {
       if (!q.reading.bullets.length) return false;
-      b.items = q.reading.bullets.slice();
+      // A bullet like "1946 — Founded in Tampa" carries a date whether or not
+      // the source deck thought of it as one, and the timeline sets dates
+      // separately now. The same parser the renderer uses reads it, so an
+      // imported milestone is identical to a typed one.
+      b.entries = q.reading.bullets.map(parseMilestone);
+      b.items = undefined;
       return true;
     }
 
