@@ -123,17 +123,34 @@ export function useEntrance(
     );
     stages.forEach((s) => io.observe(s));
 
-    /* The first page is already on screen when the deck opens; it should
-     * arrive on its own rather than waiting for someone to scroll. */
-    const first = requestAnimationFrame(() => {
-      if (stages[0]) {
-        arrive(stages[0]);
-        io.unobserve(stages[0]);
-      }
-    });
+    /* FAILSAFE. Hiding the page until something reveals it means that if the
+     * something never runs, the deck is blank — the worst failure this file
+     * could have, in front of the client. So anything already on screen is
+     * revealed on a timer as well, by measurement rather than by observer.
+     * Belt and braces: a stalled observer costs the animation, never the
+     * content. It also covers the tab that opens in the background, where the
+     * first arrival would otherwise wait for a frame that is not being drawn.
+     */
+    const onScreen = () => {
+      const h = window.innerHeight || 0;
+      stages.forEach((s) => {
+        if (s.classList.contains('in')) return;
+        const r = s.getBoundingClientRect();
+        if (r.top < h * 0.9 && r.bottom > h * 0.1) {
+          arrive(s);
+          io.unobserve(s);
+        }
+      });
+    };
+
+    const first = window.setTimeout(onScreen, 60);
+    const guard = window.setTimeout(onScreen, 1500);
+    document.addEventListener('visibilitychange', onScreen);
 
     return () => {
-      cancelAnimationFrame(first);
+      window.clearTimeout(first);
+      window.clearTimeout(guard);
+      document.removeEventListener('visibilitychange', onScreen);
       io.disconnect();
       root.classList.remove('motion');
     };
