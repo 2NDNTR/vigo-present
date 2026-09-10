@@ -24,6 +24,7 @@ export type BlockType =
   | 'logoGrid'
   | 'timeline'
   | 'table'
+  | 'chart'
   | 'card';
 
 export type Align = 'left' | 'center';
@@ -38,6 +39,34 @@ export interface TableData {
   /** a TOTAL row lifted out of the body so it can be ruled off and bolded */
   total?: string[];
   /** shown under the table — where the numbers came from */
+  source?: string;
+}
+
+/**
+ * CHART DATA
+ * ---------------------------------------------------------------------------
+ * A category review is read for three things: who is biggest, who is growing,
+ * and where we sit. So a chart here carries a value AND an optional delta per
+ * category — the delta is the story in a Nielsen review, and a chart that
+ * drops it is a chart that has to be explained out loud.
+ *
+ * Values are numbers, never pre-formatted strings: the renderer decides how a
+ * dollar figure is abbreviated at the size it ends up, and a stored "$12.2M"
+ * cannot be re-scaled or re-summed.
+ */
+export type ChartKind = 'bar' | 'column' | 'donut';
+
+export interface ChartData {
+  kind: ChartKind;
+  categories: string[];
+  values: number[];
+  /** period-over-period change per category, in percent; null where unknown */
+  deltas?: (number | null)[];
+  /** what the values are — drives axis and label formatting */
+  unit?: 'currency' | 'percent' | 'number';
+  /** highlighted category, drawn in the accent — normally ours */
+  highlight?: string;
+  /** attribution, set under the chart: "Nielsen, Publix, L13 WE 1/24/26" */
   source?: string;
 }
 
@@ -104,6 +133,8 @@ export interface Block {
   showImage?: boolean;
   // table — ingested from a spreadsheet, see lib/data/sheet.ts
   table?: TableData;
+  /** chart — ingested from a screenshot or typed in, see lib/ingest/chart.ts */
+  chart?: ChartData;
   // logo grid
   columns?: number;
   /**
