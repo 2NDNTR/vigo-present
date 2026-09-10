@@ -3,6 +3,7 @@
 import React from 'react';
 import type { Block, LogoEntry, TimelineEntry } from '@/lib/model/types';
 import { entriesOf, entriesPatch, showsMedia } from '@/lib/model/timeline';
+import Chart from '@/components/render/Chart';
 import { logosOf, logosPatch } from '@/lib/model/logos';
 import type { BrandTheme, TypeRole } from '@/lib/brand/themes';
 import { typeVars, u } from './typeVars';
@@ -342,6 +343,28 @@ export default function BlockView({ block, ctx }: { block: Block; ctx: RenderCtx
 
     /* ----------------------------------------------------------- timeline */
     /* -------------------------------------------------------------- table */
+    /* ---------------------------------------------------------------- chart */
+    case 'chart': {
+      const d = block.chart;
+      if (!d) {
+        return (
+          <div {...wrapProps}>
+            <div className="ph" style={{ minHeight: 0 }}>Build this page from a screenshot in the panel</div>
+          </div>
+        );
+      }
+      return (
+        <div {...wrapProps} style={{ ...wrapProps.style, width: '100%' }}>
+          <Chart data={d} theme={ctx.theme} onDark={!!ctx.onDark} />
+          {d.source ? (
+            <div className="tt ch-source" style={typeVars('caption', 0.92)}>
+              {d.source}
+            </div>
+          ) : null}
+        </div>
+      );
+    }
+
     case 'table': {
       const t = block.table;
       if (!t || !t.headers.length) {
