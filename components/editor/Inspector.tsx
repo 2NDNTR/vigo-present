@@ -16,6 +16,7 @@ import {
 import type { ColorRole, TypeRole } from '@/lib/brand/themes';
 import { processFile } from '@/lib/media';
 import { EMPTY_ENTRY, entriesOf, entriesPatch, showsMedia } from '@/lib/model/timeline';
+import { EMPTY_LOGO, logosOf, logosPatch } from '@/lib/model/logos';
 
 const ROLES_FOR: Record<string, TypeRole[]> = {
   text: ['display', 'headline', 'subhead', 'body', 'caption', 'eyebrow'],
@@ -270,12 +271,36 @@ export default function Inspector(props: InspectorProps) {
               <div style={{ marginTop: 14 }}>
                 <div className="label" style={{ marginBottom: 6 }}>Columns</div>
                 <div className="seg">
-                  {[3, 4, 5, 6].map((c) => (
+                  {[2, 3, 4, 5, 6].map((c) => (
                     <button key={c} className={(block.columns || 4) === c ? 'on' : ''} onClick={() => props.onChangeBlock(block.id, { columns: c })}>
                       {c}
                     </button>
                   ))}
                 </div>
+
+                <div className="label" style={{ marginTop: 14, marginBottom: 6 }}>Logos</div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    className="btn sm"
+                    onClick={() =>
+                      props.onChangeBlock(block.id, logosPatch([...logosOf(block), { ...EMPTY_LOGO }]))
+                    }
+                  >
+                    + Add logo
+                  </button>
+                  <button
+                    className="btn sm"
+                    disabled={logosOf(block).length <= 1}
+                    onClick={() => props.onChangeBlock(block.id, logosPatch(logosOf(block).slice(0, -1)))}
+                  >
+                    Remove last
+                  </button>
+                </div>
+                <p className="tiny" style={{ marginTop: 7 }}>
+                  Drag a mark from Assets onto any cell. Marks are always fitted whole, never
+                  cropped or stretched. A cell with no artwork keeps its name set in type, so a
+                  house brand and a partner can sit in the same grid.
+                </p>
               </div>
             )}
 
@@ -327,7 +352,7 @@ export default function Inspector(props: InspectorProps) {
               </div>
             )}
 
-            {(block.type === 'checklist' || block.type === 'bullets' || block.type === 'logoGrid') && (
+            {(block.type === 'checklist' || block.type === 'bullets') && (
               <div style={{ marginTop: 14 }}>
                 <div className="label" style={{ marginBottom: 6 }}>Items</div>
                 <div style={{ display: 'flex', gap: 6 }}>
