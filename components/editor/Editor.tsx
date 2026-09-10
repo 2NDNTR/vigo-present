@@ -587,6 +587,7 @@ export default function Editor({ id }: { id: string }) {
             </div>
             <div className="canvas-shell">
               <Stage
+                retailer={pres.retailer}
                 page={page}
                 brand={pres.brand}
                 editable={!pres.locked}
@@ -672,6 +673,11 @@ export default function Editor({ id }: { id: string }) {
               presentation={pres}
               page={page}
               selected={selected}
+              onChangeDeck={(patch) =>
+                update((d) => {
+                  Object.assign(d, patch);
+                })
+              }
               onChangeBlock={(bid, patch) =>
                 update((d) => {
                   const p = d.pages.find((x) => x.id === page.id);

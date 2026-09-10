@@ -2,6 +2,7 @@
 
 import React, { useRef } from 'react';
 import type { Block, MediaRef, Page, PageBackground, Presentation } from '@/lib/model/types';
+import { RETAILERS, retailerDef } from '@/lib/brand/retailers';
 import type { PageTemplate } from '@/lib/templates/registry';
 import { TEMPLATES, getTemplate } from '@/lib/templates/registry';
 import Select from '@/components/ui/Select';
@@ -47,6 +48,8 @@ export interface InspectorProps {
   onDeleteBlock: (id: string) => void;
   onChangePage: (patch: Partial<Page>) => void;
   onSwapTemplate: (templateId: string) => void;
+  /** deck-level edits — the retailer is a property of the whole deck */
+  onChangeDeck?: (patch: Partial<Presentation>) => void;
 }
 
 export default function Inspector(props: InspectorProps) {
@@ -501,6 +504,34 @@ export default function Inspector(props: InspectorProps) {
             onChange={(e) => props.onChangePage({ headline: e.target.value })}
           />
         )}
+
+        {/* ------------------------------------------------------- retailer
+            A deck built for one account carries that account's mark beside
+            ours. It is deck-level on purpose: a salesperson sets Publix once
+            and every page showing the lockup co-brands, instead of setting a
+            logo twenty-one times and missing three. */}
+        {props.onChangeDeck ? (
+          <>
+            <div className="label" style={{ marginBottom: 6 }}>Retailer (whole deck)</div>
+            <Select
+              style={{ marginBottom: 6 }}
+              ariaLabel="Retailer for this deck"
+              value={presentation.retailer?.id || ''}
+              onChange={(id) =>
+                props.onChangeDeck!({
+                  retailer: id ? { id, name: retailerDef(id)?.name || id } : undefined,
+                })
+              }
+              options={[
+                { value: '', label: 'None — Vigo | Alessi only' },
+                ...RETAILERS.map((r) => ({ value: r.id, label: r.name, group: 'Accounts' })),
+              ]}
+            />
+            <p className="tiny" style={{ marginTop: 0, marginBottom: 14 }}>
+              Shows beside the brand lockup on every page with the logo on. Turn the logo on below.
+            </p>
+          </>
+        ) : null}
 
         <div className="label" style={{ marginBottom: 6 }}>Brand logo, top right</div>
         <div className="seg" style={{ marginBottom: 14 }}>
