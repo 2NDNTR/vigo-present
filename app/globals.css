@@ -1274,3 +1274,99 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 .tpl-company-statement .logogrid { gap: calc(var(--u) * 8px) calc(var(--u) * 26px); }
 .tpl-company-statement .logogrid.left .logocell { aspect-ratio: 5 / 1.05; }
 .tpl-company-statement .logocap { margin-top: calc(var(--u) * 4px); }
+
+/* =========================================================== entrance motion
+ * The pages arrive; they do not appear. Every rule here is scoped to
+ * `.present-root.motion`, a class the presenter adds at run time — so the
+ * editor canvas, a print, and any view that never mounts the hook all render
+ * in the finished state rather than waiting for a class that never comes.
+ *
+ * The order is reading order: the eyebrow, then the statement, then whatever
+ * the page is actually about. The delays are held in `--rd` so a layout can
+ * re-time its own parts without restating the transition.
+ */
+.present-root.motion .stage .slot > *,
+.present-root.motion .stage .tl-item {
+  opacity: 0;
+  transform: translateY(calc(var(--u) * 26px));
+  transition:
+    opacity 620ms cubic-bezier(.22, .68, .24, 1) var(--rd, 0ms),
+    transform 820ms cubic-bezier(.22, .68, .24, 1) var(--rd, 0ms);
+}
+.present-root.motion .stage.in .slot > *,
+.present-root.motion .stage.in .tl-item {
+  opacity: 1;
+  transform: none;
+}
+
+/* The heading leads, and it leads quickly — a slow eyebrow reads as a stall. */
+.present-root.motion .stage .slot[data-slot="head"] > *:nth-child(1) { --rd: 30ms; }
+.present-root.motion .stage .slot[data-slot="head"] > *:nth-child(2) { --rd: 110ms; }
+.present-root.motion .stage .slot[data-slot="head"] > *:nth-child(3) { --rd: 190ms; }
+
+/* Everything else follows the heading in, one part at a time. Six cards land
+ * across roughly half a second, which is long enough to read as a sequence
+ * and short enough that nobody waits for the page. */
+.present-root.motion .stage .slot:not([data-slot="head"]) > *:nth-child(1) { --rd: 210ms; }
+.present-root.motion .stage .slot:not([data-slot="head"]) > *:nth-child(2) { --rd: 290ms; }
+.present-root.motion .stage .slot:not([data-slot="head"]) > *:nth-child(3) { --rd: 370ms; }
+.present-root.motion .stage .slot:not([data-slot="head"]) > *:nth-child(4) { --rd: 450ms; }
+.present-root.motion .stage .slot:not([data-slot="head"]) > *:nth-child(5) { --rd: 530ms; }
+.present-root.motion .stage .slot:not([data-slot="head"]) > *:nth-child(6) { --rd: 610ms; }
+
+/* A photograph settles rather than slides: it comes in a touch oversized and
+ * releases, which reads as depth instead of as a card being dealt. */
+.present-root.motion .stage .slot[data-slot="media"] > * {
+  transform: scale(1.045);
+  transition:
+    opacity 900ms ease var(--rd, 0ms),
+    transform 1300ms cubic-bezier(.2, .8, .3, 1) var(--rd, 0ms);
+}
+.present-root.motion .stage.in .slot[data-slot="media"] > * { transform: none; }
+
+/* The timeline draws itself. The block that holds it opts out of the generic
+ * arrival — otherwise the milestones would be carrying two translations at
+ * once — and the milestones step in along the rail instead. */
+.present-root.motion .stage .slot > *:has(.tl) {
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
+.present-root.motion .stage .tl-item:nth-child(1) { --rd: 240ms; }
+.present-root.motion .stage .tl-item:nth-child(2) { --rd: 340ms; }
+.present-root.motion .stage .tl-item:nth-child(3) { --rd: 440ms; }
+.present-root.motion .stage .tl-item:nth-child(4) { --rd: 540ms; }
+.present-root.motion .stage .tl-item:nth-child(5) { --rd: 640ms; }
+.present-root.motion .stage .tl-item:nth-child(6) { --rd: 740ms; }
+.present-root.motion .stage .tl-item:nth-child(7) { --rd: 840ms; }
+.present-root.motion .stage .tl-item:nth-child(8) { --rd: 940ms; }
+
+/* The rail is a line being drawn, so it grows from where the reading starts:
+ * left to right across a slide, top to bottom when the page is stacked. */
+.present-root.motion .stage .tl-rail::before {
+  transform-origin: left center;
+  transform: scaleX(0);
+  transition: transform 640ms cubic-bezier(.3, .7, .3, 1) var(--rd, 0ms);
+}
+.present-root.motion .stage.in .tl-rail::before { transform: scaleX(1); }
+.present-root.motion .stage.stacked .tl-rail::before {
+  transform-origin: top center;
+  transform: scaleY(0);
+}
+.present-root.motion .stage.stacked.in .tl-rail::before { transform: scaleY(1); }
+
+/* While a figure is counting its digits change width every frame, so it is
+ * set on the tabular figures for the duration and released at the end. */
+.metric .mv .tt.counting { font-variant-numeric: tabular-nums; }
+
+/* Anyone who has asked their system for less motion gets the finished page. */
+@media (prefers-reduced-motion: reduce) {
+  .present-root.motion .stage .slot > *,
+  .present-root.motion .stage .tl-item,
+  .present-root.motion .stage .slot[data-slot="media"] > *,
+  .present-root.motion .stage .tl-rail::before {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
