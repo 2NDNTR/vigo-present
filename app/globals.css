@@ -742,12 +742,36 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 .tl-date { margin-bottom: calc(var(--u) * 10px); white-space: nowrap; }
 .tl-copy { opacity: .82; }
 
-.logogrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: calc(var(--u) * 22px); width: 100%; }
+/* -------------------------------------------------------------- logo grid */
+.logogrid {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: calc(var(--u) * 22px) calc(var(--u) * 26px); width: 100%; align-items: start;
+}
+.logoitem { display: grid; grid-template-rows: auto auto; min-width: 0; }
 .logocell {
+  position: relative;
   border: calc(var(--u) * 1px) solid currentColor; border-radius: calc(var(--u) * 6px);
   aspect-ratio: 5/2; display: flex; align-items: center; justify-content: center; opacity: .8;
   text-align: center; padding: calc(var(--u) * 10px);
 }
+
+/* Once there is real artwork the boxes come off. They exist to give typeset
+ * names presence; a mark supplies its own, and a grid of framed logos reads as
+ * a table of thumbnails rather than as a set of brands. The clear space around
+ * each mark stays — that is the part that is doing the work. */
+.logogrid.has-art .logocell {
+  border: none; opacity: 1; padding: calc(var(--u) * 6px) calc(var(--u) * 14px);
+}
+.logocell img {
+  max-width: 100%; max-height: 100%;
+  /* CONTAIN. A logo is never cropped and never stretched — the one rule this
+   * block exists to keep. */
+  width: auto; height: auto; object-fit: contain; display: block;
+}
+.stage.editable .logogrid.has-art .logocell:not(.art) {
+  border: calc(var(--u) * 1.5px) dashed currentColor; opacity: .45;
+}
+.logocap { opacity: .6; margin-top: calc(var(--u) * 10px); }
 
 .logo-el { display: inline-flex; align-items: center; gap: calc(var(--u) * 12px); }
 .logo-el .lt {
@@ -1087,7 +1111,7 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 .stage.stacked .slot { grid-area: auto !important; }
 .stage.stacked .slot.h { flex-direction: column; }
 .stage.stacked .slot.bleed { min-height: 46vw; }
-.stage.stacked .logogrid { grid-template-columns: repeat(2, 1fr); }
+.stage.stacked .logogrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 /* Stacked: the rail turns vertical and runs down the left, with the picture
  * beside the date rather than above it — a phone has height to spare and no
  * width, which is the opposite of the page. */
