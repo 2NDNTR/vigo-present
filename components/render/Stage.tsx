@@ -104,7 +104,12 @@ export default function Stage(props: StageProps) {
   return (
     <div
       ref={ref}
-      className={'stage ' + (mode === 'stacked' ? 'stacked ' : '') + (props.className || '')}
+      className={
+        'stage ' +
+        (mode === 'stacked' ? 'stacked ' : '') +
+        (editable ? 'editable ' : '') +
+        (props.className || '')
+      }
       style={{ ...vars, ...sizing, ...(props.style || {}) }}
     >
       {/* background layer */}

@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import type { Block } from '@/lib/model/types';
+import type { Block, TimelineEntry } from '@/lib/model/types';
+import { entriesOf, entriesPatch, showsMedia } from '@/lib/model/timeline';
 import type { BrandTheme, TypeRole } from '@/lib/brand/themes';
 import { typeVars, u } from './typeVars';
 import EditableText from './EditableText';
@@ -62,6 +63,31 @@ function metricScale(role: TypeRole, siblings: number, value: string): number {
  * figures into each other on the Sales Growth page.
  */
 const SOLO_MAX = 430; // ceiling on the figure's set size, in design units
+
+/**
+ * A coarse first guess at how far a timeline date has to step down to sit
+ * inside its column. It is only a first guess: `EditableText` measures the real
+ * column and shrinks the date the rest of the way, which is the only thing that
+ * actually holds across brands — Vigo and Alessi set their display faces at
+ * very different widths, and estimating glyph widths is precisely what once
+ * hung a figure off both edges of the page.
+ *
+ * It earns its place by getting the ballpark right so the measured step-down
+ * has 4% increments to travel rather than 60%, and by carrying counts past what
+ * the measurement floor alone can handle. It only ever shrinks.
+ *
+ * 0.78em per character is deliberately pessimistic for a heavy display face
+ * setting digits. Too cautious costs a few points of size; too generous costs a
+ * date clipped at the page edge.
+ */
+const TIMELINE_WIDTH = 1340; // usable stage width in design units, less typical page padding
+
+function dateScale(roleSize: number, count: number, longest: number): number {
+  if (!count || !longest) return 1;
+  const column = TIMELINE_WIDTH / count - 26; // less the gutter between milestones
+  const needed = longest * roleSize * 0.78;
+  return Math.max(0.28, Math.min(1, column / needed));
+}
 
 /** Long copy is nudged down a little — then the guardrail asks for fewer words. */
 function textScale(role: TypeRole, text: string): number {
@@ -362,27 +388,107 @@ export default function BlockView({ block, ctx }: { block: Block; ctx: RenderCtx
     }
 
     case 'timeline': {
-      const items = block.items || [];
-      const upd = (i: number, v: string) => {
-        const next = [...items];
-        next[i] = v;
-        set({ items: next });
+      const entries = entriesOf(block);
+      // Turning cards on and presenting before adding any photographs should
+      // look like the plain timeline, not like five holes. The empty cards are
+      // drop targets, so they exist while editing and only survive into a
+      // presentation once at least one of them has been filled.
+      const withMedia =
+        showsMedia(block) && (!!ctx.editable || entries.some((e) => !!e.media?.url));
+
+      const patch = (i: number, part: Partial<TimelineEntry>) => {
+        const next = entries.map((e, n) => (n === i ? { ...e, ...part } : e));
+        set(entriesPatch(next));
       };
+
+      // The date is the thing the eye lands on, so it is set in the metric face
+      // rather than in body copy. Six milestones across a page do not leave room
+      // for a 120-unit figure, so it steps down with the count — the same
+      // problem three metrics in a row have, solved the same way.
+      const longest = entries.reduce((n, e) => Math.max(n, (e.date || '').length), 0);
+      const scale = dateScale(ctx.theme.type.metricLarge?.size || 110, entries.length, longest);
+
       return (
         <div {...wrapProps}>
-          <div className="tl">
-            {items.map((it, i) => (
-              <div className="tl-item" key={i}>
-                <EditableText
-                  className="tt"
-                  style={typeVars('body', 0.92)}
-                  value={it}
-                  editable={ctx.editable}
-                  placeholder="Milestone"
-                  onChange={(v) => upd(i, v)}
-                />
-              </div>
-            ))}
+          <div className={'tl' + (withMedia ? ' has-media' : '')}>
+            {entries.map((e, i) => {
+              const resolved = mediaUrl(e.media);
+              return (
+                <div className="tl-item" key={i}>
+                  {withMedia && (
+                    <div
+                      className={'tl-media' + (resolved ? '' : ' empty')}
+                      onDragOver={ctx.editable ? (ev) => ev.preventDefault() : undefined}
+                      onDrop={
+                        ctx.editable
+                          ? (ev) => {
+                              const url = ev.dataTransfer.getData('application/x-vigo-asset');
+                              if (!url) return;
+                              // The card handles its own drop so the page
+                              // background is not replaced instead — the slot
+                              // below accepts no media and would treat this as
+                              // a full-bleed drop.
+                              ev.preventDefault();
+                              ev.stopPropagation();
+                              const assetId =
+                                ev.dataTransfer.getData('application/x-vigo-asset-id') || undefined;
+                              patch(i, {
+                                media: { url, assetId, focalX: 0.5, focalY: 0.5, zoom: 1 },
+                              });
+                            }
+                          : undefined
+                      }
+                    >
+                      {resolved ? (
+                        <img
+                          src={resolved}
+                          alt={e.media?.alt || ''}
+                          style={{
+                            objectPosition: `${Math.round((e.media?.focalX ?? 0.5) * 100)}% ${Math.round(
+                              (e.media?.focalY ?? 0.5) * 100
+                            )}%`,
+                          }}
+                        />
+                      ) : ctx.editable ? (
+                        <span>Drop a photo</span>
+                      ) : null}
+                      {resolved && ctx.editable && (
+                        <button
+                          className="tl-clear"
+                          title="Remove this picture"
+                          onMouseDown={(ev) => ev.stopPropagation()}
+                          onClick={(ev) => {
+                            ev.stopPropagation();
+                            patch(i, { media: undefined });
+                          }}
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="tl-rail" />
+
+                  <EditableText
+                    className="tt tl-date"
+                    style={typeVars('metricLarge', scale)}
+                    value={e.date || ''}
+                    editable={ctx.editable}
+                    placeholder="Year"
+                    onChange={(v) => patch(i, { date: v })}
+                  />
+                  <EditableText
+                    className="tt tl-copy"
+                    style={typeVars('body', 0.88)}
+                    value={e.text || ''}
+                    editable={ctx.editable}
+                    placeholder="What happened"
+                    onChange={(v) => patch(i, { text: v })}
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
       );
