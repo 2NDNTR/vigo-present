@@ -44,7 +44,12 @@ export interface TypeStyle {
   weight: number;
   lineHeight: number;
   tracking: number; // em
-  family: 'display' | 'body';
+  /**
+   * Which of the theme's faces this role is set in. `serif` is optional: a
+   * brand that does not declare `fonts.serif` falls back to its display face,
+   * so nothing breaks for a two-face brand.
+   */
+  family: 'display' | 'body' | 'serif';
   transform?: 'none' | 'uppercase';
 }
 
@@ -79,7 +84,12 @@ export interface BrandTheme {
      */
     chromeHeight?: number;
   };
-  fonts: { display: string; body: string };
+  /**
+   * `serif` is a third, optional face for the "statistic voice" — the numerals
+   * and pull quotes that carry a different register from the headline face.
+   * Corporate uses it; brands that omit it never see it.
+   */
+  fonts: { display: string; body: string; serif?: string };
   colors: Record<ColorRole, string>;
   /**
    * The approved colours for TYPE, in the order they appear in the panel.
@@ -131,34 +141,122 @@ function typeFor(overrides: Partial<Record<TypeRole, Partial<TypeStyle>>>): Reco
 }
 
 export const THEMES: Record<BrandId, BrandTheme> = {
+  /**
+   * CORPORATE — Vigo | Alessi
+   *
+   * Every value below is lifted from the Capabilities 2026 site
+   * (`Presentation template/vigo-live/index.html`), which is the only place
+   * this identity has ever been drawn. The mapping, token for token:
+   *
+   *   --ink       #15110D  warm near-black   -> brandPrimary
+   *   --ink-soft  #2C2620                    -> brandSecondary
+   *   --paper     #F5EFE4  warm cream        -> cream   (default page surface)
+   *   --paper-2   #EDE5D6  deeper cream      -> paleCream
+   *   --greige    #CFC9BE  warm mat          -> terracotta (relabelled "Greige")
+   *   --stone     #9C9284  warm gray         -> neutral
+   *   --rosso     #9E2B22  Italian red       -> accent
+   *   --rosso-bright #C24034                 -> brandRed (relabelled "Rosso Bright")
+   *
+   * Three faces, because the site uses three and the difference between them
+   * IS the identity: Jost set in caps for every heading, Inter for reading
+   * copy, and Playfair Display for the statistic voice — the big numbers and
+   * the pull quotes. `brandYellow` is carried only because the role exists
+   * across all brands; corporate never offers it.
+   *
+   * NOT carried across, and worth knowing:
+   *  - The site tracks its caps headings at -.02em. The system-wide brand rule
+   *    forces tracking to 0 on every role in every brand (see `typeFor`), so
+   *    headings here are a touch looser than the source. Changing that is a
+   *    deliberate decision about all three brands, not a corporate edit.
+   *  - The site sets its pull quotes in Playfair *italic*. Roles have no italic
+   *    switch, so the quote role is upright Playfair.
+   */
   corporate: {
     id: 'corporate',
-    name: 'Vigo Importing Company',
+    name: 'Vigo | Alessi',
     shortName: 'Corporate',
-    description: 'Parent company. Restrained, institutional, editorial.',
-    logo: { text: 'VIGO IMPORTING CO.', mark: 'VIC', tracking: 0.22, weight: 600, family: 'body' },
+    description: 'Parent company. Warm paper, Italian red, editorial caps.',
+    logo: {
+      text: 'VIGO | ALESSI',
+      mark: 'V|A',
+      tracking: 0.22,
+      weight: 600,
+      family: 'body',
+      /**
+       * ARTWORK IS ONE FILE AWAY.
+       *
+       * The Vigo | Alessi lockup the capabilities site uses — red Vigo
+       * wordmark, gold-and-dark Alessi badge, transparent ground — has been
+       * prepared at 1000px wide and lives in the project folder as
+       * `_vigo-present-commit/public-logos/corporate-lockup.webp`. Drop that
+       * file into `public/logos/` and uncomment the line below; the text
+       * wordmark disappears and every corporate page picks up the real mark.
+       *
+       * Only a primary variant is offered on purpose: the source site already
+       * places this artwork on both cream and near-black, and a `white` entry
+       * would have to be a recolour of someone else's mark rather than a
+       * supplied file. `auto` falls back to primary on dark pages, which is
+       * the right behaviour here.
+       *
+       * files: { primary: '/logos/corporate-lockup.webp' },
+       */
+      aspect: 3.8866,
+      height: 74,
+      minHeight: 40,
+      chromeHeight: 40,
+    },
     fonts: {
-      display: "'Fraunces', 'Iowan Old Style', Georgia, serif",
+      display: "'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif",
       body: "'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif",
+      serif: "'Playfair Display', Georgia, 'Times New Roman', serif",
     },
     colors: {
-      brandPrimary: '#1C1F24',
-      brandSecondary: '#4A5058',
-      accent: '#8A7A5E',
-      cream: '#F4F1EA',
+      brandPrimary: '#15110D',
+      brandSecondary: '#2C2620',
+      accent: '#9E2B22',
+      cream: '#F5EFE4',
       white: '#FFFFFF',
-      black: '#0B0C0E',
-      neutral: '#9AA0A8',
+      black: '#0B0908',
+      neutral: '#9C9284',
       brandYellow: '#FFE812',
-      brandRed: '#E90000',
-      terracotta: '#DF683F',
-      paleCream: '#F7F7BF',
+      brandRed: '#C24034',
+      terracotta: '#CFC9BE',
+      paleCream: '#EDE5D6',
     },
-    textColors: ['brandPrimary', 'brandSecondary', 'accent', 'white', 'black', 'neutral'],
-    surfaceColors: ['brandPrimary', 'brandSecondary', 'accent', 'cream', 'white', 'black', 'neutral'],
-    surface: { bg: 'cream', ink: 'brandPrimary', muted: 'rgba(28,31,36,0.62)' },
+    textColors: ['brandPrimary', 'accent', 'brandRed', 'cream', 'white', 'black', 'neutral'],
+    surfaceColors: ['cream', 'paleCream', 'white', 'brandPrimary', 'black', 'accent', 'terracotta', 'neutral'],
+    colorLabels: {
+      brandPrimary: 'Ink',
+      brandSecondary: 'Ink Soft',
+      accent: 'Rosso',
+      brandRed: 'Rosso Bright',
+      cream: 'Paper',
+      paleCream: 'Deep Paper',
+      neutral: 'Stone',
+      terracotta: 'Greige',
+    },
+    surface: { bg: 'cream', ink: 'brandPrimary', muted: 'rgba(21,17,13,0.66)' },
     onImageInk: 'white',
-    type: typeFor({}),
+    /**
+     * Sizes are the site's own clamp maxima carried onto the 1600 x 900
+     * reference stage (the site tops out around a 1320px measure, so values
+     * are scaled by roughly 1.2 and then rounded to something that sits well).
+     *
+     * Jost in caps for display / headline / eyebrow, Inter for reading copy and
+     * labels, Playfair for the numerals and the quote.
+     */
+    type: typeFor({
+      display: { size: 112, weight: 700, lineHeight: 1.02, transform: 'uppercase' },
+      headline: { size: 62, weight: 700, lineHeight: 1.06, transform: 'uppercase' },
+      subhead: { size: 30, weight: 400, lineHeight: 1.3 },
+      body: { size: 22, weight: 400, lineHeight: 1.5 },
+      caption: { size: 15, weight: 500 },
+      eyebrow: { size: 20, weight: 600, family: 'display' },
+      quote: { size: 48, weight: 400, lineHeight: 1.14, family: 'serif' },
+      metricXl: { size: 176, weight: 600, lineHeight: 0.92, family: 'serif' },
+      metricLarge: { size: 104, weight: 600, lineHeight: 0.92, family: 'serif' },
+      metricLabel: { size: 22, weight: 600 },
+    }),
     rule: { color: 'accent', weight: 3 },
   },
 
@@ -407,7 +505,12 @@ export function themeVars(theme: BrandTheme): Record<string, string> {
     vars['--t-' + k + '-weight'] = String(t.weight);
     vars['--t-' + k + '-lh'] = String(t.lineHeight);
     vars['--t-' + k + '-tracking'] = t.tracking + 'em';
-    vars['--t-' + k + '-family'] = t.family === 'display' ? theme.fonts.display : theme.fonts.body;
+    vars['--t-' + k + '-family'] =
+      t.family === 'body'
+        ? theme.fonts.body
+        : t.family === 'serif'
+          ? theme.fonts.serif || theme.fonts.display
+          : theme.fonts.display;
     vars['--t-' + k + '-transform'] = t.transform || 'none';
   });
   vars['--page-bg'] = theme.colors[theme.surface.bg];
