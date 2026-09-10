@@ -678,6 +678,13 @@ export default function Editor({ id }: { id: string }) {
                   Object.assign(d, patch);
                 })
               }
+              onInsertPage={(np) =>
+                update((d) => {
+                  const at = d.pages.findIndex((x) => x.id === page.id);
+                  d.pages.splice(at + 1, 0, np);
+                  setTimeout(() => setCurrentId(np.id), 0);
+                })
+              }
               onChangeBlock={(bid, patch) =>
                 update((d) => {
                   const p = d.pages.find((x) => x.id === page.id);

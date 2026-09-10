@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import type { Block, MediaRef, Page, PageBackground, Presentation } from '@/lib/model/types';
 import { RETAILERS, retailerDef } from '@/lib/brand/retailers';
 import type { PageTemplate } from '@/lib/templates/registry';
@@ -50,6 +50,8 @@ export interface InspectorProps {
   onSwapTemplate: (templateId: string) => void;
   /** deck-level edits — the retailer is a property of the whole deck */
   onChangeDeck?: (patch: Partial<Presentation>) => void;
+  /** insert a page composed elsewhere — the screenshot reader returns one */
+  onInsertPage?: (page: Page) => void;
 }
 
 export default function Inspector(props: InspectorProps) {
@@ -505,6 +507,14 @@ export default function Inspector(props: InspectorProps) {
           />
         )}
 
+        {/* ---------------------------------------------- screenshot reader
+            A category review arrives as a PDF of somebody else's charts.
+            Retyping one is ten minutes and a typo; this is ten seconds and
+            keeps it as data, drawn in our own hand. What comes back is a
+            proposal — the numbers are editable on the page like any others,
+            and they should be checked against the source before it goes out. */}
+        {props.onInsertPage ? <ChartFromImage onInsert={props.onInsertPage} /> : null}
+
         {/* ------------------------------------------------------- retailer
             A deck built for one account carries that account's mark beside
             ours. It is deck-level on purpose: a salesperson sets Publix once
@@ -710,6 +720,80 @@ function Slider({
         onChange={(e) => onChange(parseFloat(e.target.value))}
         style={{ width: '100%' }}
       />
+    </div>
+  );
+}
+
+
+/* ------------------------------------------------- chart from a screenshot */
+
+function ChartFromImage({ onInsert }: { onInsert: (page: Page) => void }) {
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+  const [done, setDone] = useState<string | null>(null);
+  const input = useRef<HTMLInputElement>(null);
+
+  const read = async (file: File) => {
+    setProblem(null);
+    setDone(null);
+    setBusy(true);
+    try {
+      const image = await new Promise<string>((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(String(fr.result));
+        fr.onerror = () => reject(new Error('That file could not be read.'));
+        fr.readAsDataURL(file);
+      });
+      const res = await fetch('/api/ingest/chart', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ image }),
+      });
+      const j = await res.json();
+      if (!res.ok || !j.page) {
+        setProblem(j.error || 'That image could not be read as a chart.');
+        return;
+      }
+      onInsert(j.page);
+      setDone('Page added — check the figures against the report.');
+    } catch (e) {
+      setProblem(e instanceof Error ? e.message : 'Something went wrong reading that image.');
+    } finally {
+      setBusy(false);
+      if (input.current) input.current.value = '';
+    }
+  };
+
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div className="label" style={{ marginBottom: 6 }}>Build a page from a screenshot</div>
+      <button
+        className="btn"
+        style={{ width: '100%' }}
+        disabled={busy}
+        onClick={() => input.current?.click()}
+      >
+        {busy ? 'Reading the chart…' : 'Choose a chart screenshot'}
+      </button>
+      <input
+        ref={input}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) read(f);
+        }}
+      />
+      {problem ? (
+        <p className="tiny" style={{ marginTop: 8, color: 'var(--danger, #b23)' }}>{problem}</p>
+      ) : done ? (
+        <p className="tiny" style={{ marginTop: 8 }}>{done}</p>
+      ) : (
+        <p className="tiny" style={{ marginTop: 8 }}>
+          Crop to one chart or table. The numbers come back as data and are drawn in Vigo styling — always check them against the source.
+        </p>
+      )}
     </div>
   );
 }
