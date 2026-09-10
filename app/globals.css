@@ -1185,7 +1185,7 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
   row-gap: 0;
 }
 .tpl-cards-six .slot[data-slot="main"] > * {
-  padding: calc(var(--u) * 40px) calc(var(--u) * 46px) calc(var(--u) * 44px);
+  padding: calc(var(--u) * 30px) calc(var(--u) * 46px) calc(var(--u) * 28px);
   border-left: calc(var(--u) * 1px) solid currentColor;
   border-top: calc(var(--u) * 1px) solid currentColor;
   min-width: 0;
@@ -1201,7 +1201,7 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
   display: block;
   width: calc(var(--u) * 30px);
   height: calc(var(--u) * 30px);
-  margin-bottom: calc(var(--u) * 26px);
+  margin-bottom: calc(var(--u) * 18px);
   border-radius: 50%;
   border: calc(var(--u) * 1.5px) solid var(--rule-color);
   background:
@@ -1241,7 +1241,7 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 .tpl-metrics-quad .mlabel {
   text-transform: none;
   letter-spacing: 0;
-  max-width: calc(var(--u) * 330px);
+  max-width: calc(var(--u) * 460px);
 }
 .tpl-metrics-quad .foot, .tpl-metrics-quad .slot[data-slot="foot"] { opacity: .88; }
 
