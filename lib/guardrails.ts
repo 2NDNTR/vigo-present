@@ -13,6 +13,23 @@ export interface Guardrail {
  * The silent internal creative director.
  * These never block the user — they nudge, in plain language.
  */
+/**
+ * Overflow measured on the canvas, turned into the same kind of notice as the
+ * rest. It is passed in rather than computed here because it cannot be known
+ * from the data: whether a paragraph fits depends on the font that loaded and
+ * the width it rendered at, which only the browser knows.
+ */
+export function fitGuardrails(overflowing: { label: string; by: number }[]): Guardrail[] {
+  return overflowing.map((o) => ({
+    id: 'fit-' + o.label,
+    tone: 'warn' as const,
+    /* Named in the language of the fix. "Overflows by 84px" is a developer's
+     * sentence; the person reading this needs to know that a projector will
+     * cut it off and that the cure is fewer words. */
+    text: `${o.label} runs past the bottom of the slide — about ${Math.round(o.by)} points of it will be cut off when this is presented. Shorten the copy, or move some of it to a second page.`,
+  }));
+}
+
 export function pageGuardrails(page: Page, template: PageTemplate, theme?: BrandTheme): Guardrail[] {
   const out: Guardrail[] = [];
   const allBlocks = Object.values(page.slots || {}).flat();
@@ -24,6 +41,23 @@ export function pageGuardrails(page: Page, template: PageTemplate, theme?: Brand
         id: 'max-' + slot.key,
         tone: 'warn',
         text: `This layout works best with ${slot.max} ${slot.max === 1 ? 'item' : 'items'} in ${slot.label}. You have ${blocks.length}.`,
+      });
+    }
+    /*
+     * UNDER-FILLING IS THE MORE COMMON FAILURE, AND NOTHING USED TO SAY SO.
+     * A six-card grid holding three cards does not look like an error; it
+     * looks like a page with a lot of air, and it ships. Then somebody opens
+     * it beside the approved deck and finds it bare. A grid layout is a
+     * COMPOSITION — the count is part of the design, not a maximum the user
+     * is free to ignore — so falling short earns the same nudge as spilling
+     * over. Only for grids of three or more: a two-item slot that holds one
+     * is usually deliberate.
+     */
+    if (slot.max >= 3 && blocks.length > 0 && blocks.length < slot.max) {
+      out.push({
+        id: 'under-' + slot.key,
+        tone: 'info',
+        text: `${slot.label} is composed for ${slot.max}. You have ${blocks.length} — the page will read thin next to the rest of the deck.`,
       });
     }
   });

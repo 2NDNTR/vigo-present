@@ -67,10 +67,14 @@ export interface ChartData {
   /** highlighted category, drawn in the accent — normally ours */
   highlight?: string;
   /**
-   * Per-category colour. Empty or null means "let the theme decide", which is
-   * the right answer almost always; an explicit value is here because a buyer
-   * sometimes wants their own brand colour on their own slice, and arguing
-   * with them costs more than a field.
+   * Per-category colour, held as a COLOUR ROLE from the brand theme
+   * ('accent', 'terracotta', …) rather than as a hex. Null means "let the
+   * theme decide", which is the right answer almost always.
+   *
+   * Roles rather than hexes because a deck has to survive a rebrand: change
+   * the token and every chart in every deck follows. A stored #9E2B22 would
+   * be the one thing in the company that does not. Older charts that stored a
+   * literal still render — see sliceColors.
    */
   colors?: (string | null)[];
   /** attribution, set under the chart: "Nielsen, Publix, L13 WE 1/24/26" */

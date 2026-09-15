@@ -17,7 +17,7 @@ import {
   colorLabel,
   getTheme,
 } from '@/lib/brand/themes';
-import type { ColorRole, TypeRole } from '@/lib/brand/themes';
+import type { BrandTheme, ColorRole, TypeRole } from '@/lib/brand/themes';
 import { processFile } from '@/lib/media';
 import { EMPTY_ENTRY, entriesOf, entriesPatch, showsMedia } from '@/lib/model/timeline';
 import { EMPTY_LOGO, logosOf, logosPatch } from '@/lib/model/logos';
@@ -477,6 +477,7 @@ export default function Inspector(props: InspectorProps) {
       {block && block.type === 'chart' ? (
         <ChartEditor
           block={block}
+          theme={theme}
           onChange={(patch) => props.onChangeBlock(block.id, patch)}
         />
       ) : null}
@@ -850,7 +851,15 @@ const CHART_KINDS = [
 
 /* --------------------------------------------------------------- chart data */
 
-function ChartEditor({ block, onChange }: { block: Block; onChange: (patch: Partial<Block>) => void }) {
+function ChartEditor({
+  block,
+  theme,
+  onChange,
+}: {
+  block: Block;
+  theme: BrandTheme;
+  onChange: (patch: Partial<Block>) => void;
+}) {
   const chart = block.chart || { kind: 'bar' as const, categories: [], values: [] };
   const rows = chart.categories.length;
 
@@ -917,13 +926,11 @@ function ChartEditor({ block, onChange }: { block: Block; onChange: (patch: Part
       <div className="label" style={{ marginBottom: 6 }}>Rows</div>
       {chart.categories.map((cat, i) => (
         <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6 }}>
-          <input
-            type="color"
-            aria-label={'Colour for ' + cat}
-            title="Colour on the chart and in the key"
-            value={chart.colors?.[i] || '#999999'}
-            onChange={(e) => setRow(i, { color: e.target.value })}
-            style={{ width: 26, height: 26, padding: 0, border: 0, background: 'none', flex: '0 0 auto' }}
+          <ColourRole
+            value={chart.colors?.[i] || null}
+            theme={theme}
+            label={cat}
+            onChange={(role) => setRow(i, { color: role })}
           />
           <input
             className="field"
@@ -967,8 +974,73 @@ function ChartEditor({ block, onChange }: { block: Block; onChange: (patch: Part
         onChange={(e) => patch({ source: e.target.value })}
       />
       <p className="tiny" style={{ marginTop: 8 }}>
-        A colour set here is used on the chart and in the key together.
+        Colours are brand roles, so a rebrand carries every chart with it.
       </p>
     </div>
+  );
+}
+
+
+/**
+ * A COLOUR IS A ROLE, NOT A HEX
+ * ---------------------------------------------------------------------------
+ * The first version of this was an <input type="color"> — a full colour wheel,
+ * which is what a design tool offers when its promise is freedom. This product
+ * makes the opposite promise: whatever anyone builds is on brand, and stays on
+ * brand through a rebrand. A wheel cannot keep that promise. Eight approved
+ * roles can, and picking from eight is faster than picking from sixteen
+ * million anyway — the wheel was never the convenient option, only the
+ * flattering one.
+ */
+function ColourRole({
+  value,
+  theme,
+  label,
+  onChange,
+}: {
+  value: string | null;
+  theme: BrandTheme;
+  label: string;
+  onChange: (role: string | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const roles = theme.textColors;
+  const shown = value ? (theme.colors as Record<string, string>)[value] || value : undefined;
+
+  return (
+    <span className="crole" style={{ flex: '0 0 auto' }}>
+      <button
+        className={'crole-dot' + (open ? ' on' : '')}
+        aria-label={'Colour for ' + label}
+        title={value ? colorLabel(theme, value as any) : 'From the theme'}
+        onClick={() => setOpen(!open)}
+        style={shown ? { background: shown } : undefined}
+      />
+      {open ? (
+        <span className="crole-menu">
+          <button
+            className={'crole-opt' + (!value ? ' on' : '')}
+            onClick={() => {
+              onChange(null);
+              setOpen(false);
+            }}
+          >
+            <i className="crole-auto" /> From the theme
+          </button>
+          {roles.map((r) => (
+            <button
+              key={r}
+              className={'crole-opt' + (value === r ? ' on' : '')}
+              onClick={() => {
+                onChange(r);
+                setOpen(false);
+              }}
+            >
+              <i style={{ background: theme.colors[r] }} /> {colorLabel(theme, r)}
+            </button>
+          ))}
+        </span>
+      ) : null}
+    </span>
   );
 }

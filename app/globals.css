@@ -1663,3 +1663,38 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 /* A little more air between groups, a lot less ink in the rules between them. */
 .panel-sec { padding: 16px 0; }
 .collapse { border-top-color: var(--app-line-soft); }
+
+/* ------------------------------------------------------------ colour roles
+ * A swatch that opens eight approved colours, not a wheel that opens sixteen
+ * million. The dot shows what is set; empty means the theme decides, which is
+ * the answer almost every time.
+ */
+.crole { position: relative; display: inline-flex; }
+.crole-dot {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 1px solid var(--app-line); cursor: pointer; padding: 0;
+  background:
+    linear-gradient(45deg, transparent 44%, var(--app-line) 44%, var(--app-line) 56%, transparent 56%)
+      no-repeat center / 14px 14px,
+    #fff;
+}
+.crole-dot.on { box-shadow: 0 0 0 2px rgba(23,24,26,0.18); }
+.crole-menu {
+  position: absolute; z-index: 40; top: 26px; left: 0;
+  display: flex; flex-direction: column; min-width: 168px;
+  padding: 4px; border: 1px solid var(--app-line); border-radius: 8px;
+  background: #fff; box-shadow: 0 10px 28px rgba(0,0,0,0.14);
+}
+.crole-opt {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px; border: 0; background: none; border-radius: 5px;
+  font-size: 12px; cursor: pointer; text-align: left; color: inherit;
+}
+.crole-opt:hover { background: rgba(23,24,26,0.05); }
+.crole-opt.on { font-weight: 600; }
+.crole-opt i { width: 13px; height: 13px; border-radius: 3px; border: 1px solid rgba(23,24,26,0.14); flex: 0 0 auto; }
+.crole-auto {
+  background:
+    linear-gradient(45deg, transparent 44%, rgba(23,24,26,0.3) 44%, rgba(23,24,26,0.3) 56%, transparent 56%)
+      no-repeat center / 11px 11px;
+}

@@ -91,8 +91,18 @@ const RAMP_ROLES = ['brandPrimary', 'terracotta', 'brandYellow', 'brandSecondary
 export function sliceColors(data: ChartData, theme: BrandTheme, onDark: boolean): string[] {
   const base = RAMP_ROLES.map((r) => theme.colors[r]).filter(Boolean) as string[];
   return data.categories.map((cat, i) => {
+    /*
+     * A chosen colour is stored as a ROLE, not as a hex. This is the whole
+     * argument of the product in one line: a deck built here is re-themable
+     * because nothing in it names a colour directly. Store #9E2B22 on a slice
+     * and that slice is the only thing in the company that will not change
+     * when the brand does.
+     *
+     * Anything that is not a known role is read as a literal, so charts
+     * authored before this still draw.
+     */
     const chosen = data.colors?.[i];
-    if (chosen) return chosen;
+    if (chosen) return (theme.colors as Record<string, string>)[chosen] || chosen;
     if (data.highlight && cat === data.highlight) return theme.colors.accent;
     const hue = base[i % base.length];
     const tier = Math.floor(i / base.length); // second time round, lighter

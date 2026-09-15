@@ -16,7 +16,8 @@ import SharePanel from './SharePanel';
 import type { Block, BlockType, Page, Presentation } from '@/lib/model/types';
 import { uid } from '@/lib/model/types';
 import { createPage, getTemplate } from '@/lib/templates/registry';
-import { pageGuardrails } from '@/lib/guardrails';
+import { pageGuardrails, fitGuardrails } from '@/lib/guardrails';
+import { useFit } from './useFit';
 import { getTheme } from '@/lib/brand/themes';
 import type { BrandId } from '@/lib/brand/themes';
 import { getStore, storeKindSync } from '@/lib/store';
@@ -229,6 +230,10 @@ export default function Editor({ id }: { id: string }) {
     [update]
   );
 
+  /* A callback ref rather than useRef: the hook needs to re-run when the node
+   * appears, and a ref object does not tell it that. */
+  const [canvas, setCanvas] = useState<HTMLDivElement | null>(null);
+
   const pageIndex = useMemo(() => (pres ? pres.pages.findIndex((p) => p.id === currentId) : -1), [pres, currentId]);
   const page = pageIndex >= 0 ? pres!.pages[pageIndex] : null;
 
@@ -406,6 +411,13 @@ export default function Editor({ id }: { id: string }) {
     return () => window.removeEventListener('keydown', h);
   }, [pres, currentId, undo, redo]);
 
+  /* Measured above the early returns, because a hook cannot be called after
+   * one: the first render of this component happens while the deck is still
+   * loading, and calling useFit only once `page` exists would change the hook
+   * count between renders and crash on the second. Keyed on the page and the
+   * rough size of its content, so it re-measures when either changes. */
+  const overflow = useFit(canvas, page ? page.id + ':' + JSON.stringify(page.slots).length : 'none');
+
   if (missing) {
     return (
       <div style={{ padding: 60 }}>
@@ -418,7 +430,20 @@ export default function Editor({ id }: { id: string }) {
 
   // Guardrail notices moved up from the Inspector: the panel renders them above
   // its tab row, so they are visible and fixed in place on every tab.
-  const warnings = pageGuardrails(page, getTemplate(page.templateId), getTheme(page.brandOverride || pres.brand));
+  /* Structural guardrails come from the data; the fit guardrail has to be
+   * measured on the rendered page, so the canvas is watched and the two lists
+   * are merged into one voice. Fit warnings go first — a slide that will be
+   * cut off on a projector outranks advice about card counts. */
+  const template = getTemplate(page.templateId);
+  const warnings = [
+    ...fitGuardrails(
+      overflow.map((o) => ({
+        ...o,
+        label: template.slots.find((sl) => sl.key === o.label)?.label || 'This page',
+      }))
+    ),
+    ...pageGuardrails(page, template, getTheme(page.brandOverride || pres.brand)),
+  ];
 
   return (
     <div className="editor">
@@ -597,7 +622,7 @@ export default function Editor({ id }: { id: string }) {
               </button>
             </div>
           ) : null}
-          <div className="canvas-frame" onMouseDown={(e) => e.stopPropagation()}>
+          <div className="canvas-frame" ref={setCanvas} onMouseDown={(e) => e.stopPropagation()}>
             <div className="canvas-caption">
               <span>
                 Page {pageIndex + 1} of {pres.pages.length} · {getTemplate(page.templateId).name}
