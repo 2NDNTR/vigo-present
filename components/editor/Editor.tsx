@@ -565,146 +565,6 @@ export default function Editor({ id }: { id: string }) {
         </div>
       </div>
 
-      {/*
-        * THE PANEL, ACROSS THE TOP
-        * -------------------------------------------------------------------
-        * A settings rail on the right competes with the work for the widest
-        * dimension of the screen, and it makes every group a tall column that
-        * has to be collapsed to fit — which is how a panel ends up hiding the
-        * things it exists to show. Across the top there is width instead: the
-        * groups sit side by side, open, and the canvas gets the whole middle.
-        *
-        * The right edge is now reserved for the companions — the wizard and
-        * notes — which is the only thing there that should ever cover the
-        * work, and only when asked.
-        */}
-      <div className="ed-sheet" onMouseDown={(e) => e.stopPropagation()}>
-        <div className="ed-sheet-inner">
-          {/* Page guidance sits above the tabs, so it holds one position
-              whichever tab is open rather than appearing only under Pages. */}
-          {warnings.length > 0 && (
-            <div className="panel-notices">
-              {warnings.slice(0, 3).map((w) => (
-                <div
-                  className="warn"
-                  key={w.id}
-                  style={w.tone === 'info' ? { background: '#f4f6f8', borderColor: '#e0e5ea', color: '#5f6368' } : undefined}
-                >
-                  <span>{w.tone === 'warn' ? '△' : 'ⓘ'}</span>
-                  <span>{w.text}</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* The bar, not the track, is what sticks — it needs an opaque
-              background spanning the panel's full width, or content scrolls
-              visibly through the tabs. */}
-          <div className="ed-tabsbar">
-            <div className="ed-tabs">
-              {(['pages', 'add', 'assets', 'brand'] as Tab[]).map((t) => (
-                <button key={t} className={'tabbtn' + (tab === t ? ' on' : '')} onClick={() => setTab(t)}>
-                  {t[0].toUpperCase() + t.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {tab === 'pages' && (
-            <Inspector
-              layout="sheet"
-              presentation={pres}
-              page={page}
-              selected={selected}
-              onChangeDeck={(patch) =>
-                update((d) => {
-                  Object.assign(d, patch);
-                })
-              }
-              onDeselect={() => setSelected(null)}
-              onInsertPage={(np) =>
-                update((d) => {
-                  const at = d.pages.findIndex((x) => x.id === page.id);
-                  d.pages.splice(at + 1, 0, np);
-                  setTimeout(() => setCurrentId(np.id), 0);
-                })
-              }
-              onChangeBlock={(bid, patch) =>
-                update((d) => {
-                  const p = d.pages.find((x) => x.id === page.id);
-                  if (!p) return;
-                  Object.keys(p.slots).forEach((k) =>
-                    p.slots[k].forEach((b, idx) => {
-                      if (b.id === bid) p.slots[k][idx] = { ...b, ...patch };
-                    })
-                  );
-                })
-              }
-              onDeleteBlock={(bid) => {
-                update((d) => {
-                  const p = d.pages.find((x) => x.id === page.id);
-                  if (!p) return;
-                  Object.keys(p.slots).forEach((k) => (p.slots[k] = p.slots[k].filter((b) => b.id !== bid)));
-                });
-                setSelected(null);
-              }}
-              onChangePage={(patch) =>
-                update((d) => {
-                  const i = d.pages.findIndex((x) => x.id === page.id);
-                  if (i >= 0) d.pages[i] = { ...d.pages[i], ...patch };
-                })
-              }
-              onSwapTemplate={swapTemplate}
-            />
-          )}
-          {tab === 'add' && (
-            <>
-              <AddFromImage
-                onInsert={(np) =>
-                  update((d) => {
-                    const at = d.pages.findIndex((x) => x.id === page.id);
-                    d.pages.splice(at + 1, 0, np);
-                    setTimeout(() => setCurrentId(np.id), 0);
-                  })
-                }
-              />
-            </>
-          )}
-
-          {tab === 'add' && (
-            <AddPanel
-              page={page}
-              activeSlot={activeSlot}
-              onAddPage={() => setAdding({ afterIndex: pageIndex })}
-              onAddBlock={addBlock}
-              onInsertBlock={insertBlock}
-            />
-          )}
-          {tab === 'assets' && <AssetsPanel brand={pres.brand} onUse={useAsset} />}
-          {tab === 'brand' && (
-            <DeckSettings
-              presentation={pres}
-              onChangeDeck={(patch) =>
-                update((d) => {
-                  Object.assign(d, patch);
-                })
-              }
-            />
-          )}
-
-          {tab === 'brand' && (
-            <BrandPanel
-              brand={pres.brand}
-              onChangeBrand={(b: BrandId) =>
-                update((d) => {
-                  d.brand = b;
-                })
-              }
-            />
-          )}
-        </div>
-      </div>
-
       <div className="ed-body">
         <div className="ed-left">
           <PageNav
@@ -909,7 +769,129 @@ export default function Editor({ id }: { id: string }) {
           />
         ) : null}
 
+        <div className="ed-right" onMouseDown={(e) => e.stopPropagation()}>
+          {/* Page guidance sits above the tabs, so it holds one position
+              whichever tab is open rather than appearing only under Pages. */}
+          {warnings.length > 0 && (
+            <div className="panel-notices">
+              {warnings.slice(0, 3).map((w) => (
+                <div
+                  className="warn"
+                  key={w.id}
+                  style={w.tone === 'info' ? { background: '#f4f6f8', borderColor: '#e0e5ea', color: '#5f6368' } : undefined}
+                >
+                  <span>{w.tone === 'warn' ? '△' : 'ⓘ'}</span>
+                  <span>{w.text}</span>
+                </div>
+              ))}
+            </div>
+          )}
 
+          {/* The bar, not the track, is what sticks — it needs an opaque
+              background spanning the panel's full width, or content scrolls
+              visibly through the tabs. */}
+          <div className="ed-tabsbar">
+            <div className="ed-tabs">
+              {(['pages', 'add', 'assets', 'brand'] as Tab[]).map((t) => (
+                <button key={t} className={'tabbtn' + (tab === t ? ' on' : '')} onClick={() => setTab(t)}>
+                  {t[0].toUpperCase() + t.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {tab === 'pages' && (
+            <Inspector
+              presentation={pres}
+              page={page}
+              selected={selected}
+              onChangeDeck={(patch) =>
+                update((d) => {
+                  Object.assign(d, patch);
+                })
+              }
+              onDeselect={() => setSelected(null)}
+              onInsertPage={(np) =>
+                update((d) => {
+                  const at = d.pages.findIndex((x) => x.id === page.id);
+                  d.pages.splice(at + 1, 0, np);
+                  setTimeout(() => setCurrentId(np.id), 0);
+                })
+              }
+              onChangeBlock={(bid, patch) =>
+                update((d) => {
+                  const p = d.pages.find((x) => x.id === page.id);
+                  if (!p) return;
+                  Object.keys(p.slots).forEach((k) =>
+                    p.slots[k].forEach((b, idx) => {
+                      if (b.id === bid) p.slots[k][idx] = { ...b, ...patch };
+                    })
+                  );
+                })
+              }
+              onDeleteBlock={(bid) => {
+                update((d) => {
+                  const p = d.pages.find((x) => x.id === page.id);
+                  if (!p) return;
+                  Object.keys(p.slots).forEach((k) => (p.slots[k] = p.slots[k].filter((b) => b.id !== bid)));
+                });
+                setSelected(null);
+              }}
+              onChangePage={(patch) =>
+                update((d) => {
+                  const i = d.pages.findIndex((x) => x.id === page.id);
+                  if (i >= 0) d.pages[i] = { ...d.pages[i], ...patch };
+                })
+              }
+              onSwapTemplate={swapTemplate}
+            />
+          )}
+          {tab === 'add' && (
+            <>
+              <AddFromImage
+                onInsert={(np) =>
+                  update((d) => {
+                    const at = d.pages.findIndex((x) => x.id === page.id);
+                    d.pages.splice(at + 1, 0, np);
+                    setTimeout(() => setCurrentId(np.id), 0);
+                  })
+                }
+              />
+            </>
+          )}
+
+          {tab === 'add' && (
+            <AddPanel
+              page={page}
+              activeSlot={activeSlot}
+              onAddPage={() => setAdding({ afterIndex: pageIndex })}
+              onAddBlock={addBlock}
+              onInsertBlock={insertBlock}
+            />
+          )}
+          {tab === 'assets' && <AssetsPanel brand={pres.brand} onUse={useAsset} />}
+          {tab === 'brand' && (
+            <DeckSettings
+              presentation={pres}
+              onChangeDeck={(patch) =>
+                update((d) => {
+                  Object.assign(d, patch);
+                })
+              }
+            />
+          )}
+
+          {tab === 'brand' && (
+            <BrandPanel
+              brand={pres.brand}
+              onChangeBrand={(b: BrandId) =>
+                update((d) => {
+                  d.brand = b;
+                })
+              }
+            />
+          )}
+        </div>
       </div>
 
       {adding && (
