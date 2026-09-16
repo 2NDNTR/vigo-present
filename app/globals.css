@@ -367,14 +367,17 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
   padding: 14px 18px 10px;
   background: #fff;
 }
+/* Flex, not a fixed column count. The grid was written when there were four
+ * tabs; Notes made five and the track wrapped, which is the kind of breakage
+ * a hard-coded count guarantees the first time anyone adds anything. */
 .ed-tabs {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
   gap: 2px;
   padding: 3px;
   background: rgba(23, 24, 26, 0.05);
   border-radius: 9px;
 }
+.ed-tabs .tabbtn { flex: 1 1 0; min-width: 0; padding: 0 2px; }
 .tabbtn {
   height: 30px; padding: 0 6px; border-radius: 6px; border: 0; background: none; cursor: pointer;
   font-size: 13px; color: var(--app-ink-2); white-space: nowrap;
@@ -2018,3 +2021,86 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 .chart-type { border-radius: var(--r-md); border-color: var(--app-line); }
 .crole-menu, .mention-menu, .bbar-colors { border-radius: var(--r-md); box-shadow: var(--e3); border: 0; }
 .notes-summary { border-radius: 0 var(--r-md) var(--r-md) 0; }
+
+
+/* ============================================ the panel, one voice at last
+ * Three text styles in the whole panel, and no fourth. A control panel that
+ * uses five is not expressive, it is unreadable: every heading competes with
+ * every label, and the eye has to re-learn the hierarchy in each section.
+ *
+ *   heading  13 / 600   what a group of controls is
+ *   label    12 / 500   what one control does
+ *   helper  11.5 / 400  the sentence you read once and never again
+ *
+ * Everything else — buttons, fields, segmented controls, menus — sits at
+ * 12.5 and shares the label's colour, so the only things that carry weight
+ * are the two that mean something.
+ */
+.ed-right .panel-h,
+.ed-right .collapse-head { font-size: 13px; font-weight: 600; letter-spacing: 0; color: var(--app-ink); }
+.ed-right .label { font-size: 12px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--app-ink-2); }
+.ed-right .tiny { font-size: 11.5px; font-weight: 400; line-height: 1.45; color: var(--app-ink-3); }
+.ed-right .field,
+.ed-right .selecttrigger,
+.ed-right .btn,
+.ed-right .seg button,
+.ed-right .menu button { font-size: 12.5px; }
+/* The numeric read-outs beside sliders were the fifth style — a mono face at
+ * a size nothing else used, for a number nobody reads precisely. */
+.ed-right .mono-num { font-family: inherit; font-size: 11.5px; color: var(--app-ink-3); }
+
+/* Sections need air between them more than they need a rule through them. */
+.ed-right .panel-sec + .panel-sec { margin-top: 2px; }
+.ed-right .collapse-body { padding-bottom: 16px; }
+
+
+/* The select is its own component and renders its menu outside the panel, so
+ * panel-scoped rules never reached it — which is how a control that says
+ * "None — Vigo | Alessi only" ended up two points larger than every other
+ * control around it, and its menu larger again. One size, everywhere. */
+/* The real class names: the trigger was 44px tall with inherited 14px text and
+ * the menu rows were 13.5 — two more sizes, in the control people look at
+ * most. */
+.ed-right .selecttrigger { height: 36px; font-size: 12.5px; border-radius: var(--r-sm); }
+.ed-right .selectitem { font-size: 12.5px; height: 28px; }
+.selectgroup { font-size: 11.5px; font-weight: 500; letter-spacing: 0; text-transform: none; }
+
+
+/* ---------------------------------------------------------- panel scoping
+ * The bar that says what you are editing and how to get back out. Small, but
+ * it is the thing that makes a scoped panel legible rather than mysterious:
+ * without it, a panel that changed contents when you clicked something looks
+ * like a panel that lost your settings.
+ */
+.panel-scope {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 0 10px;
+  border-bottom: 1px solid var(--app-line-soft);
+  margin-bottom: 12px;
+}
+.scope-back {
+  border: 0; background: rgba(16,24,40,0.05); cursor: pointer;
+  padding: 4px 10px; border-radius: var(--r-pill);
+  font-size: 12px; color: var(--app-ink-2);
+}
+.scope-back:hover { background: rgba(16,24,40,0.09); color: var(--app-ink); }
+.scope-here { font-size: 13px; font-weight: 600; }
+
+/* ------------------------------------------------- the picker as a sheet
+ * Expanding forty-five layouts inline pushed every other control off the
+ * screen — the panel became a layout browser with some settings lost beneath
+ * it. It opens over the panel instead: the browsing is a mode, it ends, and
+ * the settings are where they were left.
+ */
+.lp-body {
+  position: absolute;
+  left: 0; right: 0; top: 0; bottom: 0;
+  z-index: 12;
+  display: flex; flex-direction: column;
+  padding: 12px 16px 16px;
+  margin: 0;
+  background: var(--app-panel);
+  overflow: hidden;
+}
+.lp-grid { max-height: none; flex: 1 1 auto; }
+.ed-right { position: relative; }

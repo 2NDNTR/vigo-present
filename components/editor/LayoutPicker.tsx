@@ -56,6 +56,12 @@ export default function LayoutPicker({
 
       {open ? (
         <div className="lp-body">
+          {/* The sheet says what it is and how to leave, because a panel that
+              swaps its whole contents needs a door. */}
+          <div className="panel-scope" style={{ paddingTop: 0 }}>
+            <button className="scope-back" onClick={() => setOpen(false)}>← Back</button>
+            <span className="scope-here">Choose a layout</span>
+          </div>
           <div className="lp-cats">
             {TEMPLATE_CATEGORIES.map((c) => (
               <button key={c} className={'chip sm' + (cat === c ? ' on' : '')} onClick={() => setCat(c)}>

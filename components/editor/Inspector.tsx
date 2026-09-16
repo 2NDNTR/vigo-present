@@ -55,6 +55,8 @@ export interface InspectorProps {
   onChangeDeck?: (patch: Partial<Presentation>) => void;
   /** insert a page composed elsewhere — the screenshot reader returns one */
   onInsertPage?: (page: Page) => void;
+  /** step back out to the page — the panel is scoped, not stacked */
+  onDeselect?: () => void;
 }
 
 export default function Inspector(props: InspectorProps) {
@@ -89,22 +91,36 @@ export default function Inspector(props: InspectorProps) {
 
   return (
     <div>
-      {/* Page guidance is no longer drawn here — the editor renders it above
-          the panel's tab row, so it keeps the same position on every tab
-          instead of appearing only under Pages. */}
+      {/*
+        * ONE QUESTION AT A TIME
+        * -------------------------------------------------------------------
+        * The panel used to stack the selected element's controls, the page's
+        * controls, the deck's controls and two ways to make a new page in one
+        * scroll. Four subjects in one column is why it read as endless: there
+        * was no answer to "what am I editing", so everything had to be read
+        * every time.
+        *
+        * Now it answers exactly one question — what is selected — and the
+        * other scope is one click away. Selecting an element shows that
+        * element and a way back to the page; selecting nothing shows the
+        * page. Deck settings live on the Brand tab, where the deck lives, and
+        * making a page lives on Add, where pages are made.
+        */}
+      {block ? (
+        <div className="panel-scope">
+          <button className="scope-back" onClick={() => props.onDeselect && props.onDeselect()}>
+            ← Page
+          </button>
+          <span className="scope-here">
+            {block.type === 'text' ? 'Text' : block.type[0].toUpperCase() + block.type.slice(1)}
+          </span>
+        </div>
+      ) : null}
 
       {/* ------------------------------------------------- selected block */}
       {block ? (
         <>
           <div className="panel-sec" style={{ paddingTop: 0 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <h4 className="panel-h" style={{ margin: 0 }}>
-                {block.type === 'text' ? 'Text' : block.type[0].toUpperCase() + block.type.slice(1)}
-              </h4>
-              <button className="btn ghost sm" onClick={() => props.onDeleteBlock(block.id)}>
-                Remove
-              </button>
-            </div>
 
             {ROLES_FOR[block.type] && (
               <>
@@ -483,14 +499,14 @@ export default function Inspector(props: InspectorProps) {
       ) : null}
 
       {/* ------------------------------------------------------ page level */}
-      <div className="panel-sec" style={!block ? { paddingTop: 0 } : undefined}>
-        <h4 className="panel-h">Page</h4>
+      {!block ? (
+      <div className="panel-sec" style={{ paddingTop: 0 }}>
 
         {/* Shown, not named. See LayoutPicker for why. */}
         <LayoutPicker brand={presentation.brand} templateId={page.templateId} onPick={props.onSwapTemplate} />
 
-        <Collapse title="Page chrome" note="eyebrow, logo">
-        <div className="label" style={{ marginBottom: 6 }}>Page eyebrow</div>
+        <Collapse title="Labels &amp; logo" note="top of the page">
+        <div className="label" style={{ marginBottom: 6 }}>Running label</div>
         <div className="seg" style={{ marginBottom: 8 }}>
           <button
             className={page.headline !== undefined ? 'on' : ''}
@@ -512,43 +528,9 @@ export default function Inspector(props: InspectorProps) {
           />
         )}
 
-        {/* ---------------------------------------------- screenshot reader
-            A category review arrives as a PDF of somebody else's charts.
-            Retyping one is ten minutes and a typo; this is ten seconds and
-            keeps it as data, drawn in our own hand. What comes back is a
-            proposal — the numbers are editable on the page like any others,
-            and they should be checked against the source before it goes out. */}
-        {props.onInsertPage ? <ChartFromImage onInsert={props.onInsertPage} /> : null}
 
-        {/* ------------------------------------------------------- retailer
-            A deck built for one account carries that account's mark beside
-            ours. It is deck-level on purpose: a salesperson sets Publix once
-            and every page showing the lockup co-brands, instead of setting a
-            logo twenty-one times and missing three. */}
-        {props.onChangeDeck ? (
-          <>
-            <div className="label" style={{ marginBottom: 6 }}>Retailer (whole deck)</div>
-            <Select
-              style={{ marginBottom: 6 }}
-              ariaLabel="Retailer for this deck"
-              value={presentation.retailer?.id || ''}
-              onChange={(id) =>
-                props.onChangeDeck!({
-                  retailer: id ? { id, name: retailerDef(id)?.name || id } : undefined,
-                })
-              }
-              options={[
-                { value: '', label: 'None — Vigo | Alessi only' },
-                ...RETAILERS.map((r) => ({ value: r.id, label: r.name, group: 'Accounts' })),
-              ]}
-            />
-            <p className="tiny" style={{ marginTop: 0, marginBottom: 14 }}>
-              Shows wherever the page logo is on.
-            </p>
-          </>
-        ) : null}
 
-        <div className="label" style={{ marginBottom: 6 }}>Brand logo, top right</div>
+        <div className="label" style={{ marginBottom: 6 }}>Brand logo</div>
         <div className="seg" style={{ marginBottom: 14 }}>
           <button className={page.showLogo ? 'on' : ''} onClick={() => props.onChangePage({ showLogo: true })}>
             Show
@@ -668,7 +650,7 @@ export default function Inspector(props: InspectorProps) {
           </>
         )}
 
-        <div className="label" style={{ margin: '14px 0 6px' }}>Section name</div>
+        <div className="label" style={{ margin: '14px 0 6px' }}>Starts a section</div>
         <input
           className="field"
           placeholder="No section break"
@@ -677,6 +659,8 @@ export default function Inspector(props: InspectorProps) {
         />
 
         </Collapse>
+
+
 
         {presentation.brand === 'corporate' && (
           <>
@@ -697,6 +681,60 @@ export default function Inspector(props: InspectorProps) {
           </>
         )}
       </div>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Deck-level settings, for the Brand tab. A retailer is not a property of a
+ * page and filing it under one taught the wrong model: a salesperson set it,
+ * saw it appear on the page they were looking at, and reasonably assumed they
+ * had to do it nineteen more times.
+ */
+export function DeckSettings(props: { presentation: Presentation; onChangeDeck: (patch: Partial<Presentation>) => void }) {
+  const { presentation } = props;
+  return (
+    <div className="panel-sec" style={{ paddingTop: 0 }}>
+        {/* ------------------------------------------------------- the deck
+            Below the page's own controls and under its own heading, because
+            it is not a property of this page: set it once and all twenty
+            pages co-brand. Filed under the page it was quietly wrong. */}
+        {props.onChangeDeck ? (
+          <>
+            <h4 className="panel-h">This deck</h4>
+            <div className="label" style={{ marginBottom: 6 }}>Retailer</div>
+            <Select
+              style={{ marginBottom: 6 }}
+              ariaLabel="Retailer for this deck"
+              value={presentation.retailer?.id || ''}
+              onChange={(id) =>
+                props.onChangeDeck!({
+                  retailer: id ? { id, name: retailerDef(id)?.name || id } : undefined,
+                })
+              }
+              options={[
+                { value: '', label: 'None — Vigo | Alessi only' },
+                ...RETAILERS.map((r) => ({ value: r.id, label: r.name, group: 'Accounts' })),
+              ]}
+            />
+            <p className="tiny" style={{ marginTop: 0, marginBottom: 14 }}>
+              Shows wherever the page logo is on.
+            </p>
+          </>
+        ) : null}
+    </div>
+  );
+}
+
+/**
+ * Making a page from a screenshot belongs with the other ways of making a
+ * page, not inside the settings of the page you happen to be on.
+ */
+export function AddFromImage({ onInsert }: { onInsert: (page: Page) => void }) {
+  return (
+    <div className="panel-sec" style={{ paddingTop: 0 }}>
+      <ChartFromImage onInsert={onInsert} />
     </div>
   );
 }
@@ -775,7 +813,8 @@ function ChartFromImage({ onInsert }: { onInsert: (page: Page) => void }) {
 
   return (
     <div style={{ marginBottom: 16 }}>
-      <div className="label" style={{ marginBottom: 6 }}>Build a page from a screenshot</div>
+      <h4 className="panel-h">Add a page</h4>
+      <div className="label" style={{ marginBottom: 6 }}>From a screenshot</div>
       <button
         className="btn"
         style={{ width: '100%' }}

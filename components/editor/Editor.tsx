@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation';
 import Stage from '@/components/render/Stage';
 import PageNav from './PageNav';
-import Inspector from './Inspector';
+import Inspector, { DeckSettings, AddFromImage } from './Inspector';
 import Presence from './Presence';
 import NotesPanel from './NotesPanel';
 import AssetsPanel from './AssetsPanel';
@@ -758,6 +758,7 @@ export default function Editor({ id }: { id: string }) {
                   Object.assign(d, patch);
                 })
               }
+              onDeselect={() => setSelected(null)}
               onInsertPage={(np) =>
                 update((d) => {
                   const at = d.pages.findIndex((x) => x.id === page.id);
@@ -810,6 +811,20 @@ export default function Editor({ id }: { id: string }) {
             />
           )}
           {tab === 'add' && (
+            <>
+              <AddFromImage
+                onInsert={(np) =>
+                  update((d) => {
+                    const at = d.pages.findIndex((x) => x.id === page.id);
+                    d.pages.splice(at + 1, 0, np);
+                    setTimeout(() => setCurrentId(np.id), 0);
+                  })
+                }
+              />
+            </>
+          )}
+
+          {tab === 'add' && (
             <AddPanel
               page={page}
               activeSlot={activeSlot}
@@ -826,6 +841,17 @@ export default function Editor({ id }: { id: string }) {
               pageTitles={Object.fromEntries(
                 pres.pages.map((p, i) => [p.id, (i + 1) + '. ' + (p.sectionStart || getTemplate(p.templateId).name)])
               )}
+            />
+          )}
+
+          {tab === 'brand' && (
+            <DeckSettings
+              presentation={pres}
+              onChangeDeck={(patch) =>
+                update((d) => {
+                  Object.assign(d, patch);
+                })
+              }
             />
           )}
 
