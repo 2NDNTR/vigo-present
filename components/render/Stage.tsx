@@ -53,6 +53,8 @@ export interface StageProps {
   onSelectBlock?: (blockId: string, slotKey: string) => void;
   onSelectSlot?: (slotKey: string) => void;
   onChangeBlock?: (blockId: string, patch: Partial<Block>) => void;
+  /** remove a block from the canvas, without a trip to the panel */
+  onDeleteBlock?: (blockId: string) => void;
   onDropOnSlot?: (slotKey: string, e: React.DragEvent) => void;
   onChangePage?: (patch: Partial<Page>) => void;
   onReorderBlocks?: (slotKey: string, from: number, to: number) => void;
@@ -374,6 +376,29 @@ export default function Stage(props: StageProps) {
                       : undefined
                   }
                 >
+                  {/*
+                    * DELETE WHERE THE THING IS.
+                    * Removing a block used to mean selecting it, looking away
+                    * to the panel, and finding the button there. On a page
+                    * being tidied that is a dozen round trips across the
+                    * screen. The control belongs on the block: it appears on
+                    * hover and stays while the block is selected, which is
+                    * also when someone has decided they do not want it.
+                    */}
+                  {editable && props.onDeleteBlock ? (
+                    <button
+                      className="bdel"
+                      title="Remove this element"
+                      aria-label="Remove this element"
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        props.onDeleteBlock!(b.id);
+                      }}
+                    >
+                      −
+                    </button>
+                  ) : null}
                   {editable && blocks.length > 1 ? (
                     <span
                       className="grip"

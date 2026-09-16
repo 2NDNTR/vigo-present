@@ -1698,3 +1698,41 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
     linear-gradient(45deg, transparent 44%, rgba(23,24,26,0.3) 44%, rgba(23,24,26,0.3) 56%, transparent 56%)
       no-repeat center / 11px 11px;
 }
+
+/* --------------------------------------------------------- remove a block
+ * On the block, not in the panel. Tidying a page is a dozen small removals,
+ * and making each one a trip across the screen to a sidebar is how a page
+ * stays messy. Appears on hover, stays while the block is selected — which is
+ * the moment someone has already decided they do not want it.
+ *
+ * Sized in design units like everything else on the stage, so it stays the
+ * same size relative to the slide at any zoom.
+ */
+.bdel {
+  position: absolute;
+  top: calc(var(--u) * -14px);
+  right: calc(var(--u) * -14px);
+  z-index: 6;
+  width: calc(var(--u) * 26px);
+  height: calc(var(--u) * 26px);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--app-focus, #2f6df6);
+  color: #fff;
+  font-size: calc(var(--u) * 18px);
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.28);
+}
+/* The button is a child of .blockslot, the wrapper Stage puts around every
+ * block — .blockwrap lives inside it and would clip nothing usefully. */
+.blockslot { position: relative; }
+.blockslot:hover > .bdel,
+.blockslot:has(.blockwrap.selected) > .bdel,
+.bdel:focus-visible { opacity: 1; }
+.bdel:hover { background: #c0392b; }

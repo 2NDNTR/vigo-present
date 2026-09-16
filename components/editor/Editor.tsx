@@ -652,6 +652,16 @@ export default function Editor({ id }: { id: string }) {
                     { coalesce: true }
                   )
                 }
+                onDeleteBlock={(bid) =>
+                  update((d) => {
+                    const p = d.pages.find((x) => x.id === page.id);
+                    if (!p) return;
+                    Object.keys(p.slots).forEach((k) => (p.slots[k] = p.slots[k].filter((b) => b.id !== bid)));
+                    /* Clear the selection with it: a panel describing a block
+                     * that no longer exists is how an editor starts lying. */
+                    if (selected?.blockId === bid) setTimeout(() => setSelected(null), 0);
+                  })
+                }
                 onChangePage={(patch) =>
                   update(
                     (d) => {
