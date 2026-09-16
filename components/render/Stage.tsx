@@ -395,6 +395,7 @@ export default function Stage(props: StageProps) {
                     <BlockBar
                       block={b}
                       theme={theme}
+                      onDark={onDark}
                       canAdd={!!props.onAddLike && blocks.length < slot.max}
                       onColor={(role) =>
                         props.onChangeBlock &&

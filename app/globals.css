@@ -1747,15 +1747,15 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
  */
 .bbar {
   position: absolute;
-  bottom: calc(100% + var(--u) * 14px);
+  bottom: calc(100% + var(--u) * 16px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 8;
   display: flex;
   align-items: center;
-  gap: calc(var(--u) * 2px);
-  padding: calc(var(--u) * 4px);
-  border-radius: calc(var(--u) * 9px);
+  gap: calc(var(--u) * 3px);
+  padding: calc(var(--u) * 5px);
+  border-radius: calc(var(--u) * 11px);
   background: #fff;
   box-shadow: 0 calc(var(--u) * 4px) calc(var(--u) * 18px) rgba(0, 0, 0, 0.22);
   white-space: nowrap;
@@ -1763,13 +1763,13 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 .bbar-btn {
   display: grid;
   place-items: center;
-  width: calc(var(--u) * 28px);
-  height: calc(var(--u) * 28px);
+  width: calc(var(--u) * 34px);
+  height: calc(var(--u) * 34px);
   border: 0;
-  border-radius: calc(var(--u) * 6px);
+  border-radius: calc(var(--u) * 8px);
   background: none;
   color: #17181a;
-  font-size: calc(var(--u) * 17px);
+  font-size: calc(var(--u) * 19px);
   line-height: 1;
   cursor: pointer;
 }
@@ -1783,15 +1783,15 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 }
 /* The swatch shows the role in force; the diagonal means the theme decides,
  * which is the right answer on most blocks. */
+/* Shows the colour the block actually is — including the inherited one, which
+ * is most of them. A crossed-out chip would say "no colour" about text that
+ * plainly has one. */
 .bbar-swatch {
-  width: calc(var(--u) * 15px);
-  height: calc(var(--u) * 15px);
+  width: calc(var(--u) * 19px);
+  height: calc(var(--u) * 19px);
   border-radius: 50%;
-  border: 1px solid rgba(23, 24, 26, 0.2);
-  background:
-    linear-gradient(45deg, transparent 44%, rgba(23,24,26,0.35) 44%, rgba(23,24,26,0.35) 56%, transparent 56%)
-      no-repeat center / calc(var(--u) * 11px) calc(var(--u) * 11px),
-    #fff;
+  border: 1px solid rgba(23, 24, 26, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
 }
 .bbar-colors {
   position: absolute;
@@ -1805,8 +1805,8 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
   box-shadow: 0 calc(var(--u) * 4px) calc(var(--u) * 18px) rgba(0, 0, 0, 0.22);
 }
 .bbar-color {
-  width: calc(var(--u) * 22px);
-  height: calc(var(--u) * 22px);
+  width: calc(var(--u) * 26px);
+  height: calc(var(--u) * 26px);
   display: grid;
   place-items: center;
   padding: 0;
@@ -1816,19 +1816,16 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
   cursor: pointer;
 }
 .bbar-color i {
-  width: calc(var(--u) * 16px);
-  height: calc(var(--u) * 16px);
+  width: calc(var(--u) * 19px);
+  height: calc(var(--u) * 19px);
   border-radius: 50%;
   border: 1px solid rgba(23, 24, 26, 0.18);
   display: block;
 }
 .bbar-color.on { box-shadow: inset 0 0 0 calc(var(--u) * 2px) var(--app-focus, #2f6df6); }
-.bbar-color i.auto {
-  background:
-    linear-gradient(45deg, transparent 44%, rgba(23,24,26,0.35) 44%, rgba(23,24,26,0.35) 56%, transparent 56%)
-      no-repeat center / calc(var(--u) * 12px) calc(var(--u) * 12px),
-    #fff;
-}
+/* The inherited option shows the same colour as the swatch; a dashed ring is
+ * what marks it as inherited rather than chosen. */
+.bbar-color i.auto { border-style: dashed; border-width: calc(var(--u) * 1.5px); }
 /* With the bar up, the hover − would be a second delete in the same corner. */
 .blockslot:has(.bbar) > .bdel { display: none; }
 
