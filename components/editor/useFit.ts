@@ -28,7 +28,14 @@ export interface Overflow {
   by: number;
 }
 
-const SLOP = 3;
+/*
+ * Calibrated against the real deck rather than guessed. At 3px this fired on
+ * the approved company statement — four points of rounding on a three-line
+ * display headline, invisible to anyone — which is precisely the wolf-crying
+ * the comment above warns about. Twelve points is roughly a line's descender:
+ * below it nothing is legibly lost, above it a reader can see the cut.
+ */
+const SLOP = 12;
 
 export function useFit(root: HTMLElement | null, key: unknown): Overflow[] {
   const [over, setOver] = useState<Overflow[]>([]);

@@ -53,7 +53,15 @@ export function pageGuardrails(page: Page, template: PageTemplate, theme?: Brand
      * over. Only for grids of three or more: a two-item slot that holds one
      * is usually deliberate.
      */
-    if (slot.max >= 3 && blocks.length > 0 && blocks.length < slot.max) {
+    /*
+     * Only for slots that are GRIDS — cards, pictures, figures — where the
+     * count is part of the composition. A flexible copy slot has a max that
+     * is a capacity, not a design: the approved company statement holds three
+     * blocks in a slot that accepts five, and scolding it for that is the
+     * guardrail being wrong in front of someone who is right.
+     */
+    const isGrid = !slot.accepts.some((a) => a === 'text' || a === 'quote' || a === 'bullets' || a === 'checklist' || a === 'cta');
+    if (isGrid && slot.max >= 3 && blocks.length > 0 && blocks.length < slot.max) {
       out.push({
         id: 'under-' + slot.key,
         tone: 'info',
