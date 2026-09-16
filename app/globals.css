@@ -2155,3 +2155,69 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
   border-top: 1px solid var(--app-line-soft);
 }
 .wiz-suggest span { flex: 1 1 auto; }
+
+/* =============================================== the panel moves up top
+ * A settings rail on the right competes with the work for the widest
+ * dimension of the screen, and it turns every group into a tall column that
+ * must be collapsed to fit — which is how a panel ends up hiding the things
+ * it exists to show. Across the top there is width instead: groups sit side
+ * by side, open, and the canvas keeps the whole middle.
+ */
+.ed-sheet {
+  flex: none;
+  background: var(--app-panel);
+  border-radius: var(--r-md);
+  box-shadow: var(--e1);
+  margin: 0 12px;
+  max-height: 46vh;
+  overflow-y: auto;
+}
+.ed-sheet-inner { padding: 12px 16px 14px; }
+
+/* The tab row stops spanning a 300px column and becomes a control that is
+ * only as wide as its labels — a full-width segmented control across 1400px
+ * would look like a navigation bar for the whole application. */
+.ed-sheet .ed-tabsbar {
+  position: static;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.ed-sheet .ed-tabs { width: auto; display: inline-flex; }
+.ed-sheet .ed-tabs .tabbtn { flex: 0 0 auto; padding: 0 16px; }
+
+/* Groups across, not down. Each becomes a column of its own with a floor on
+ * its width, and they wrap when the window is narrow rather than squeezing
+ * into unusable slivers. */
+.ed-sheet .panel-sec {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px 28px;
+  padding: 0;
+}
+.ed-sheet .panel-sec > * { flex: 1 1 260px; min-width: 240px; max-width: 420px; }
+/* The layout picker is the first thing anyone reaches for, so it leads and
+ * keeps its own width. */
+.ed-sheet .layout-picker { flex: 0 0 300px; }
+.ed-sheet .collapse { border-top: 0; }
+.ed-sheet .collapse-head { padding: 0 0 8px; }
+.ed-sheet .collapse-body { padding-bottom: 0; }
+.ed-sheet .collapse-note { display: none; }
+.ed-sheet .panel-notices { padding: 0 0 10px; }
+.ed-sheet .panel-scope { padding: 0 0 10px; margin-bottom: 10px; }
+
+/* The picker's sheet covers the panel it opened from, not the whole editor. */
+.ed-sheet { position: relative; }
+.ed-sheet .lp-body { padding: 14px 16px; }
+.ed-sheet .lp-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); max-height: 34vh; }
+
+/* Now that nothing else lives on the right, the drawer is the only thing
+ * there — and it gets the full height of the body rather than a slot in a
+ * row of three. */
+.ed-body { align-items: stretch; }
+
+/* The right rail is gone; these keep any stragglers from reserving width. */
+.ed-right { display: none; }

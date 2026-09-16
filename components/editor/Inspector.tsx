@@ -57,6 +57,13 @@ export interface InspectorProps {
   onInsertPage?: (page: Page) => void;
   /** step back out to the page — the panel is scoped, not stacked */
   onDeselect?: () => void;
+  /**
+   * Where the panel is drawn. In a rail, groups are closed by default and you
+   * open one at a time because vertical space is the scarce thing. Across the
+   * top there is width instead, so the groups sit side by side and open — the
+   * whole point of moving it was to stop hiding things behind disclosure.
+   */
+  layout?: 'rail' | 'sheet';
 }
 
 export default function Inspector(props: InspectorProps) {
@@ -505,7 +512,7 @@ export default function Inspector(props: InspectorProps) {
         {/* Shown, not named. See LayoutPicker for why. */}
         <LayoutPicker brand={presentation.brand} templateId={page.templateId} onPick={props.onSwapTemplate} />
 
-        <Collapse title="Labels &amp; logo" note="top of the page">
+        <Collapse title="Labels &amp; logo" note="top of the page" defaultOpen={props.layout === 'sheet'}>
         <div className="label" style={{ marginBottom: 6 }}>Running label</div>
         <div className="seg" style={{ marginBottom: 8 }}>
           <button
@@ -542,7 +549,7 @@ export default function Inspector(props: InspectorProps) {
 
         </Collapse>
 
-        <Collapse title="Background" note="colour, image, overlay">
+        <Collapse title="Background" note="colour, image, overlay" defaultOpen={props.layout === 'sheet'}>
         <div className="seg" style={{ marginBottom: 10 }}>
           {(['theme', 'color', 'image', 'video'] as const).map((k) => (
             <button key={k} className={(page.background?.kind || 'theme') === k ? 'on' : ''} onClick={() => setBg({ kind: k })}>
