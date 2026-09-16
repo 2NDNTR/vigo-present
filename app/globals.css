@@ -2104,3 +2104,54 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 }
 .lp-grid { max-height: none; flex: 1 1 auto; }
 .ed-right { position: relative; }
+
+/* ------------------------------------------------------- companion drawer
+ * Notes and the wizard talk ABOUT the deck; the inspector describes one page
+ * of it. Mixing them put two unrelated jobs in one tab row. The drawer opens
+ * beside the inspector and closes when it is not wanted, which is what a
+ * companion should do.
+ */
+.drawer {
+  width: 330px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--app-panel);
+  border-radius: var(--r-md);
+  box-shadow: var(--e1);
+  overflow: hidden;
+}
+.drawer-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 12px 10px;
+  border-bottom: 1px solid var(--app-line-soft);
+}
+.drawer-tabs { flex: 1 1 auto; }
+.drawer-body { flex: 1 1 auto; overflow-y: auto; padding: 14px 16px 90px; }
+
+.wiz-prompts { display: flex; flex-direction: column; gap: 6px; }
+.wiz-prompt {
+  text-align: left; cursor: pointer;
+  padding: 9px 11px;
+  border: 1px solid var(--app-line);
+  border-radius: var(--r-sm);
+  background: #fff;
+  font-size: 12.5px; color: var(--app-ink-2);
+}
+.wiz-prompt:hover { border-color: rgba(16,24,40,0.2); color: var(--app-ink); }
+.wiz-prompt:disabled { opacity: .5; cursor: default; }
+
+.wiz-reply {
+  margin-top: 16px; padding: 12px;
+  border-radius: var(--r-sm);
+  background: rgba(16,24,40,0.04);
+  font-size: 12.5px; line-height: 1.5;
+}
+.wiz-reply p { margin: 0; }
+.wiz-suggest {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 10px; padding-top: 10px;
+  border-top: 1px solid var(--app-line-soft);
+}
+.wiz-suggest span { flex: 1 1 auto; }

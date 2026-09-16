@@ -6,7 +6,7 @@ import Stage from '@/components/render/Stage';
 import PageNav from './PageNav';
 import Inspector, { DeckSettings, AddFromImage } from './Inspector';
 import Presence from './Presence';
-import NotesPanel from './NotesPanel';
+import AssistDrawer from './AssistDrawer';
 import AssetsPanel from './AssetsPanel';
 import BrandPanel from './BrandPanel';
 import AddPanel from './AddPanel';
@@ -24,7 +24,7 @@ import { getStore, storeKindSync } from '@/lib/store';
 import { ConflictError } from '@/lib/store/api';
 import { processFile } from '@/lib/media';
 
-type Tab = 'pages' | 'add' | 'assets' | 'brand' | 'notes';
+type Tab = 'pages' | 'add' | 'assets' | 'brand';
 
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
 
@@ -233,6 +233,9 @@ export default function Editor({ id }: { id: string }) {
   /* A callback ref rather than useRef: the hook needs to re-run when the node
    * appears, and a ref object does not tell it that. */
   const [canvas, setCanvas] = useState<HTMLDivElement | null>(null);
+  /* The companions: open or shut, and which one. Kept here rather than in the
+   * drawer so the top-bar buttons can show what is open. */
+  const [drawer, setDrawer] = useState<null | 'notes' | 'wizard'>(null);
 
   const pageIndex = useMemo(() => (pres ? pres.pages.findIndex((p) => p.id === currentId) : -1), [pres, currentId]);
   const page = pageIndex >= 0 ? pres!.pages[pageIndex] : null;
@@ -245,6 +248,23 @@ export default function Editor({ id }: { id: string }) {
       setTimeout(() => setCurrentId(np.id), 0);
     });
   };
+
+  /* One implementation of a layout swap, so the panel and the wizard cannot
+   * drift apart on what swapping means. */
+  const swapTemplate = (tid: string) =>
+    update((d) => {
+      const i = d.pages.findIndex((x) => x.id === page?.id);
+      if (i < 0) return;
+      const nextSlots = remapSlots(d.pages[i], tid);
+      const t = getTemplate(tid);
+      d.pages[i] = {
+        ...d.pages[i],
+        templateId: tid,
+        slots: nextSlots,
+        background:
+          d.pages[i].background?.kind === 'theme' && t.background ? clone(t.background) : d.pages[i].background,
+      };
+    });
 
   const onDropOnSlot = async (slotKey: string, e: React.DragEvent) => {
     if (!page) return;
@@ -513,6 +533,20 @@ export default function Editor({ id }: { id: string }) {
             pageId={page?.id}
             pageTitleFor={(pid) => pres.pages.find((x) => x.id === pid)?.sectionStart || undefined}
           />
+          <button
+            className={'btn sm' + (drawer === 'wizard' ? ' primary' : '')}
+            title="Ask for help with this page"
+            onClick={() => setDrawer(drawer === 'wizard' ? null : 'wizard')}
+          >
+            Wizard
+          </button>
+          <button
+            className={'btn sm' + (drawer === 'notes' ? ' primary' : '')}
+            title="Notes on this deck"
+            onClick={() => setDrawer(drawer === 'notes' ? null : 'notes')}
+          >
+            Notes
+          </button>
           <button className="btn sm" onClick={() => router.push('/present/' + pres.id)}>
             Preview
           </button>
@@ -717,6 +751,24 @@ export default function Editor({ id }: { id: string }) {
           )}
         </div>
 
+        {drawer ? (
+          <AssistDrawer
+            open
+            tab={drawer}
+            onTab={setDrawer}
+            onClose={() => setDrawer(null)}
+            presentation={pres}
+            page={page}
+            onApply={(mutate) =>
+              update((d) => {
+                const p = d.pages.find((x) => x.id === page.id);
+                if (p) mutate(p);
+              })
+            }
+            onSwapTemplate={(id) => swapTemplate(id)}
+          />
+        ) : null}
+
         <div className="ed-right" onMouseDown={(e) => e.stopPropagation()}>
           {/* Page guidance sits above the tabs, so it holds one position
               whichever tab is open rather than appearing only under Pages. */}
@@ -740,7 +792,7 @@ export default function Editor({ id }: { id: string }) {
               visibly through the tabs. */}
           <div className="ed-tabsbar">
             <div className="ed-tabs">
-              {(['pages', 'add', 'assets', 'brand', 'notes'] as Tab[]).map((t) => (
+              {(['pages', 'add', 'assets', 'brand'] as Tab[]).map((t) => (
                 <button key={t} className={'tabbtn' + (tab === t ? ' on' : '')} onClick={() => setTab(t)}>
                   {t[0].toUpperCase() + t.slice(1)}
                 </button>
@@ -791,23 +843,7 @@ export default function Editor({ id }: { id: string }) {
                   if (i >= 0) d.pages[i] = { ...d.pages[i], ...patch };
                 })
               }
-              onSwapTemplate={(tid) =>
-                update((d) => {
-                  const i = d.pages.findIndex((x) => x.id === page.id);
-                  if (i < 0) return;
-                  const nextSlots = remapSlots(d.pages[i], tid);
-                  const t = getTemplate(tid);
-                  d.pages[i] = {
-                    ...d.pages[i],
-                    templateId: tid,
-                    slots: nextSlots,
-                    background:
-                      d.pages[i].background?.kind === 'theme' && t.background
-                        ? clone(t.background)
-                        : d.pages[i].background,
-                  };
-                })
-              }
+              onSwapTemplate={swapTemplate}
             />
           )}
           {tab === 'add' && (
@@ -834,16 +870,6 @@ export default function Editor({ id }: { id: string }) {
             />
           )}
           {tab === 'assets' && <AssetsPanel brand={pres.brand} onUse={useAsset} />}
-          {tab === 'notes' && (
-            <NotesPanel
-              presentationId={pres.id}
-              pageId={page?.id}
-              pageTitles={Object.fromEntries(
-                pres.pages.map((p, i) => [p.id, (i + 1) + '. ' + (p.sectionStart || getTemplate(p.templateId).name)])
-              )}
-            />
-          )}
-
           {tab === 'brand' && (
             <DeckSettings
               presentation={pres}
