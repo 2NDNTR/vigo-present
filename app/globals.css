@@ -1856,3 +1856,165 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 .dp-input:focus { border-color: rgba(23,24,26,0.4); }
 .dp-row .btn { flex: 0 0 auto; align-self: stretch; }
 .dp-note { margin: 9px 2px 0; }
+
+/* =========================================================================
+   THE CHROME, REMADE
+   -------------------------------------------------------------------------
+   One rule governs this whole block: it changes the APPLICATION and never the
+   SLIDE. Everything scoped below touches panels, rails, buttons and cards —
+   the furniture around the work. Not one selector reaches inside .stage,
+   because the deck is the brand and the brand is not a design trend. A
+   presentation exported today and one exported next year have to be the same
+   deck; only the room around them gets new furniture.
+
+   The direction, from the references: a soft ground with white panels
+   floating on it, generous radii, and separation carried by shadow rather
+   than by hairlines. Borders draw attention to edges; shadows let the eye
+   read depth and ignore the boundary, which is what makes a dense tool feel
+   calm rather than gridded.
+   ========================================================================= */
+
+:root {
+  /* A ground with a trace of blue in it. Pure grey under white panels reads
+     as dirty; a few degrees of cool makes the white look intentional. */
+  --app-bg: #f4f6f9;
+  --app-panel: #ffffff;
+  --app-line: rgba(16, 24, 40, 0.07);
+  --app-line-soft: rgba(16, 24, 40, 0.045);
+
+  /* Radii as a scale rather than a single value: controls, panels, and the
+     things that want to look like pills each have a place on it. */
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-pill: 999px;
+  --radius: var(--r-sm);
+
+  /* Three elevations, all cool-tinted and wide. A shadow that is pure black
+     at high opacity looks like a drop shadow; one that is slightly blue and
+     spread looks like light. */
+  --e1: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.05);
+  --e2: 0 2px 4px rgba(16, 24, 40, 0.03), 0 6px 16px rgba(16, 24, 40, 0.07);
+  --e3: 0 8px 20px rgba(16, 24, 40, 0.08), 0 24px 56px rgba(16, 24, 40, 0.12);
+}
+
+/* ------------------------------------------------------------- primitives */
+
+.btn {
+  border-radius: var(--r-sm);
+  border-color: transparent;
+  box-shadow: var(--e1);
+  font-weight: 500;
+}
+.btn:hover { background: #fff; box-shadow: var(--e2); border-color: transparent; }
+.btn.primary { box-shadow: var(--e1); }
+.btn.primary:hover { box-shadow: var(--e2); }
+.btn.ghost { box-shadow: none; }
+.btn.ghost:hover { box-shadow: none; background: rgba(16, 24, 40, 0.05); }
+.btn.lg { border-radius: var(--r-md); }
+
+.field {
+  border-radius: var(--r-sm);
+  border-color: var(--app-line);
+  box-shadow: var(--e1);
+}
+.field:focus {
+  border-color: rgba(47, 109, 246, 0.5);
+  box-shadow: 0 0 0 3px rgba(47, 109, 246, 0.12);
+}
+
+/* Segmented controls become pill tracks — the single most recognisable
+   gesture in the references, and the one our tabs and toggles already were in
+   all but shape. */
+.seg {
+  background: rgba(16, 24, 40, 0.05);
+  border-radius: var(--r-pill);
+  padding: 3px;
+  border: 0;
+}
+.seg button { border-radius: var(--r-pill); }
+.seg button.on { box-shadow: var(--e1); }
+
+.chip { border-radius: var(--r-pill); }
+.chip.on { box-shadow: var(--e1); }
+
+/* ---------------------------------------------------------------- surfaces */
+
+.topbar {
+  background: rgba(244, 246, 249, 0.8);
+  border-bottom: 1px solid var(--app-line-soft);
+}
+
+/* A deck in the list is a card, not a thumbnail with text under it: the
+   picture, the name and the meta line share one white surface, which is what
+   makes a grid of them read as objects rather than as a contact sheet. */
+.card-thumb {
+  border-radius: var(--r-md) var(--r-md) 0 0;
+  border: 0;
+  box-shadow: none;
+}
+.card {
+  background: var(--app-panel);
+  border-radius: var(--r-md);
+  box-shadow: var(--e1);
+  overflow: hidden;
+  transition: box-shadow 160ms ease, transform 160ms ease;
+}
+.card:hover { box-shadow: var(--e3); transform: translateY(-2px); }
+.card:hover .card-thumb { box-shadow: none; transform: none; }
+.card-meta { padding: 14px 16px 16px; }
+
+.menu { border-radius: var(--r-md); box-shadow: var(--e3); border: 0; }
+.menu button { border-radius: var(--r-sm); }
+
+.modal { border-radius: var(--r-lg); box-shadow: var(--e3); }
+.empty-state { border-radius: var(--r-md); }
+.deckprompt { border-radius: var(--r-lg); border: 0; box-shadow: var(--e1); background: var(--app-panel); }
+.dp-input { border-radius: var(--r-md); }
+.dp-row .btn { border-radius: var(--r-md); }
+
+/* ------------------------------------------------------------- the editor */
+
+/* The rails stop being walls and become panels floating on the ground. This
+   is the whole "widget" feeling in three declarations: inset them, round
+   them, and let a shadow do the separating that a border was doing. */
+.ed-body { padding: 12px; gap: 12px; background: var(--app-bg); }
+.ed-left,
+.ed-right {
+  background: var(--app-panel);
+  border: 0;
+  border-radius: var(--r-md);
+  box-shadow: var(--e1);
+}
+.ed-left { padding: 12px 10px 100px; }
+.ed-right { padding: 0 16px 100px; }
+.ed-center { padding: 22px 6px; }
+
+.ed-top {
+  background: var(--app-bg);
+  border-bottom: 0;
+  padding: 0 16px;
+}
+
+/* The tab bar keeps its opaque sticky fill — see the note where it is defined
+   — and only changes shape. */
+.ed-tabsbar { margin: 0 -16px 14px; padding: 14px 16px 10px; border-radius: var(--r-md) var(--r-md) 0 0; }
+.ed-tabs { border-radius: var(--r-pill); padding: 3px; background: rgba(16, 24, 40, 0.05); }
+.tabbtn { border-radius: var(--r-pill); }
+.tabbtn.on { box-shadow: var(--e1); }
+
+.canvas-shell { border-radius: var(--r-md); overflow: hidden; box-shadow: var(--e2); }
+.panel-notices { padding: 14px 0 2px; }
+.warn { border-radius: var(--r-sm); }
+
+/* Panel sections lose their rules: on a white card floating in space, a
+   horizontal line between every group is the gridded look the references are
+   deliberately without. Space separates them instead. */
+.panel-sec { border-bottom: 0; padding: 14px 0; }
+.collapse { border-top: 1px solid var(--app-line-soft); }
+
+.lp-current { border-radius: var(--r-md); border-color: var(--app-line); }
+.lp-item { border-radius: var(--r-md); }
+.chart-type { border-radius: var(--r-md); border-color: var(--app-line); }
+.crole-menu, .mention-menu, .bbar-colors { border-radius: var(--r-md); box-shadow: var(--e3); border: 0; }
+.notes-summary { border-radius: 0 var(--r-md) var(--r-md) 0; }
