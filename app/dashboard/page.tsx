@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Thumb from '@/components/ui/Thumb';
 import Brandmark from '@/components/ui/Brandmark';
+import DeckPrompt from '@/components/dashboard/DeckPrompt';
 import NewPresentation from '@/components/NewPresentation';
 import PdfImport from '@/components/PdfImport';
 import { getStore } from '@/lib/store';
@@ -156,6 +157,10 @@ export default function Dashboard() {
             </button>
           </div>
         </div>
+
+        {/* The blank-deck problem sits above the list, where the blank deck
+            would otherwise be started. */}
+        <DeckPrompt brand={'corporate'} />
 
         <div className="filters">
           {FILTERS.map((f) => (

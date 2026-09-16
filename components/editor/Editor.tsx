@@ -652,6 +652,32 @@ export default function Editor({ id }: { id: string }) {
                     { coalesce: true }
                   )
                 }
+                onAddLike={(slotKey, afterIndex) =>
+                  update((d) => {
+                    const p = d.pages.find((x) => x.id === page.id);
+                    if (!p) return;
+                    const src = p.slots[slotKey]?.[afterIndex];
+                    if (!src) return;
+                    /* A copy of the block beside it, emptied of its words. The
+                     * SHAPE is what the person wants repeated — another card,
+                     * another figure — and the style rides along, so the new
+                     * one is on brand without anybody choosing anything. */
+                    const copy: typeof src = {
+                      ...src,
+                      id: uid('b'),
+                      text: src.type === 'text' ? '' : src.text ? '' : undefined,
+                      support: src.support !== undefined ? '' : undefined,
+                      value: src.value !== undefined ? '' : undefined,
+                      label: src.label !== undefined ? '' : undefined,
+                      items: src.items ? [] : undefined,
+                      entries: undefined,
+                      table: undefined,
+                      chart: undefined,
+                    };
+                    p.slots[slotKey].splice(afterIndex + 1, 0, copy);
+                    setTimeout(() => setSelected({ blockId: copy.id, slotKey }), 0);
+                  })
+                }
                 onDeleteBlock={(bid) =>
                   update((d) => {
                     const p = d.pages.find((x) => x.id === page.id);

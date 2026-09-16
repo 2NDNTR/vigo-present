@@ -1736,3 +1736,126 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 .blockslot:has(.blockwrap.selected) > .bdel,
 .bdel:focus-visible { opacity: 1; }
 .bdel:hover { background: #c0392b; }
+
+/* ------------------------------------------------------- the selection bar
+ * Three controls, floating above the selected block. Canva's bar carries a
+ * dozen because its promise is that anything is possible; ours carries three
+ * because the other nine — font, size, position, rotation, opacity, effects —
+ * are decisions this product makes on the user's behalf on purpose. A bar
+ * offering them would be offering to break the brand from the most convenient
+ * place on the screen.
+ */
+.bbar {
+  position: absolute;
+  bottom: calc(100% + var(--u) * 14px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 2px);
+  padding: calc(var(--u) * 4px);
+  border-radius: calc(var(--u) * 9px);
+  background: #fff;
+  box-shadow: 0 calc(var(--u) * 4px) calc(var(--u) * 18px) rgba(0, 0, 0, 0.22);
+  white-space: nowrap;
+}
+.bbar-btn {
+  display: grid;
+  place-items: center;
+  width: calc(var(--u) * 28px);
+  height: calc(var(--u) * 28px);
+  border: 0;
+  border-radius: calc(var(--u) * 6px);
+  background: none;
+  color: #17181a;
+  font-size: calc(var(--u) * 17px);
+  line-height: 1;
+  cursor: pointer;
+}
+.bbar-btn:hover, .bbar-btn.on { background: rgba(23, 24, 26, 0.08); }
+.bbar-btn.danger:hover { background: #c0392b; color: #fff; }
+.bbar-sep {
+  width: 1px;
+  align-self: stretch;
+  margin: calc(var(--u) * 3px) calc(var(--u) * 2px);
+  background: rgba(23, 24, 26, 0.12);
+}
+/* The swatch shows the role in force; the diagonal means the theme decides,
+ * which is the right answer on most blocks. */
+.bbar-swatch {
+  width: calc(var(--u) * 15px);
+  height: calc(var(--u) * 15px);
+  border-radius: 50%;
+  border: 1px solid rgba(23, 24, 26, 0.2);
+  background:
+    linear-gradient(45deg, transparent 44%, rgba(23,24,26,0.35) 44%, rgba(23,24,26,0.35) 56%, transparent 56%)
+      no-repeat center / calc(var(--u) * 11px) calc(var(--u) * 11px),
+    #fff;
+}
+.bbar-colors {
+  position: absolute;
+  top: calc(100% + var(--u) * 6px);
+  left: 0;
+  display: flex;
+  gap: calc(var(--u) * 4px);
+  padding: calc(var(--u) * 6px);
+  border-radius: calc(var(--u) * 8px);
+  background: #fff;
+  box-shadow: 0 calc(var(--u) * 4px) calc(var(--u) * 18px) rgba(0, 0, 0, 0.22);
+}
+.bbar-color {
+  width: calc(var(--u) * 22px);
+  height: calc(var(--u) * 22px);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+}
+.bbar-color i {
+  width: calc(var(--u) * 16px);
+  height: calc(var(--u) * 16px);
+  border-radius: 50%;
+  border: 1px solid rgba(23, 24, 26, 0.18);
+  display: block;
+}
+.bbar-color.on { box-shadow: inset 0 0 0 calc(var(--u) * 2px) var(--app-focus, #2f6df6); }
+.bbar-color i.auto {
+  background:
+    linear-gradient(45deg, transparent 44%, rgba(23,24,26,0.35) 44%, rgba(23,24,26,0.35) 56%, transparent 56%)
+      no-repeat center / calc(var(--u) * 12px) calc(var(--u) * 12px),
+    #fff;
+}
+/* With the bar up, the hover − would be a second delete in the same corner. */
+.blockslot:has(.bbar) > .bdel { display: none; }
+
+/* ------------------------------------------------------------ deck prompt
+ * Sits above the list, where a blank deck would otherwise be started.
+ */
+.deckprompt {
+  margin: 4px 0 26px;
+  padding: 16px;
+  border: 1px solid var(--app-line);
+  border-radius: 14px;
+  background: var(--app-bg-2, #f7f6f4);
+}
+.dp-row { display: flex; gap: 10px; align-items: stretch; }
+.dp-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  resize: vertical;
+  padding: 11px 14px;
+  border: 1px solid var(--app-line);
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.45;
+  outline: none;
+}
+.dp-input:focus { border-color: rgba(23,24,26,0.4); }
+.dp-row .btn { flex: 0 0 auto; align-self: stretch; }
+.dp-note { margin: 9px 2px 0; }

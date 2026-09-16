@@ -3,6 +3,7 @@
 import React, { CSSProperties, useEffect, useRef, useState } from 'react';
 import type { Block, Page } from '@/lib/model/types';
 import type { BrandId } from '@/lib/brand/themes';
+import BlockBar from '@/components/render/BlockBar';
 import type { RetailerRef } from '@/lib/brand/retailers';
 import { retailerSrc } from '@/lib/brand/retailers';
 import { getTheme, themeVars } from '@/lib/brand/themes';
@@ -55,6 +56,8 @@ export interface StageProps {
   onChangeBlock?: (blockId: string, patch: Partial<Block>) => void;
   /** remove a block from the canvas, without a trip to the panel */
   onDeleteBlock?: (blockId: string) => void;
+  /** add another block of the same kind after this one, within the slot's rules */
+  onAddLike?: (slotKey: string, afterIndex: number) => void;
   onDropOnSlot?: (slotKey: string, e: React.DragEvent) => void;
   onChangePage?: (patch: Partial<Page>) => void;
   onReorderBlocks?: (slotKey: string, from: number, to: number) => void;
@@ -385,6 +388,22 @@ export default function Stage(props: StageProps) {
                     * hover and stays while the block is selected, which is
                     * also when someone has decided they do not want it.
                     */}
+                  {/* The bar belongs to the selected block only; the bare −
+                      stays on hover so tidying does not require selecting
+                      first. */}
+                  {editable && props.selectedId === b.id && props.onDeleteBlock ? (
+                    <BlockBar
+                      block={b}
+                      theme={theme}
+                      canAdd={!!props.onAddLike && blocks.length < slot.max}
+                      onColor={(role) =>
+                        props.onChangeBlock &&
+                        props.onChangeBlock(b.id, { style: { ...(b.style || {}), color: role } })
+                      }
+                      onAdd={() => props.onAddLike && props.onAddLike(slot.key, bi)}
+                      onDelete={() => props.onDeleteBlock!(b.id)}
+                    />
+                  ) : null}
                   {editable && props.onDeleteBlock ? (
                     <button
                       className="bdel"
