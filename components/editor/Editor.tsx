@@ -443,17 +443,31 @@ export default function Editor({ id }: { id: string }) {
         else undo();
         return;
       }
-      const editing = (document.activeElement as HTMLElement)?.isContentEditable;
-      if (editing) return;
+      /* An arrow key belongs to whatever is being typed in. Slide text is
+       * contentEditable, but the deck title, the wizard, a note, a section
+       * name and the size bar are ordinary fields, and moving the deck out
+       * from under someone mid-sentence is the rudest thing an editor can
+       * do. */
+      const el = document.activeElement as HTMLElement | null;
+      const tag = el?.tagName;
+      if (el?.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
       if (!pres) return;
-      if (e.key === 'ArrowDown' || e.key === 'PageDown') {
+
+      /* The pages run left to right along the bottom now, so the arrows that
+       * move between them are left and right. Up and down still work, and so
+       * do the page keys, which is what a presenter remote sends. */
+      const step = (d: number) => {
+        e.preventDefault();
         const i = pres.pages.findIndex((p) => p.id === currentId);
-        if (i < pres.pages.length - 1) setCurrentId(pres.pages[i + 1].id);
-      }
-      if (e.key === 'ArrowUp' || e.key === 'PageUp') {
-        const i = pres.pages.findIndex((p) => p.id === currentId);
-        if (i > 0) setCurrentId(pres.pages[i - 1].id);
-      }
+        const n = i + d;
+        if (n < 0 || n >= pres.pages.length) return;
+        setCurrentId(pres.pages[n].id);
+        setSelected(null);
+      };
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown') step(1);
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') step(-1);
+      if (e.key === 'Home') { e.preventDefault(); setCurrentId(pres.pages[0].id); setSelected(null); }
+      if (e.key === 'End') { e.preventDefault(); setCurrentId(pres.pages[pres.pages.length - 1].id); setSelected(null); }
     };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
