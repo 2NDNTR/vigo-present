@@ -6,7 +6,8 @@ import Stage from '@/components/render/Stage';
 import PageNav from './PageNav';
 import Inspector, { DeckSettings, AddFromImage } from './Inspector';
 import Presence from './Presence';
-import AssistDrawer from './AssistDrawer';
+import WizardWidget from './WizardWidget';
+import NotesWidget from './NotesWidget';
 import AssetsPanel from './AssetsPanel';
 import BrandPanel from './BrandPanel';
 import AddPanel from './AddPanel';
@@ -233,9 +234,11 @@ export default function Editor({ id }: { id: string }) {
   /* A callback ref rather than useRef: the hook needs to re-run when the node
    * appears, and a ref object does not tell it that. */
   const [canvas, setCanvas] = useState<HTMLDivElement | null>(null);
-  /* The companions: open or shut, and which one. Kept here rather than in the
-   * drawer so the top-bar buttons can show what is open. */
-  const [drawer, setDrawer] = useState<null | 'notes' | 'wizard'>(null);
+  /* The companions: open or shut, and which one. Kept here rather than inside
+   * them so the top-bar buttons can show what is open. One at a time — they
+   * occupy the same place, and two feeds stacked over the panel would bury
+   * the panel. */
+  const [companion, setCompanion] = useState<null | 'notes' | 'wizard'>(null);
 
   const pageIndex = useMemo(() => (pres ? pres.pages.findIndex((p) => p.id === currentId) : -1), [pres, currentId]);
   const page = pageIndex >= 0 ? pres!.pages[pageIndex] : null;
@@ -534,16 +537,16 @@ export default function Editor({ id }: { id: string }) {
             pageTitleFor={(pid) => pres.pages.find((x) => x.id === pid)?.sectionStart || undefined}
           />
           <button
-            className={'btn sm' + (drawer === 'wizard' ? ' primary' : '')}
+            className={'btn sm' + (companion === 'wizard' ? ' primary' : '')}
             title="Ask for help with this page"
-            onClick={() => setDrawer(drawer === 'wizard' ? null : 'wizard')}
+            onClick={() => setCompanion(companion === 'wizard' ? null : 'wizard')}
           >
             Wizard
           </button>
           <button
-            className={'btn sm' + (drawer === 'notes' ? ' primary' : '')}
+            className={'btn sm' + (companion === 'notes' ? ' primary' : '')}
             title="Notes on this deck"
-            onClick={() => setDrawer(drawer === 'notes' ? null : 'notes')}
+            onClick={() => setCompanion(companion === 'notes' ? null : 'notes')}
           >
             Notes
           </button>
@@ -751,25 +754,36 @@ export default function Editor({ id }: { id: string }) {
           )}
         </div>
 
-        {drawer ? (
-          <AssistDrawer
-            open
-            tab={drawer}
-            onTab={setDrawer}
-            onClose={() => setDrawer(null)}
-            presentation={pres}
-            page={page}
-            onApply={(mutate) =>
-              update((d) => {
-                const p = d.pages.find((x) => x.id === page.id);
-                if (p) mutate(p);
-              })
-            }
-            onSwapTemplate={(id) => swapTemplate(id)}
-          />
-        ) : null}
-
         <div className="ed-right" onMouseDown={(e) => e.stopPropagation()}>
+          {/* The companions sit ABOVE the module, in the same column. They are
+              about the deck; the module below describes one page of it. */}
+          {companion === 'wizard' && (
+            <WizardWidget
+              page={page}
+              onClose={() => setCompanion(null)}
+              onApply={(mutate) =>
+                update((d) => {
+                  const p = d.pages.find((x) => x.id === page.id);
+                  if (p) mutate(p);
+                })
+              }
+              onSwapTemplate={(id) => swapTemplate(id)}
+            />
+          )}
+          {companion === 'notes' && (
+            <NotesWidget
+              presentationId={pres.id}
+              pageId={page.id}
+              pageTitles={Object.fromEntries(
+                pres.pages.map((p, i) => [p.id, i + 1 + '. ' + (p.sectionStart || getTemplate(p.templateId).name)])
+              )}
+              onClose={() => setCompanion(null)}
+              onGoToPage={(pid) => {
+                setCurrentId(pid);
+                setSelected(null);
+              }}
+            />
+          )}
           {/* Page guidance sits above the tabs, so it holds one position
               whichever tab is open rather than appearing only under Pages. */}
           {warnings.length > 0 && (

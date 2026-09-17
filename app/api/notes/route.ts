@@ -83,3 +83,19 @@ export async function PATCH(req: Request) {
   await q('update notes set resolved = $2 where id = $1', [String(body.id), !!body.resolved]);
   return NextResponse.json({ ok: true });
 }
+
+/**
+ * Removing one is the author's own privilege and nobody else's. Resolving
+ * settles a note; deleting erases the record that it was ever raised, and
+ * letting anyone do that to anyone's feedback is how a review turns into a
+ * thing people stop trusting.
+ */
+export async function DELETE(req: Request) {
+  const me = await currentUser();
+  if (!me) return unauthorized();
+  const id = new URL(req.url).searchParams.get('id') || '';
+  if (!id) return NextResponse.json({ error: 'Missing note' }, { status: 400 });
+  const r = await q('delete from notes where id = $1 and author_id = $2', [id, me.id]);
+  if (!r.rowCount) return NextResponse.json({ error: 'That note is not yours to delete.' }, { status: 403 });
+  return NextResponse.json({ ok: true });
+}

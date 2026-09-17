@@ -1454,9 +1454,6 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 .pres-dot.same { box-shadow: 0 0 0 2px rgba(255,255,255,0.55); }
 .pres-dot.more { background: rgba(255,255,255,0.18); }
 
-.notes-panel .notes-count {
-  font-size: 11px; font-weight: 600; opacity: .7; margin-left: 8px;
-}
 .mention-menu {
   display: flex; flex-direction: column; gap: 2px;
   border: 1px solid rgba(255,255,255,0.12); border-radius: 6px;
@@ -1468,24 +1465,6 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 }
 .mention-menu button:hover { background: rgba(255,255,255,0.09); }
 
-.notes-summary {
-  margin-top: 10px; padding: 10px 12px;
-  border-left: 2px solid var(--accent, #9E2B22);
-  background: rgba(255,255,255,0.04);
-  border-radius: 0 6px 6px 0;
-  font-size: 12.5px; line-height: 1.55;
-}
-.notes-summary p { margin: 0 0 7px; }
-
-.notes-list { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
-.note { border-top: 1px solid rgba(255,255,255,0.09); padding-top: 9px; }
-.note-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
-.note-head b { font-size: 12.5px; }
-.note-head .tiny { opacity: .55; }
-.note-body { font-size: 12.5px; line-height: 1.5; margin: 4px 0 6px; white-space: pre-wrap; }
-/* A resolved note stays readable — struck through would make the record of
-   what was asked for harder to read than the thing nobody asked for. */
-.note.done { opacity: .5; }
 
 /* ==================================================== the panel, made visual
  * The panel used to be a stack of labelled form controls: correct, and hard to
@@ -1668,8 +1647,6 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
  * a login form. Shorter fields put more of the page on screen at once, which
  * is the actual complaint behind "clunky". */
 .panel-sec .field,
-.notes-panel .field { height: 36px; padding: 0 11px; font-size: 12.5px; }
-.notes-panel textarea.field { height: auto; padding: 8px 11px; }
 .panel-sec .seg { height: 32px; }
 .panel-sec .seg button { height: 26px; font-size: 12px; }
 
@@ -2030,7 +2007,6 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 .lp-item { border-radius: var(--r-md); }
 .chart-type { border-radius: var(--r-md); border-color: var(--app-line); }
 .crole-menu, .mention-menu, .bbar-colors { border-radius: var(--r-md); box-shadow: var(--e3); border: 0; }
-.notes-summary { border-radius: 0 var(--r-md) var(--r-md) 0; }
 
 
 /* ============================================ the panel, one voice at last
@@ -2115,53 +2091,167 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 .lp-grid { max-height: none; flex: 1 1 auto; }
 .ed-right { position: relative; }
 
-/* ------------------------------------------------------- companion drawer
- * Notes and the wizard talk ABOUT the deck; the inspector describes one page
- * of it. Mixing them put two unrelated jobs in one tab row. The drawer opens
- * beside the inspector and closes when it is not wanted, which is what a
- * companion should do.
+/* ============================================================ the companions
+ * Wizard and Notes used to open a second panel beside the inspector. Wrong
+ * shape twice over: it put two columns of controls around a page that then had
+ * less room than either of them, and it dressed a conversation up as a form.
+ *
+ * They are widgets now. They sit ON the panel column, above the module, and
+ * the module carries on underneath — so the thing you are talking about and
+ * the thing you are talking with are in one place, and the canvas keeps its
+ * width.
  */
-.drawer {
-  width: 330px;
-  flex: none;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  background: var(--app-panel);
+.wgt {
+  display: flex; flex-direction: column;
+  margin: 12px 0 10px;
   border-radius: var(--r-md);
-  box-shadow: var(--e1);
+  background: var(--app-panel);
+  box-shadow: var(--e2);
   overflow: hidden;
 }
-.drawer-head {
-  display: flex; align-items: center; gap: 8px;
-  padding: 12px 12px 10px;
-  border-bottom: 1px solid var(--app-line-soft);
+.wgt-head { display: flex; align-items: center; gap: 8px; padding: 10px 10px 8px 12px; }
+.wgt-title { font-size: 13px; font-weight: 600; color: var(--app-ink); }
+.wgt-sub { font-size: 11.5px; color: var(--app-ink-3); }
+.wgt-badge {
+  font-size: 11px; font-weight: 600; padding: 1px 7px;
+  border-radius: var(--r-pill); background: rgba(16,24,40,0.07); color: var(--app-ink-2);
 }
-.drawer-tabs { flex: 1 1 auto; }
-.drawer-body { flex: 1 1 auto; overflow-y: auto; padding: 14px 16px 90px; }
+.wgt-x {
+  margin-left: auto; width: 24px; height: 24px; flex: none;
+  border: 0; border-radius: var(--r-sm); background: transparent;
+  color: var(--app-ink-3); font-size: 12px; cursor: pointer;
+  display: grid; place-items: center;
+}
+.wgt-x:hover { background: rgba(16,24,40,0.07); color: var(--app-ink); }
 
-.wiz-prompts { display: flex; flex-direction: column; gap: 6px; }
-.wiz-prompt {
-  text-align: left; cursor: pointer;
-  padding: 9px 11px;
-  border: 1px solid var(--app-line);
-  border-radius: var(--r-sm);
-  background: #fff;
-  font-size: 12.5px; color: var(--app-ink-2);
+/* ------------------------------------------------------------- the wizard
+ * A feed and a field. Everyone already knows this shape, which is the point —
+ * nothing here needs explaining, so the only thing to think about is what to
+ * ask for.
+ */
+.wgt-wizard { border: 1px solid var(--app-line-soft); }
+.wiz-feed {
+  max-height: 300px; min-height: 90px; overflow-y: auto;
+  padding: 2px 12px 8px;
+  display: flex; flex-direction: column; gap: 8px;
 }
-.wiz-prompt:hover { border-color: rgba(16,24,40,0.2); color: var(--app-ink); }
-.wiz-prompt:disabled { opacity: .5; cursor: default; }
+.wiz-empty p { margin: 0 0 10px; font-size: 11.5px; line-height: 1.5; color: var(--app-ink-3); }
+.wiz-chips { display: flex; flex-direction: column; gap: 5px; }
+.wiz-chip {
+  text-align: left; cursor: pointer; line-height: 1.35;
+  padding: 7px 10px; border: 1px solid var(--app-line);
+  border-radius: var(--r-sm); background: #fff;
+  font-size: 12px; color: var(--app-ink-2);
+}
+.wiz-chip:hover { border-color: rgba(16,24,40,0.22); color: var(--app-ink); }
 
-.wiz-reply {
-  margin-top: 16px; padding: 12px;
-  border-radius: var(--r-sm);
-  background: rgba(16,24,40,0.04);
-  font-size: 12.5px; line-height: 1.5;
-}
-.wiz-reply p { margin: 0; }
-.wiz-suggest {
-  display: flex; align-items: center; gap: 10px;
-  margin-top: 10px; padding-top: 10px;
-  border-top: 1px solid var(--app-line-soft);
-}
+.wiz-turn { display: flex; flex-direction: column; }
+.wiz-bubble { font-size: 12.5px; line-height: 1.5; padding: 8px 11px; border-radius: var(--r-md); max-width: 92%; }
+.wiz-turn.you { align-items: flex-end; }
+.wiz-turn.you .wiz-bubble { background: var(--app-ink); color: #fff; border-bottom-right-radius: 4px; }
+.wiz-turn.wizard .wiz-bubble { background: rgba(16,24,40,0.05); color: var(--app-ink); border-bottom-left-radius: 4px; }
+.wiz-turn.failed .wiz-bubble { background: #fdecea; color: #b3261e; }
+.wiz-bubble.pending { color: var(--app-ink-3); }
+.wiz-suggest { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 12px; color: var(--app-ink-2); }
 .wiz-suggest span { flex: 1 1 auto; }
+
+.wiz-compose {
+  display: flex; align-items: flex-end; gap: 6px;
+  padding: 8px; margin: 0 8px 8px;
+  border: 1px solid var(--app-line); border-radius: var(--r-md); background: #fff;
+}
+.wiz-compose textarea {
+  flex: 1 1 auto; border: 0; outline: none; resize: none; background: transparent;
+  font: inherit; font-size: 12.5px; line-height: 1.45; color: var(--app-ink);
+  max-height: 96px; padding: 3px 2px;
+}
+.wiz-send {
+  flex: none; width: 26px; height: 26px; border: 0; border-radius: 50%;
+  background: var(--app-ink); color: #fff; cursor: pointer; font-size: 13px;
+  display: grid; place-items: center;
+}
+.wiz-send:disabled { background: rgba(16,24,40,0.15); cursor: default; }
+.wiz-foot { padding: 0 12px 10px; font-size: 11px; color: var(--app-ink-3); }
+
+/* -------------------------------------------------------------- the notes
+ * Yellow, and the only yellow in the editor. It is doing a job: everything
+ * else on screen is the deck, and this is the arguing about it — the one part
+ * allowed to look unfinished, because it is.
+ */
+.wgt-notes { background: #FFF6CC; }
+.wgt-notes .wgt-head { padding-bottom: 6px; }
+.wgt-notes .wgt-title { color: #3f3100; }
+.wgt-notes .wgt-badge { background: rgba(120,88,0,0.14); color: #6b5300; }
+.wgt-notes .wgt-x { color: #6b5300; }
+.wgt-notes .wgt-x:hover { background: rgba(120,88,0,0.13); color: #3f3100; }
+
+.notes-scope { display: flex; align-items: center; gap: 8px; padding: 0 12px 8px; }
+.notes-scope .seg { flex: 1 1 auto; background: rgba(120,88,0,0.10); }
+.notes-scope .seg button { font-size: 11.5px; color: #6b5300; }
+.notes-scope .seg button.on { background: #fff; color: #3f3100; }
+.notes-sum-btn {
+  border: 0; background: none; cursor: pointer; padding: 2px 4px;
+  font-size: 11.5px; font-weight: 600; color: #6b5300; text-decoration: underline;
+}
+.notes-summary {
+  margin: 0 12px 8px; padding: 9px 11px;
+  background: rgba(255,255,255,0.75); border-radius: var(--r-sm);
+  font-size: 12px; line-height: 1.5; color: #3f3100;
+}
+.notes-summary .tiny { font-size: 11px; opacity: .65; margin-bottom: 5px; }
+.notes-summary p { margin: 0 0 6px; }
+
+.postits { max-height: 340px; overflow-y: auto; padding: 0 12px 4px; display: flex; flex-direction: column; gap: 8px; }
+.notes-none { margin: 0 12px 10px; font-size: 11.5px; color: #6b5300; opacity: .85; }
+
+/* Square corners and a real shadow: this is a scrap of paper on the panel,
+   not another rounded card in the system. */
+.postit {
+  background: #FFE873; border-radius: 3px; padding: 9px 10px 7px; color: #3f3100;
+  box-shadow: 0 1px 2px rgba(80,60,0,0.18), 0 8px 12px -9px rgba(80,60,0,0.45);
+}
+.postit.done { background: rgba(255,232,115,0.42); color: #7a6a30; box-shadow: 0 1px 2px rgba(80,60,0,0.08); }
+.postit-top { display: flex; align-items: baseline; gap: 8px; }
+.postit-top b { font-size: 12px; font-weight: 700; }
+.postit-when { margin-left: auto; font-size: 10.5px; opacity: .6; }
+.postit-body { font-size: 12.5px; line-height: 1.5; margin: 4px 0 7px; white-space: pre-wrap; word-break: break-word; }
+.pi-at { font-weight: 700; }
+.postit-foot { display: flex; align-items: center; gap: 6px; }
+.postit-where {
+  border: 0; background: none; padding: 0; cursor: pointer; text-align: left;
+  font-size: 10.5px; color: #6b5300; text-decoration: underline;
+}
+.postit-where.flat { text-decoration: none; cursor: default; opacity: .7; }
+.postit-acts { margin-left: auto; display: flex; gap: 4px; }
+.pi-act {
+  width: 22px; height: 22px; border: 0; border-radius: 50%; cursor: pointer;
+  font-size: 11px; display: grid; place-items: center;
+  background: rgba(80,60,0,0.10); color: #3f3100;
+}
+.pi-act:hover { background: rgba(80,60,0,0.22); }
+.pi-act.ok.on { background: #2e7d32; color: #fff; }
+.pi-act.no:hover { background: #c0392b; color: #fff; }
+
+.notes-compose {
+  position: relative; margin: 6px 12px 12px; padding: 8px;
+  display: flex; align-items: flex-end; gap: 6px;
+  background: #fff; border-radius: var(--r-sm);
+  box-shadow: inset 0 0 0 1px rgba(120,88,0,0.2);
+}
+.notes-compose textarea {
+  flex: 1 1 auto; border: 0; outline: none; resize: none; background: transparent;
+  font: inherit; font-size: 12.5px; line-height: 1.45; color: var(--app-ink);
+  max-height: 90px; padding: 3px 2px;
+}
+.notes-post {
+  flex: none; border: 0; border-radius: var(--r-sm); cursor: pointer;
+  padding: 0 10px; height: 26px; font-size: 12px; font-weight: 600;
+  background: #3f3100; color: #FFE873;
+}
+.notes-post:disabled { background: rgba(80,60,0,0.16); color: rgba(63,49,0,0.45); cursor: default; }
+/* The @ list opens upward — the field is at the bottom of the widget. */
+.notes-compose .mention-menu {
+  position: absolute; left: 0; right: 0; bottom: calc(100% + 6px);
+  background: #fff; color: var(--app-ink); z-index: 5;
+}
+.notes-compose .mention-menu button:hover { background: rgba(16,24,40,0.07); }
