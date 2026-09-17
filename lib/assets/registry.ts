@@ -44,6 +44,10 @@ let byId: Record<string, AssetRecord> = {};
 let loading: Promise<void> | null = null;
 let usingPlaceholders = false;
 let shared = false;
+/* What the library actually is right now, so the panel can say it out loud
+ * rather than leaving people to guess why a picture is missing. */
+let reachable = false;
+let sharedCount = 0;
 const objectUrls: Record<string, string> = {};
 const subscribers = new Set<() => void>();
 
@@ -100,6 +104,8 @@ export function ensureManifest(): Promise<void> {
       if (res.ok) {
         const data = await res.json();
         const list: AssetRecord[] = data.assets || [];
+        reachable = true;
+        sharedCount = list.length;
         if (list.length > 0) {
           shared = true;
           await refreshUploads();
@@ -179,6 +185,16 @@ export function assetPath(id?: string): string | undefined {
 
 export function isPlaceholderLibrary(): boolean {
   return usingPlaceholders;
+}
+
+/**
+ * The state of the library in one object, for the panel to report. "Reachable"
+ * is the question that matters when a picture is missing: a library nobody can
+ * read looks exactly like a library with nothing in it, and the two want
+ * completely different actions from the person looking at the screen.
+ */
+export function libraryState(): { reachable: boolean; count: number; shared: boolean } {
+  return { reachable, count: sharedCount, shared };
 }
 
 /** True when the library is served from the shared backend. */

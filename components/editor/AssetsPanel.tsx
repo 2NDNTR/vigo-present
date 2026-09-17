@@ -6,14 +6,15 @@ import {
   isPlaceholderLibrary,
   isSharedLibrary,
   refreshShared,
+  libraryState,
   refreshUploads,
   storableUrl,
   uploadedAssets,
   useAssetRegistry,
 } from '@/lib/assets/registry';
-import { deleteShared, uploadShared } from '@/lib/assets/sharedUpload';
+import { deleteShared, publishUpload, uploadShared } from '@/lib/assets/sharedUpload';
 import type { AssetRecord } from '@/lib/assets/registry';
-import { addUpload, exportAll, listUploads, removeUpload } from '@/lib/assets/uploads';
+import { listUploads, removeUpload } from '@/lib/assets/uploads';
 import { ASSET_CATEGORIES } from '@/lib/model/types';
 import type { AssetCategory } from '@/lib/model/types';
 import { BRAND_ORDER, THEMES } from '@/lib/brand/themes';
@@ -54,6 +55,7 @@ export default function AssetsPanel({
   const placeholders = isPlaceholderLibrary();
   const shared = isSharedLibrary();
   const mine = uploadedAssets();
+  const lib = libraryState();
   const mineForBrand = mine.filter((a) => a.brand === b);
 
   async function ingest(files: FileList | File[]) {
@@ -61,33 +63,59 @@ export default function AssetsPanel({
       (f) => f.type.startsWith('image/') || f.type.startsWith('video/')
     );
     if (!list.length) return;
+    /* One destination. A picture kept in this browser is a picture nobody
+     * else can see and one cleared cache away from gone, so there is no local
+     * path any more — if the upload cannot reach storage the file is refused,
+     * with the reason, rather than quietly landing somewhere private. */
     let failed = 0;
+    let reason = '';
     for (let i = 0; i < list.length; i++) {
-      setBusy(`${shared ? 'Uploading' : 'Adding'} ${i + 1} of ${list.length}…`);
+      setBusy(`Uploading ${i + 1} of ${list.length}…`);
       try {
-        if (shared) await uploadShared(list[i], b, uploadCat);
-        else await addUpload(list[i], b, uploadCat);
+        await uploadShared(list[i], b, uploadCat);
       } catch (e: any) {
         failed++;
+        reason = reason || String(e?.message || e);
         console.warn('upload failed', e);
       }
     }
-    if (shared) await refreshShared();
-    else await refreshUploads();
+    await refreshShared();
     setBusy(null);
-    if (failed) window.alert(`${failed} file${failed === 1 ? '' : 's'} could not be uploaded.`);
+    if (failed) {
+      window.alert(
+        `${failed} file${failed === 1 ? '' : 's'} could not be uploaded, so ${failed === 1 ? 'it was' : 'they were'} not added.\n\n${reason}`
+      );
+    }
   }
 
-  async function download() {
-    setBusy('Packaging…');
-    const zip = await exportAll(await listUploads());
+  /* The repair path for anything uploaded before there was a shared library.
+   * Same id either side, so every deck pointing at these starts resolving the
+   * moment they land — nothing has to be re-pointed and nothing re-dropped. */
+  async function publishMine() {
+    const all = await listUploads();
+    if (!all.length) return;
+    let failed = 0;
+    let reason = '';
+    for (let i = 0; i < all.length; i++) {
+      setBusy(`Publishing ${i + 1} of ${all.length}…`);
+      try {
+        await publishUpload(all[i]);
+        await removeUpload(all[i].id);
+      } catch (e: any) {
+        failed++;
+        reason = reason || String(e?.message || e);
+      }
+    }
+    await refreshShared();
+    await refreshUploads();
     setBusy(null);
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(zip);
-    a.download = 'vigo-assets.zip';
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    window.alert(
+      failed
+        ? `${all.length - failed} of ${all.length} published. ${failed} failed.\n\n${reason}`
+        : `${all.length} picture${all.length === 1 ? '' : 's'} published. Every deck using them now reads from the library.`
+    );
   }
+
 
   return (
     <div>
@@ -179,22 +207,28 @@ export default function AssetsPanel({
           )}
         </div>
 
-        {!shared && mine.length > 0 && (
-          <>
-            <div className="tiny" style={{ marginTop: 10, display: 'flex', justifyContent: 'space-between' }}>
-              <span>
-                {mine.length} uploaded · {mineForBrand.length} in {THEMES[b].shortName}
-              </span>
-            </div>
-            <button className="btn sm" style={{ marginTop: 8, width: '100%', justifyContent: 'center' }} onClick={download}>
-              Download for the repository
-            </button>
-            <p className="tiny" style={{ marginTop: 7 }}>
-              Uploads work immediately for you. Unzip this over <code>public/assets/</code>, run{' '}
-              <code>npm run assets</code> and commit to make them permanent and visible to everyone —
-              the ids match, so nothing has to be re-pointed.
-            </p>
-          </>
+        {mine.length > 0 && (
+          <div className="warn" style={{ marginTop: 12 }}>
+            <span>△</span>
+            <span>
+              <b>
+                {mine.length} picture{mine.length === 1 ? '' : 's'}{mine.length === 1 ? ' is' : ' are'} only
+                on this computer.
+              </b>{' '}
+              Nobody else can see {mine.length === 1 ? 'it' : 'them'}, and clearing this browser would
+              lose {mine.length === 1 ? 'it' : 'them'}. Publishing puts {mine.length === 1 ? 'it' : 'them'} in
+              the library — every deck already using {mine.length === 1 ? 'it' : 'them'} starts working
+              again straight away.
+              <button
+                className="btn sm"
+                style={{ marginTop: 8, width: '100%', justifyContent: 'center' }}
+                disabled={!!busy || !lib.reachable}
+                onClick={publishMine}
+              >
+                {busy || `Publish ${mine.length} to the library`}
+              </button>
+            </span>
+          </div>
         )}
       </div>
 
@@ -253,22 +287,17 @@ export default function AssetsPanel({
         </p>
 
         <div className="banner" style={{ marginTop: 12, marginBottom: 0 }}>
-          {shared ? (
+          {!lib.reachable ? (
             <>
-              <b>Shared library.</b> Everything here is visible to everyone on the team, and to
-              anyone opening a published link. Upload a file with the same name to replace it
-              everywhere it is used.
-            </>
-          ) : placeholders && mine.length === 0 ? (
-            <>
-              <b>Placeholder library.</b> Drop real photography above, or commit it to{' '}
-              <code>public/assets/</code> in the repository. Either way this panel picks it up.
+              <b>The library cannot be reached.</b> Pictures are stored on the server, so until this
+              comes back nothing can be uploaded and pictures already placed may not appear. Nothing
+              has been lost — this is a connection to storage, not the pictures themselves.
             </>
           ) : (
             <>
-              <b>Replace once, updates everywhere.</b> Presentations reference an asset by id, never
-              a copy. Save a new file over the same name and every page using it updates — old
-              versions never pile up.
+              <b>Shared library — {lib.count} file{lib.count === 1 ? '' : 's'}.</b> Everything here is
+              stored online and visible to everyone on the team and to anyone opening a published
+              link. Upload a file with the same name to replace it everywhere it is used.
             </>
           )}
         </div>

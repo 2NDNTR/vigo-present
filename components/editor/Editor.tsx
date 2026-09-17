@@ -24,7 +24,8 @@ import type { BrandId } from '@/lib/brand/themes';
 import { getStore, storeKindSync } from '@/lib/store';
 import { ConflictError } from '@/lib/store/api';
 import { processFile } from '@/lib/media';
-import { storableUrl } from '@/lib/assets/registry';
+import { refreshShared, storableUrl } from '@/lib/assets/registry';
+import { uploadShared } from '@/lib/assets/sharedUpload';
 
 type Tab = 'pages' | 'add' | 'assets' | 'brand';
 
@@ -287,19 +288,41 @@ export default function Editor({ id }: { id: string }) {
     const template = getTemplate(page.templateId);
     const slot = template.slots.find((s) => s.key === slotKey);
     const assetUrl = e.dataTransfer.getData('application/x-vigo-asset');
-    const assetId = e.dataTransfer.getData('application/x-vigo-asset-id') || undefined;
+    let assetId = e.dataTransfer.getData('application/x-vigo-asset-id') || undefined;
     const file = e.dataTransfer.files?.[0];
     let url = assetUrl;
     let kind: 'image' | 'video' = 'image';
     let width = 1200;
     let height = 800;
     if (!url && file) {
-      const m = await processFile(file);
-      url = m.url;
-      kind = m.kind;
-      width = m.width;
-      height = m.height;
-      if (m.tooLarge) window.alert('That file is very large. It has been added, but consider a smaller version.');
+      /* A picture dropped straight onto a slide goes to the library like any
+       * other, so it is stored online, has an id, and is there for everyone who
+       * opens the deck — not baked into this one page as a megabyte of text
+       * that no other deck can reuse and nobody can replace.
+       *
+       * If storage will not take it, the file is embedded rather than dropped
+       * on the floor: worse, but the deck still shows what the person put on
+       * it, and they are told which of the two happened. */
+      try {
+        const stored = await uploadShared(file, pres!.brand, 'Product Photography');
+        url = stored.url;
+        assetId = stored.id;
+        kind = stored.kind;
+        width = stored.width || width;
+        height = stored.height || height;
+        await refreshShared();
+      } catch (err) {
+        const m = await processFile(file);
+        url = m.url;
+        kind = m.kind;
+        width = m.width;
+        height = m.height;
+        window.alert(
+          'That picture could not be uploaded to the library, so it has been put on the page itself. ' +
+            'It will show for everyone, but it cannot be reused or replaced from Assets.\n\n' +
+            String((err as Error)?.message || err)
+        );
+      }
     }
     /* An upload has no durable URL yet — its id is the whole reference, and
      * refusing the drop for want of a string would refuse the commonest drop

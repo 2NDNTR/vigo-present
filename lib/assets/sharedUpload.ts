@@ -16,11 +16,19 @@ import { CATEGORY_FOLDER, prettyName, slug } from './uploads';
  * same filename REPLACES the picture everywhere it is used — which is the whole
  * point of the library.
  */
+export interface StoredAsset {
+  id: string;
+  url: string;
+  kind: 'image' | 'video';
+  width?: number;
+  height?: number;
+}
+
 export async function uploadShared(
   file: File,
   brand: BrandId,
   category: AssetCategory
-): Promise<void> {
+): Promise<StoredAsset> {
   const { upload } = await import('@vercel/blob/client');
 
   const folder = CATEGORY_FOLDER[category] || 'misc';
@@ -37,17 +45,20 @@ export async function uploadShared(
     contentType: file.type || undefined,
   });
 
+  const id = `${brand}-${folder}-${base}`;
+  const kind: 'image' | 'video' = file.type.startsWith('video/') ? 'video' : 'image';
+
   const res = await fetch('/api/assets', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
-      id: `${brand}-${folder}-${base}`,
+      id,
       brand,
       category,
       name: prettyName(file.name),
       fileName,
       url: blob.url,
-      kind: file.type.startsWith('video/') ? 'video' : 'image',
+      kind,
       size: file.size,
       ...dims,
     }),
@@ -56,6 +67,27 @@ export async function uploadShared(
     const data = await res.json().catch(() => ({}));
     throw new Error(data?.error || 'Could not save the asset record.');
   }
+  return { id, url: blob.url, kind, ...dims };
+}
+
+/**
+ * Lift a file that only exists in this browser into the shared library.
+ *
+ * The ids line up on purpose — both are derived from brand + folder + file
+ * name — so publishing does not just add a copy: every page in every deck that
+ * already points at that id starts resolving to the stored URL instead of to
+ * something only this browser could see. A picture that was missing for
+ * everyone else comes back for everyone at once, with nothing re-pointed.
+ */
+export async function publishUpload(a: {
+  blob: Blob;
+  fileName: string;
+  type?: string;
+  brand: BrandId;
+  category: AssetCategory;
+}): Promise<void> {
+  const file = new File([a.blob], a.fileName, { type: a.type || a.blob.type || 'image/jpeg' });
+  await uploadShared(file, a.brand, a.category);
 }
 
 export async function deleteShared(id: string): Promise<void> {
