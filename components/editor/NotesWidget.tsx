@@ -11,12 +11,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
  * unfinished, because it IS the unfinished part. Everything else on screen is
  * the deck; this is the arguing about it.
  *
- * Three things make it worth having rather than a shared document:
- *   - a note is pinned to the page it is about, so round three reads next to
- *     the slide round two was arguing over;
- *   - @ mentions resolve to people, so a note reaches someone without a
- *     separate email that then holds the real decision;
- *   - the summary reads every round at once and says what is still open.
+ * Two things make it worth having rather than a shared document: a note is
+ * pinned to the page it is about, so round three reads next to the slide
+ * round two was arguing over; and @ mentions resolve to people, so a note
+ * reaches someone without a separate email that then holds the real
+ * decision.
  *
  * ✓ settles a note; ✕ removes it, and only for the person who wrote it.
  * Deleting someone else's feedback is not a tidy-up, it is an edit to the
@@ -54,7 +53,6 @@ export default function NotesWidget({
   const [text, setText] = useState('');
   const [scope, setScope] = useState<'page' | 'deck'>('page');
   const [busy, setBusy] = useState(false);
-  const [summary, setSummary] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [mentionAt, setMentionAt] = useState<string | null>(null);
   const box = useRef<HTMLTextAreaElement>(null);
@@ -158,33 +156,10 @@ export default function NotesWidget({
     load();
   };
 
-  const summarise = async () => {
-    setBusy(true);
-    setProblem(null);
-    setSummary(null);
-    try {
-      const r = await fetch('/api/notes/summary', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ presentationId, pageTitles }),
-      });
-      const j = await r.json();
-      if (!r.ok) setProblem(j.error || 'The summary could not be built.');
-      else setSummary(j.summary);
-    } catch {
-      setProblem('The summary could not be built.');
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const open = notes.filter((n) => !n.resolved).length;
-
   return (
     <section className="wgt wgt-notes">
       <header className="wgt-head">
         <span className="wgt-title">Notes</span>
-        {open ? <span className="wgt-badge">{open} open</span> : null}
         <button className="wgt-x" onClick={onClose} aria-label="Close notes">
           ✕
         </button>
@@ -195,22 +170,7 @@ export default function NotesWidget({
           <button className={scope === 'page' ? 'on' : ''} onClick={() => setScope('page')}>This page</button>
           <button className={scope === 'deck' ? 'on' : ''} onClick={() => setScope('deck')}>All pages</button>
         </div>
-        {notes.length ? (
-          <button className="notes-sum-btn" disabled={busy} onClick={summarise} title="Read every note and say what is still open">
-            Summarise
-          </button>
-        ) : null}
       </div>
-
-      {summary ? (
-        <div className="notes-summary">
-          <div className="tiny">Across {notes.length} note{notes.length === 1 ? '' : 's'} — a reading, not a decision.</div>
-          {summary.split('\n').filter(Boolean).map((line, i) => (
-            <p key={i}>{line}</p>
-          ))}
-          <button className="notes-sum-btn" onClick={() => setSummary(null)}>Hide</button>
-        </div>
-      ) : null}
 
       <div className="postits">
         {shown.length === 0 ? (

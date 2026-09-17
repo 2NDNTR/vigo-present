@@ -2151,7 +2151,14 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
  * the thing you are talking with are in one place, and the canvas keeps its
  * width.
  */
+/* `flex: none` is the whole fix for a widget that arrived squashed. The panel
+   column hides its overflow, and this was an ordinary flex item next to a
+   module whose content is far taller than the screen — so the browser shrank
+   BOTH of them, and the widget lost its list and half its composer. It keeps
+   its own height now, capped, and gives the shrink to the one part inside it
+   that can scroll. */
 .wgt {
+  flex: none; max-height: 56%; min-height: 0;
   display: flex; flex-direction: column;
   margin: 12px 16px 10px;
   border-radius: var(--r-md);
@@ -2159,13 +2166,9 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
   box-shadow: var(--e2);
   overflow: hidden;
 }
-.wgt-head { display: flex; align-items: center; gap: 8px; padding: 10px 10px 8px 12px; }
+.wgt-head { flex: none; display: flex; align-items: center; gap: 8px; padding: 10px 10px 8px 12px; }
 .wgt-title { font-size: 13px; font-weight: 600; color: var(--app-ink); }
 .wgt-sub { font-size: 11.5px; color: var(--app-ink-3); }
-.wgt-badge {
-  font-size: 11px; font-weight: 600; padding: 1px 7px;
-  border-radius: var(--r-pill); background: rgba(16,24,40,0.07); color: var(--app-ink-2);
-}
 .wgt-x {
   margin-left: auto; width: 24px; height: 24px; flex: none;
   border: 0; border-radius: var(--r-sm); background: transparent;
@@ -2181,7 +2184,7 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
  */
 .wgt-wizard { border: 1px solid var(--app-line-soft); }
 .wiz-feed {
-  max-height: 300px; min-height: 90px; overflow-y: auto;
+  flex: 1 1 auto; min-height: 72px; overflow-y: auto;
   padding: 2px 12px 8px;
   display: flex; flex-direction: column; gap: 8px;
 }
@@ -2206,6 +2209,7 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 .wiz-suggest span { flex: 1 1 auto; }
 
 .wiz-compose {
+  flex: none;
   display: flex; align-items: flex-end; gap: 6px;
   padding: 8px; margin: 0 8px 8px;
   border: 1px solid var(--app-line); border-radius: var(--r-md); background: #fff;
@@ -2221,7 +2225,7 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
   display: grid; place-items: center;
 }
 .wiz-send:disabled { background: rgba(16,24,40,0.15); cursor: default; }
-.wiz-foot { padding: 0 12px 10px; font-size: 11px; color: var(--app-ink-3); }
+.wiz-foot { flex: none; padding: 0 12px 10px; font-size: 11px; color: var(--app-ink-3); }
 
 /* -------------------------------------------------------------- the notes
  * Yellow, and the only yellow in the editor. It is doing a job: everything
@@ -2231,28 +2235,15 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 .wgt-notes { background: #FFF6CC; }
 .wgt-notes .wgt-head { padding-bottom: 6px; }
 .wgt-notes .wgt-title { color: #3f3100; }
-.wgt-notes .wgt-badge { background: rgba(120,88,0,0.14); color: #6b5300; }
 .wgt-notes .wgt-x { color: #6b5300; }
 .wgt-notes .wgt-x:hover { background: rgba(120,88,0,0.13); color: #3f3100; }
 
-.notes-scope { display: flex; align-items: center; gap: 8px; padding: 0 12px 8px; }
+.notes-scope { flex: none; display: flex; align-items: center; gap: 8px; padding: 0 12px 8px; }
 .notes-scope .seg { flex: 1 1 auto; background: rgba(120,88,0,0.10); }
 .notes-scope .seg button { font-size: 11.5px; color: #6b5300; }
 .notes-scope .seg button.on { background: #fff; color: #3f3100; }
-.notes-sum-btn {
-  border: 0; background: none; cursor: pointer; padding: 2px 4px;
-  font-size: 11.5px; font-weight: 600; color: #6b5300; text-decoration: underline;
-}
-.notes-summary {
-  margin: 0 12px 8px; padding: 9px 11px;
-  background: rgba(255,255,255,0.75); border-radius: var(--r-sm);
-  font-size: 12px; line-height: 1.5; color: #3f3100;
-}
-.notes-summary .tiny { font-size: 11px; opacity: .65; margin-bottom: 5px; }
-.notes-summary p { margin: 0 0 6px; }
-
-.postits { max-height: 340px; overflow-y: auto; padding: 0 12px 4px; display: flex; flex-direction: column; gap: 8px; }
-.notes-none { margin: 0 12px 10px; font-size: 11.5px; color: #6b5300; opacity: .85; }
+.postits { flex: 1 1 auto; min-height: 56px; overflow-y: auto; padding: 0 12px 4px; display: flex; flex-direction: column; gap: 8px; }
+.notes-none { flex: none; margin: 0 12px 10px; font-size: 11.5px; color: #6b5300; opacity: .85; }
 
 /* Square corners and a real shadow: this is a scrap of paper on the panel,
    not another rounded card in the system. */
@@ -2283,6 +2274,7 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 .pi-act.no:hover { background: #c0392b; color: #fff; }
 
 .notes-compose {
+  flex: none;
   position: relative; margin: 6px 12px 12px; padding: 8px;
   display: flex; align-items: flex-end; gap: 6px;
   background: #fff; border-radius: var(--r-sm);
