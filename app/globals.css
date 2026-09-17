@@ -1758,8 +1758,12 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
  */
 .bdel {
   position: absolute;
-  top: calc(var(--u) * -14px);
-  right: calc(var(--u) * -14px);
+  /* Inside the corner, not hanging off it. Outside, a block against the top or
+     right edge of the slide put this button past the edge of the stage, which
+     clipped it — the one place a delete is most wanted is exactly where it
+     could not be reached. */
+  top: calc(var(--u) * 10px);
+  right: calc(var(--u) * 10px);
   z-index: 6;
   width: calc(var(--u) * 26px);
   height: calc(var(--u) * 26px);

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import type { Block, LogoEntry, TimelineEntry } from '@/lib/model/types';
 import { entriesOf, entriesPatch, showsMedia } from '@/lib/model/timeline';
 import Chart from '@/components/render/Chart';
@@ -178,64 +178,8 @@ export default function BlockView({ block, ctx }: { block: Block; ctx: RenderCtx
 
     /* -------------------------------------------------------------- media */
     case 'image':
-    case 'video': {
-      const m = block.media;
-      const resolved = mediaUrl(m);
-      const has = !!resolved;
-      if (!has) {
-        return (
-          <div {...wrapProps} style={{ ...wrapProps.style, height: '100%' }}>
-            <div className="ph">Drop {block.type === 'video' ? 'a video' : 'an image'} here<br />or pick one from Assets</div>
-          </div>
-        );
-      }
-      const objectPosition = `${Math.round((m.focalX ?? 0.5) * 100)}% ${Math.round((m.focalY ?? 0.5) * 100)}%`;
-      const transform = m.zoom && m.zoom !== 1 ? `scale(${m.zoom})` : undefined;
-      /* A crop is the largest box of that shape that fits the area, centred.
-       * The picture still COVERS its box, so choosing a shape never letterboxes
-       * anything — it decides what is in frame, and the focal point decides
-       * which part. That pairing is the whole feature: a 4:3 photograph of two
-       * men in a 16:9 well is either a crop somebody chose or a crop the layout
-       * chose by accident.
-       *
-       * Container units do the arithmetic. `aspect-ratio` alone cannot: with a
-       * width of 100% a max-height clamps the height and leaves the width
-       * behind, and with a height of 100% it fails the same way the other way
-       * round — measured both, both wrong. `min(100cqw, 100cqh * ratio)` is the
-       * largest box of that shape in one expression, with no measuring. */
-      const cropped = !!m.crop;
-      const [rw, rh] = cropped ? m.crop!.split(':').map(Number) : [0, 0];
-      const media = (
-        <div
-          className="media-el"
-          style={
-            cropped
-              ? { width: `min(100cqw, calc(100cqh * ${rw} / ${rh}))`, height: 'auto', aspectRatio: `${rw} / ${rh}` }
-              : undefined
-          }
-        >
-            {block.type === 'video' ? (
-              <video
-                src={resolved}
-                poster={m.poster}
-                autoPlay={m.autoplay !== false}
-                loop={m.loop !== false}
-                muted={m.muted !== false}
-                controls={!!m.controls}
-                playsInline
-                style={{ objectPosition, transform }}
-              />
-            ) : (
-              <img src={resolved} alt={m.alt || ''} style={{ objectPosition, transform }} />
-            )}
-        </div>
-      );
-      return (
-        <div {...wrapProps} style={{ ...wrapProps.style, height: '100%' }}>
-          {cropped ? <div className="cropfit">{media}</div> : media}
-        </div>
-      );
-    }
+    case 'video':
+      return <MediaBlock block={block} wrapProps={wrapProps} />;
 
     /* --------------------------------------------------------------- logo */
     case 'logo': {
@@ -770,4 +714,111 @@ export default function BlockView({ block, ctx }: { block: Block; ctx: RenderCtx
     default:
       return null;
   }
+}
+
+/**
+ * A PICTURE, AND WHAT TO SHOW WHEN THERE ISN'T ONE
+ * ---------------------------------------------------------------------------
+ * The broken-image icon is the worst possible answer here. It is small, it is
+ * the browser's, it appears in the corner of a well the size of half a slide,
+ * and it tells the person nothing they can act on. Worse, it is indefinite:
+ * the picture might come back on a reload, or might have been gone for months.
+ *
+ * So a picture that fails to load is treated as a picture that is not there.
+ * The well says so and says what to do, and dropping a new one fixes it — the
+ * same well you get before anything is placed, which is the truth: as far as
+ * this deck is concerned, there is no usable picture here.
+ *
+ * It happens for exactly one reason worth naming. An upload lives in the
+ * browser that made it until someone commits it to the repository; open the
+ * deck anywhere else and the file is genuinely not there. An empty well says
+ * that. A broken icon looks like a bug in the product.
+ */
+function MediaBlock({
+  block,
+  wrapProps,
+}: {
+  block: Block;
+  wrapProps: { className: string; onMouseDown?: () => void; style: React.CSSProperties };
+}) {
+  const m = block.media;
+  const resolved = mediaUrl(m);
+  /* Keyed on the URL: a new drop must get its own chance to fail. */
+  const [failed, setFailed] = useState<string | null>(null);
+  const broken = !resolved || failed === resolved;
+
+  if (broken) {
+    const wasSomething = !!(m?.url || m?.assetId);
+    return (
+      <div {...wrapProps} style={{ ...wrapProps.style, height: '100%' }}>
+        <div className="ph">
+          {wasSomething ? (
+            <>
+              This picture isn&rsquo;t available here.
+              <br />
+              Drop another, or pick one from Assets
+            </>
+          ) : (
+            <>
+              Drop {block.type === 'video' ? 'a video' : 'an image'} here
+              <br />
+              or pick one from Assets
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  const objectPosition = `${Math.round((m!.focalX ?? 0.5) * 100)}% ${Math.round((m!.focalY ?? 0.5) * 100)}%`;
+  const transform = m!.zoom && m!.zoom !== 1 ? `scale(${m!.zoom})` : undefined;
+  /* A crop is the largest box of that shape that fits the area, centred. The
+   * picture still COVERS its box, so choosing a shape never letterboxes
+   * anything — it decides what is in frame, and the focal point decides which
+   * part of it.
+   *
+   * Container units do the arithmetic. `aspect-ratio` alone cannot: with a
+   * width of 100% a max-height clamps the height and leaves the width behind,
+   * and with a height of 100% it fails the same way the other way round —
+   * measured both, both wrong. min(100cqw, 100cqh * ratio) is the largest box
+   * of that shape in one expression, with nothing to measure. */
+  const cropped = !!m!.crop;
+  const [rw, rh] = cropped ? m!.crop!.split(':').map(Number) : [0, 0];
+  const media = (
+    <div
+      className="media-el"
+      style={
+        cropped
+          ? { width: `min(100cqw, calc(100cqh * ${rw} / ${rh}))`, height: 'auto', aspectRatio: `${rw} / ${rh}` }
+          : undefined
+      }
+    >
+      {block.type === 'video' ? (
+        <video
+          src={resolved}
+          poster={m!.poster}
+          autoPlay={m!.autoplay !== false}
+          loop={m!.loop !== false}
+          muted={m!.muted !== false}
+          controls={!!m!.controls}
+          playsInline
+          style={{ objectPosition, transform }}
+          onError={() => setFailed(resolved)}
+        />
+      ) : (
+        <img
+          src={resolved}
+          alt={m!.alt || ''}
+          style={{ objectPosition, transform }}
+          onError={() => setFailed(resolved)}
+        />
+      )}
+    </div>
+  );
+
+  return (
+    <div {...wrapProps} style={{ ...wrapProps.style, height: '100%' }}>
+      {cropped ? <div className="cropfit">{media}</div> : media}
+    </div>
+  );
 }
