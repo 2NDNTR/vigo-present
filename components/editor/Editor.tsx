@@ -239,6 +239,11 @@ export default function Editor({ id }: { id: string }) {
    * occupy the same place, and two feeds stacked over the panel would bury
    * the panel. */
   const [companion, setCompanion] = useState<null | 'notes' | 'wizard'>(null);
+  /* How far the slide is pulled in from the widest the window allows. 0 is the
+   * default and the normal state; two steps is as far out as it goes, because
+   * a slide any smaller than that is a thumbnail, and there is a whole strip
+   * of those. */
+  const [zoom, setZoom] = useState(0);
 
   const pageIndex = useMemo(() => (pres ? pres.pages.findIndex((p) => p.id === currentId) : -1), [pres, currentId]);
   const page = pageIndex >= 0 ? pres!.pages[pageIndex] : null;
@@ -412,6 +417,26 @@ export default function Editor({ id }: { id: string }) {
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setSelected(null);
+      /* The browser's own zoom would resize the panel, the strip and the type
+       * along with the slide, which is not what anyone means by zooming a
+       * slide. Taken over here and applied to the slide alone. */
+      if (e.metaKey || e.ctrlKey) {
+        if (e.key === '-' || e.key === '_') {
+          e.preventDefault();
+          setZoom((z) => Math.min(2, z + 1));
+          return;
+        }
+        if (e.key === '+' || e.key === '=') {
+          e.preventDefault();
+          setZoom((z) => Math.max(0, z - 1));
+          return;
+        }
+        if (e.key === '0') {
+          e.preventDefault();
+          setZoom(0);
+          return;
+        }
+      }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault();
         if (e.shiftKey) redo();
@@ -569,7 +594,7 @@ export default function Editor({ id }: { id: string }) {
       </div>
 
       <div className="ed-body">
-        <div className="ed-center" onMouseDown={() => setSelected(null)}>
+        <div className="ed-center" data-zoom={zoom} onMouseDown={() => setSelected(null)}>
           {conflict ? (
             <div className="lockbar" style={{ background: '#fdf6e6', borderColor: '#f0dfae', color: '#6a5209' }}>
               <span>
@@ -615,6 +640,7 @@ export default function Editor({ id }: { id: string }) {
               </button>
             </div>
           ) : null}
+          <div className="deckcol">
           <div className="canvas-frame" ref={setCanvas} onMouseDown={(e) => e.stopPropagation()}>
             <div className="canvas-caption">
               <span>
@@ -748,6 +774,7 @@ export default function Editor({ id }: { id: string }) {
               })
             }
           />
+          </div>
         </div>
 
         <div className="ed-right" onMouseDown={(e) => e.stopPropagation()}>

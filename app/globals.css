@@ -459,16 +459,27 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 }
 .addpage:hover { border-color: var(--app-accent); color: var(--app-ink); }
 
-/* The slide is width-driven, but the height it costs is what decides whether
-   the strip beneath it is on screen. Converting a height budget back into a
-   width through the 16:9 keeps both in view without measuring anything in
-   JavaScript. The budget is the tallest strip, so the slide never jumps when
-   the zoom changes. */
-.canvas-frame {
+/* THE DECK COLUMN — the slide and the strip that belongs to it, one width.
+ *
+ * The slide is width-driven, but the height it costs is what decides whether
+ * the strip beneath it is on screen. Converting a height budget back into a
+ * width through the 16:9 keeps both in view without measuring anything in
+ * JavaScript. The budget covers the strip at its largest, so the slide holds
+ * still when the strip is resized.
+ *
+ * There is no fixed cap: widest the window allows IS the standard size, and
+ * ⌘− pulls it in by one gutter at a time. Two is as far as it goes — a slide
+ * smaller than that is a thumbnail, and there is a strip of those below it. */
+.deckcol {
   width: 100%;
-  max-width: min(1180px, calc((100vh - 305px) * 16 / 9));
-  position: relative;
+  max-width: min(calc(100% - var(--pad, 0px) * 2), calc((100vh - 333px) * 16 / 9));
+  display: flex; flex-direction: column; gap: 12px;
+  transition: max-width .16s ease;
 }
+.ed-center[data-zoom='1'] { --pad: 80px; }
+.ed-center[data-zoom='2'] { --pad: 168px; }
+
+.canvas-frame { width: 100%; position: relative; }
 .canvas-shell {
   border-radius: 4px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.13); background: #fff;
   position: relative;
@@ -2268,17 +2279,21 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
  * reads left to right.
  */
 .ed-strip {
-  --tw: 132px;
-  width: 100%; max-width: 1180px; flex: none;
-  display: flex; align-items: stretch; gap: 12px;
-  padding: 8px 10px 10px;
+  width: 100%; flex: none;
+  display: flex; align-items: stretch; gap: 10px;
+  padding: 8px 8px 10px 10px;
   background: var(--app-panel);
   border-radius: var(--r-md);
   box-shadow: var(--e1);
-  /* Tucked under the slide: the centre column's own 28px gap is the distance
-     between unrelated things, and these two are one thing. */
-  margin-top: -16px;
   z-index: 20;
+}
+/* The thin line between the slide and the strip. What there is on the left,
+   how big to draw it on the right — neither is a page, so neither belongs
+   among the pages. */
+.strip-wrap { --tw: 132px; width: 100%; display: flex; flex-direction: column; gap: 6px; }
+.strip-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 20px; padding: 0 4px;
 }
 .strip-scroll {
   flex: 1 1 auto; min-width: 0;
@@ -2324,22 +2339,20 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 .strip-item:hover .strip-more, .strip-item.on .strip-more { opacity: 1; }
 .strip-more:hover { background: rgba(16,24,40,0.08); color: var(--app-ink); }
 /* Small is for reading the shape of a deck, not its titles. */
-.ed-strip.tiny .strip-cap .tname { display: none; }
+.strip-wrap.tiny .strip-cap .tname { display: none; }
 
 .strip-menu { position: fixed; top: auto; left: auto; z-index: 60; }
 
-.strip-add {
-  flex: none; width: var(--tw); margin-top: 14px; aspect-ratio: 16/9;
-  border: 1px dashed var(--app-line); border-radius: 5px; background: #fff;
-  cursor: pointer; color: var(--app-ink-3); font-size: 17px;
+/* Add a page lives at the fixed right edge, not at the end of the scroll.
+   Inside the scroller it was the seventeenth page's ghost, and it drifted
+   further out of reach with every page added. */
+.strip-new {
+  flex: none; width: 40px; align-self: stretch; margin-top: 14px;
+  border: 1px dashed var(--app-line); border-radius: var(--r-sm); background: #fff;
+  cursor: pointer; color: var(--app-ink-3); font-size: 19px; line-height: 1;
 }
-.strip-add:hover { border-color: var(--app-accent); color: var(--app-ink); }
+.strip-new:hover { border-color: var(--app-accent); color: var(--app-ink); background: rgba(16,24,40,0.02); }
 
-.strip-tools {
-  flex: none; display: flex; flex-direction: column; align-items: flex-end;
-  justify-content: center; gap: 8px;
-  padding-left: 12px; border-left: 1px solid var(--app-line-soft);
-}
 .strip-count { font-size: 11px; color: var(--app-ink-3); white-space: nowrap; }
 
 /* A bar, not three named sizes: take the width that fits this screen and this

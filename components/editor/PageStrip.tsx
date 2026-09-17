@@ -121,7 +121,30 @@ export default function PageStrip({
   };
 
   return (
-    <div className={'ed-strip' + (w < NAME_AT ? ' tiny' : '')} style={{ ['--tw' as string]: w + 'px' }}>
+    <div className={'strip-wrap' + (w < NAME_AT ? ' tiny' : '')} style={{ ['--tw' as string]: w + 'px' }}>
+      {/* A thin line between the slide and the strip: what there is on the
+          left, how big to draw it on the right. Neither is a page, so neither
+          belongs among the pages. */}
+      <div className="strip-bar">
+        <span className="strip-count">
+          {pages.length} page{pages.length === 1 ? '' : 's'}
+        </span>
+        <label className="strip-zoom" title="Page size">
+          <span aria-hidden="true" className="zi sm" />
+          <input
+            type="range"
+            min={MIN}
+            max={MAX}
+            step={2}
+            value={w}
+            aria-label="Page size"
+            onChange={(e) => zoom(Number(e.target.value))}
+          />
+          <span aria-hidden="true" className="zi lg" />
+        </label>
+      </div>
+
+      <div className="ed-strip">
       <div className="strip-scroll" ref={scroller} onWheel={onWheel}>
         {pages.map((p, i) => {
           const t = getTemplate(p.templateId);
@@ -198,11 +221,11 @@ export default function PageStrip({
             </div>
           );
         })}
-
-        <button className="strip-add" title="Add a page at the end" onClick={() => onAddAfter(pages.length - 1)}>
-          +
-        </button>
       </div>
+
+      <button className="strip-new" title="Add a page at the end" aria-label="Add a page" onClick={() => onAddAfter(pages.length - 1)}>
+        +
+      </button>
 
       {menu ? (
         <div
@@ -228,23 +251,6 @@ export default function PageStrip({
         </div>
       ) : null}
 
-      <div className="strip-tools">
-        <span className="strip-count">
-          {pages.length} page{pages.length === 1 ? '' : 's'}
-        </span>
-        <label className="strip-zoom" title="Page size">
-          <span aria-hidden="true" className="zi sm" />
-          <input
-            type="range"
-            min={MIN}
-            max={MAX}
-            step={2}
-            value={w}
-            aria-label="Page size"
-            onChange={(e) => zoom(Number(e.target.value))}
-          />
-          <span aria-hidden="true" className="zi lg" />
-        </label>
       </div>
     </div>
   );
