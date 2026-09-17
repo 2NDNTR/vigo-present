@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import type { Block, MediaRef } from '@/lib/model/types';
 import type { BrandTheme, ColorRole } from '@/lib/brand/themes';
 import { colorLabel } from '@/lib/brand/themes';
@@ -55,6 +55,24 @@ export default function BlockBar({
   onCrop?: (crop: MediaRef['crop']) => void;
 }) {
   const [colors, setColors] = useState(false);
+  /*
+   * THE BAR HAS TO BE ON THE SLIDE.
+   * It sits above the block, which is right for a headline in the middle of a
+   * page and wrong for anything touching the top edge — a full-bleed picture
+   * put the bar off the top of the slide, where the stage clipped it. The trash
+   * went with it, and since the hover − hides whenever the bar is up, the block
+   * had no delete at all. Measured once against the stage on open: if there is
+   * no room above, it drops inside the block instead. Flipping only ever moves
+   * it down, so the measurement cannot chase itself.
+   */
+  const ref = useRef<HTMLDivElement>(null);
+  const [flip, setFlip] = useState(false);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const stage = el?.closest('.stage');
+    if (!el || !stage) return;
+    setFlip(el.getBoundingClientRect().top < stage.getBoundingClientRect().top + 2);
+  }, [block.id]);
   const current = block.style?.color || 'auto';
   const isMedia = (block.type === 'image' || block.type === 'video') && !!block.media?.url;
 
@@ -74,7 +92,8 @@ export default function BlockBar({
 
   return (
     <div
-      className={'bbar' + (isMedia ? ' media' : '')}
+      ref={ref}
+      className={'bbar' + (isMedia ? ' media' : '') + (flip ? ' flip' : '')}
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
     >

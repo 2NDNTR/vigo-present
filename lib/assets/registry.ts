@@ -209,5 +209,26 @@ export async function refreshShared(): Promise<void> {
 export function mediaUrl(media?: MediaRef): string {
   if (!media) return '';
   const fromRegistry = assetPath(media.assetId);
-  return fromRegistry || media.url || '';
+  if (fromRegistry) return fromRegistry;
+  /*
+   * A blob: URL is alive only in the tab that made it. One stored in a deck is
+   * dead on the next reload and was never visible to anyone else at all, so it
+   * is treated as no URL rather than handed to an <img> to fail — a broken
+   * image icon says the picture is gone, and an empty well says "drop one
+   * here", which is both truer and actionable. Decks written before
+   * storableUrl existed are the ones this catches.
+   */
+  if (media.url && media.url.startsWith('blob:')) return '';
+  return media.url || '';
+}
+
+/**
+ * The URL safe to WRITE into a deck. An upload's live path is a blob: URL, so
+ * what gets stored is where the file will live once it is committed to the
+ * repository; until then the live copy is found by id through the registry.
+ * Never store what only this tab can see.
+ */
+export function storableUrl(a: { path: string; local?: boolean; targetPath?: string }): string {
+  if (a.local || a.path.startsWith('blob:')) return a.targetPath || '';
+  return a.path;
 }

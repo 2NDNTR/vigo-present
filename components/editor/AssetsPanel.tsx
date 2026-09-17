@@ -7,6 +7,7 @@ import {
   isSharedLibrary,
   refreshShared,
   refreshUploads,
+  storableUrl,
   uploadedAssets,
   useAssetRegistry,
 } from '@/lib/assets/registry';
@@ -209,7 +210,7 @@ export default function AssetsPanel({
                 className={'assetcell' + (a.local ? ' local' : '')}
                 draggable
                 onDragStart={(e) => {
-                  e.dataTransfer.setData('application/x-vigo-asset', a.path);
+                  e.dataTransfer.setData('application/x-vigo-asset', storableUrl(a));
                   e.dataTransfer.setData('application/x-vigo-asset-id', a.id);
                   e.dataTransfer.effectAllowed = 'copy';
                 }}

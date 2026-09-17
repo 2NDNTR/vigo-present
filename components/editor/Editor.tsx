@@ -24,6 +24,7 @@ import type { BrandId } from '@/lib/brand/themes';
 import { getStore, storeKindSync } from '@/lib/store';
 import { ConflictError } from '@/lib/store/api';
 import { processFile } from '@/lib/media';
+import { storableUrl } from '@/lib/assets/registry';
 
 type Tab = 'pages' | 'add' | 'assets' | 'brand';
 
@@ -300,7 +301,10 @@ export default function Editor({ id }: { id: string }) {
       height = m.height;
       if (m.tooLarge) window.alert('That file is very large. It has been added, but consider a smaller version.');
     }
-    if (!url) return;
+    /* An upload has no durable URL yet — its id is the whole reference, and
+     * refusing the drop for want of a string would refuse the commonest drop
+     * there is. */
+    if (!url && !assetId) return;
 
     const acceptsMedia = slot && (slot.accepts.includes('image') || slot.accepts.includes('video'));
     update((d) => {
@@ -331,8 +335,10 @@ export default function Editor({ id }: { id: string }) {
     });
   };
 
-  const useAsset = (asset: { id: string; path: string; width?: number; height?: number }) => {
-    const url = asset.path;
+  const useAsset = (asset: { id: string; path: string; width?: number; height?: number; local?: boolean; targetPath?: string }) => {
+    /* Never the live path: an upload's is a blob: URL, dead on reload and
+     * invisible to everyone else. The id is what finds the picture. */
+    const url = storableUrl(asset);
     const assetId = asset.id;
     if (!page) return;
     const template = getTemplate(page.templateId);
