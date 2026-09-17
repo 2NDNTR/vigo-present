@@ -703,6 +703,51 @@ export default function Editor({ id }: { id: string }) {
               />
             </div>
           </div>
+
+          {/* Directly under the slide, not across the foot of the window: the
+              strip belongs to the deck you are looking at, and the panel on
+              the right keeps its full height. */}
+  <PageStrip
+            pages={pres.pages}
+            brand={pres.brand}
+            currentId={currentId}
+            onSelect={(pid) => {
+              setCurrentId(pid);
+              setSelected(null);
+            }}
+            onReorder={(from, to) =>
+              update((d) => {
+                const [m] = d.pages.splice(from, 1);
+                d.pages.splice(to, 0, m);
+              })
+            }
+            onDuplicate={(i) =>
+              update((d) => {
+                const copy = clone(d.pages[i]);
+                copy.id = uid('pg');
+                copy.sectionStart = undefined;
+                Object.keys(copy.slots).forEach((k) => copy.slots[k].forEach((b) => (b.id = uid('b'))));
+                d.pages.splice(i + 1, 0, copy);
+                setTimeout(() => setCurrentId(copy.id), 0);
+              })
+            }
+            onDelete={(i) =>
+              update((d) => {
+                if (d.pages.length === 1) return;
+                const removed = d.pages.splice(i, 1)[0];
+                if (removed.id === currentId) {
+                  const n = d.pages[Math.max(0, i - 1)];
+                  setTimeout(() => setCurrentId(n.id), 0);
+                }
+              })
+            }
+            onAddAfter={(i) => setAdding({ afterIndex: i })}
+            onRenameSection={(i, name) =>
+              update((d) => {
+                d.pages[i].sectionStart = name === undefined ? undefined : name;
+              })
+            }
+          />
         </div>
 
         <div className="ed-right" onMouseDown={(e) => e.stopPropagation()}>
@@ -864,51 +909,6 @@ export default function Editor({ id }: { id: string }) {
           </div>
         </div>
       </div>
-
-      {/* THE STRIP. Along the bottom, because a deck is a sequence and a
-          sequence reads left to right — and because the rail this replaces
-          spent 216px of canvas to show five pages of sixteen. */}
-        <PageStrip
-          pages={pres.pages}
-          brand={pres.brand}
-          currentId={currentId}
-          onSelect={(pid) => {
-            setCurrentId(pid);
-            setSelected(null);
-          }}
-          onReorder={(from, to) =>
-            update((d) => {
-              const [m] = d.pages.splice(from, 1);
-              d.pages.splice(to, 0, m);
-            })
-          }
-          onDuplicate={(i) =>
-            update((d) => {
-              const copy = clone(d.pages[i]);
-              copy.id = uid('pg');
-              copy.sectionStart = undefined;
-              Object.keys(copy.slots).forEach((k) => copy.slots[k].forEach((b) => (b.id = uid('b'))));
-              d.pages.splice(i + 1, 0, copy);
-              setTimeout(() => setCurrentId(copy.id), 0);
-            })
-          }
-          onDelete={(i) =>
-            update((d) => {
-              if (d.pages.length === 1) return;
-              const removed = d.pages.splice(i, 1)[0];
-              if (removed.id === currentId) {
-                const n = d.pages[Math.max(0, i - 1)];
-                setTimeout(() => setCurrentId(n.id), 0);
-              }
-            })
-          }
-          onAddAfter={(i) => setAdding({ afterIndex: i })}
-          onRenameSection={(i, name) =>
-            update((d) => {
-              d.pages[i].sectionStart = name === undefined ? undefined : name;
-            })
-          }
-        />
 
       {adding && (
         <AddPageModal

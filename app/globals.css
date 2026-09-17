@@ -459,8 +459,15 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 }
 .addpage:hover { border-color: var(--app-accent); color: var(--app-ink); }
 
+/* The slide is width-driven, but the height it costs is what decides whether
+   the strip beneath it is on screen. Converting a height budget back into a
+   width through the 16:9 keeps both in view without measuring anything in
+   JavaScript. The budget is the tallest strip, so the slide never jumps when
+   the zoom changes. */
 .canvas-frame {
-  width: 100%; max-width: 1180px; position: relative;
+  width: 100%;
+  max-width: min(1180px, calc((100vh - 305px) * 16 / 9));
+  position: relative;
 }
 .canvas-shell {
   border-radius: 4px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.13); background: #fff;
@@ -2262,11 +2269,15 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
  */
 .ed-strip {
   --tw: 132px;
-  flex: none;
+  width: 100%; max-width: 1180px; flex: none;
   display: flex; align-items: stretch; gap: 12px;
-  padding: 8px 12px 10px;
+  padding: 8px 10px 10px;
   background: var(--app-panel);
-  border-top: 1px solid var(--app-line-soft);
+  border-radius: var(--r-md);
+  box-shadow: var(--e1);
+  /* Tucked under the slide: the centre column's own 28px gap is the distance
+     between unrelated things, and these two are one thing. */
+  margin-top: -16px;
   z-index: 20;
 }
 .strip-scroll {
@@ -2313,7 +2324,7 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 .strip-item:hover .strip-more, .strip-item.on .strip-more { opacity: 1; }
 .strip-more:hover { background: rgba(16,24,40,0.08); color: var(--app-ink); }
 /* Small is for reading the shape of a deck, not its titles. */
-.ed-strip[data-size='s'] .strip-cap .tname { display: none; }
+.ed-strip.tiny .strip-cap .tname { display: none; }
 
 .strip-menu { position: fixed; top: auto; left: auto; z-index: 60; }
 
@@ -2326,8 +2337,35 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 
 .strip-tools {
   flex: none; display: flex; flex-direction: column; align-items: flex-end;
-  justify-content: center; gap: 6px;
+  justify-content: center; gap: 8px;
   padding-left: 12px; border-left: 1px solid var(--app-line-soft);
 }
 .strip-count { font-size: 11px; color: var(--app-ink-3); white-space: nowrap; }
-.strip-size button { min-width: 26px; font-size: 11px; font-weight: 600; }
+
+/* A bar, not three named sizes: take the width that fits this screen and this
+   deck. The two marks are the whole label — a number of pixels would be a
+   number nobody has an opinion about. */
+.strip-zoom { display: flex; align-items: center; gap: 7px; cursor: pointer; }
+.strip-zoom .zi { flex: none; background: var(--app-ink-3); border-radius: 1px; }
+.strip-zoom .zi.sm { width: 7px; height: 5px; }
+.strip-zoom .zi.lg { width: 12px; height: 8px; }
+.strip-zoom input[type='range'] {
+  -webkit-appearance: none; appearance: none;
+  width: 92px; height: 14px; background: transparent; cursor: pointer; margin: 0;
+}
+.strip-zoom input[type='range']::-webkit-slider-runnable-track {
+  height: 3px; border-radius: 2px; background: rgba(16,24,40,0.16);
+}
+.strip-zoom input[type='range']::-moz-range-track {
+  height: 3px; border-radius: 2px; background: rgba(16,24,40,0.16);
+}
+.strip-zoom input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 13px; height: 13px; margin-top: -5px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 3px rgba(16,24,40,0.35), inset 0 0 0 1px rgba(16,24,40,0.18);
+}
+.strip-zoom input[type='range']::-moz-range-thumb {
+  width: 13px; height: 13px; border: 0; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 3px rgba(16,24,40,0.35), inset 0 0 0 1px rgba(16,24,40,0.18);
+}
+.strip-zoom input[type='range']:focus-visible { outline: 2px solid var(--app-focus); outline-offset: 3px; }

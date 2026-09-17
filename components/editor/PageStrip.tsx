@@ -24,12 +24,19 @@ import { getTemplate } from '@/lib/templates/registry';
  * already correct down here, with no render step and nothing to go stale.
  */
 
-const SIZES = { s: 92, m: 132, l: 188 } as const;
-type Size = keyof typeof SIZES;
+/* A zoom, not three named sizes. Three buttons made you guess which one you
+ * wanted; a bar lets you take exactly the width that fits your screen and the
+ * deck you happen to have open. */
+const MIN = 74;
+const MAX = 200;
+const DEFAULT = 132;
+/* Below this a caption is a truncated word, so the number carries the tile
+ * on its own and the layout name drops out. */
+const NAME_AT = 112;
 
 /* A preference, not data — it belongs to this person's screen, so it stays in
  * this browser and never rides along with the deck. */
-const KEY = 'presente.strip.size';
+const KEY = 'presente.strip.zoom';
 
 export default function PageStrip({
   pages,
@@ -52,7 +59,7 @@ export default function PageStrip({
   onAddAfter: (i: number) => void;
   onRenameSection: (i: number, name: string) => void;
 }) {
-  const [size, setSize] = useState<Size>('m');
+  const [w, setW] = useState(DEFAULT);
   const [drag, setDrag] = useState<number | null>(null);
   const [over, setOver] = useState<{ i: number; half: 'left' | 'right' } | null>(null);
   /* A horizontal scroller clips its children vertically too — `overflow-x:
@@ -67,17 +74,17 @@ export default function PageStrip({
    * a first paint that disagrees with the second is a hydration error. */
   useEffect(() => {
     try {
-      const v = window.localStorage.getItem(KEY);
-      if (v === 's' || v === 'm' || v === 'l') setSize(v);
+      const v = Number(window.localStorage.getItem(KEY));
+      if (isFinite(v) && v >= MIN && v <= MAX) setW(v);
     } catch {
       /* private mode — the default is a fine answer */
     }
   }, []);
 
-  const pick = (v: Size) => {
-    setSize(v);
+  const zoom = (v: number) => {
+    setW(v);
     try {
-      window.localStorage.setItem(KEY, v);
+      window.localStorage.setItem(KEY, String(v));
     } catch {
       /* nothing to do: it just will not be remembered */
     }
@@ -89,7 +96,7 @@ export default function PageStrip({
    * about where you are. */
   useEffect(() => {
     currentEl.current?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
-  }, [currentId, size]);
+  }, [currentId, w]);
 
   /* A menu pinned to the viewport has to close when the page moves under it. */
   useEffect(() => {
@@ -114,7 +121,7 @@ export default function PageStrip({
   };
 
   return (
-    <div className="ed-strip" data-size={size} style={{ ['--tw' as string]: SIZES[size] + 'px' }}>
+    <div className={'ed-strip' + (w < NAME_AT ? ' tiny' : '')} style={{ ['--tw' as string]: w + 'px' }}>
       <div className="strip-scroll" ref={scroller} onWheel={onWheel}>
         {pages.map((p, i) => {
           const t = getTemplate(p.templateId);
@@ -225,18 +232,19 @@ export default function PageStrip({
         <span className="strip-count">
           {pages.length} page{pages.length === 1 ? '' : 's'}
         </span>
-        <div className="seg strip-size">
-          {(['s', 'm', 'l'] as Size[]).map((v) => (
-            <button
-              key={v}
-              className={size === v ? 'on' : ''}
-              onClick={() => pick(v)}
-              title={v === 's' ? 'Small — see the whole deck' : v === 'm' ? 'Medium' : 'Large — see what is on each page'}
-            >
-              {v.toUpperCase()}
-            </button>
-          ))}
-        </div>
+        <label className="strip-zoom" title="Page size">
+          <span aria-hidden="true" className="zi sm" />
+          <input
+            type="range"
+            min={MIN}
+            max={MAX}
+            step={2}
+            value={w}
+            aria-label="Page size"
+            onChange={(e) => zoom(Number(e.target.value))}
+          />
+          <span aria-hidden="true" className="zi lg" />
+        </label>
       </div>
     </div>
   );
