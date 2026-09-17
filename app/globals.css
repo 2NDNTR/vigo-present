@@ -1832,6 +1832,9 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 /* No room above — the block is at the top of the slide — so the bar drops
    inside it. Better over the top of a picture than clipped off the slide. */
 .bbar.flip { bottom: auto; top: calc(var(--u) * 14px); }
+/* A picture is a thing you press. Saying so costs one declaration and saves
+   the person wondering whether anything is there. */
+.slot.editable .media-el { cursor: pointer; }
 
 /* Eight controls will not fit over a picture in a four-up grid, and a bar
    clipped by the edge of the slide is worse than a bar on two lines. */

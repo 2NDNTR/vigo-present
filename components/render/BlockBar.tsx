@@ -55,27 +55,40 @@ export default function BlockBar({
   onCrop?: (crop: MediaRef['crop']) => void;
 }) {
   const [colors, setColors] = useState(false);
+  const current = block.style?.color || 'auto';
+  /* A picture with no file in it is still a picture: it takes the same bar, so
+   * the way to give one a file is to select it and use Assets, and the way to
+   * be rid of an empty well is the bin that comes with it. */
+  const isMedia = block.type === 'image' || block.type === 'video';
+
   /*
-   * THE BAR HAS TO BE ON THE SLIDE.
-   * It sits above the block, which is right for a headline in the middle of a
-   * page and wrong for anything touching the top edge — a full-bleed picture
-   * put the bar off the top of the slide, where the stage clipped it. The trash
-   * went with it, and since the hover − hides whenever the bar is up, the block
-   * had no delete at all. Measured once against the stage on open: if there is
-   * no room above, it drops inside the block instead. Flipping only ever moves
-   * it down, so the measurement cannot chase itself.
+   * THE BAR HAS TO BE ON THE SLIDE, AND IT WAS NOT.
+   *
+   * It hangs above the block. That is right for a headline in the middle of a
+   * page and wrong twice over for a picture: a picture usually fills its area,
+   * so "above the block" is above the AREA — and an area clips what leaves it.
+   * The bar was being drawn into a region the slot cannot show, which is why
+   * tapping a picture appeared to do nothing at all. Measuring against the
+   * slide missed it, because the slot's edge comes first.
+   *
+   * A picture therefore keeps its bar INSIDE itself, always. There is no
+   * measurement to get wrong, it is where a picture's controls belong anyway,
+   * and it is the one case where there is guaranteed to be room. Everything
+   * else keeps the bar above and is measured against the nearest thing that
+   * can clip it — the slot, not the slide.
    */
   const ref = useRef<HTMLDivElement>(null);
   const [flip, setFlip] = useState(false);
   useLayoutEffect(() => {
+    if (isMedia) {
+      setFlip(true);
+      return;
+    }
     const el = ref.current;
-    const stage = el?.closest('.stage');
-    if (!el || !stage) return;
-    setFlip(el.getBoundingClientRect().top < stage.getBoundingClientRect().top + 2);
-  }, [block.id]);
-  const current = block.style?.color || 'auto';
-  const isMedia = (block.type === 'image' || block.type === 'video') && !!block.media?.url;
-
+    const clip = el?.closest('.slot') || el?.closest('.stage');
+    if (!el || !clip) return;
+    setFlip(el.getBoundingClientRect().top < clip.getBoundingClientRect().top + 2);
+  }, [block.id, isMedia]);
   /*
    * The swatch shows the colour the block IS, not the colour someone has
    * overridden it to. Most blocks are on 'auto' — they take the page's ink —

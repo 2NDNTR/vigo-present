@@ -802,6 +802,7 @@ function MediaBlock({
           muted={m!.muted !== false}
           controls={!!m!.controls}
           playsInline
+          draggable={false}
           style={{ objectPosition, transform }}
           onError={() => setFailed(resolved)}
         />
@@ -809,6 +810,10 @@ function MediaBlock({
         <img
           src={resolved}
           alt={m!.alt || ''}
+          /* Without this, pressing on a picture starts the browser's own image
+           * drag instead of reaching the block underneath — so selecting one by
+           * pressing and holding, which is what a tap is, did nothing. */
+          draggable={false}
           style={{ objectPosition, transform }}
           onError={() => setFailed(resolved)}
         />
