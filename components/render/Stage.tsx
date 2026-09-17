@@ -69,6 +69,12 @@ export default function Stage(props: StageProps) {
   const { page, brand, retailer, mode = 'fixed', editable } = props;
   const [ref, w] = useWidth<HTMLDivElement>();
   const [dropSlot, setDropSlot] = useState<string | null>(null);
+  /* Which picture is being repositioned. It ends when the selection moves,
+   * because a mode you cannot see the edge of is a mode people get stuck in. */
+  const [moveId, setMoveId] = useState<string | null>(null);
+  useEffect(() => {
+    setMoveId(null);
+  }, [props.selectedId]);
   const [dragBlock, setDragBlock] = useState<{ slot: string; index: number } | null>(null);
   useAssetRegistry();
 
@@ -342,7 +348,53 @@ export default function Stage(props: StageProps) {
               {blocks.map((b, bi) => (
                 <div
                   key={b.id}
-                  className={'blockslot' + (dragBlock && dragBlock.slot === slot.key && dragBlock.index === bi ? ' dragging' : '')}
+                  className={
+                    'blockslot' +
+                    (dragBlock && dragBlock.slot === slot.key && dragBlock.index === bi ? ' dragging' : '') +
+                    (moveId === b.id ? ' moving' : '')
+                  }
+                  /* Dragging a picture inside its frame moves the focal point,
+                   * which is what object-position reads. Pointer capture rather
+                   * than window listeners: the pointer leaving the picture
+                   * mid-drag is normal — you are pushing content past an edge —
+                   * and without capture the drag would end there. */
+                  onPointerDown={
+                    moveId === b.id && props.onChangeBlock
+                      ? (e) => {
+                          const el = e.currentTarget as HTMLElement;
+                          const r = el.getBoundingClientRect();
+                          if (!r.width || !r.height) return;
+                          const m = b.media || { url: '' };
+                          const fx = m.focalX ?? 0.5;
+                          const fy = m.focalY ?? 0.5;
+                          const sx = e.clientX;
+                          const sy = e.clientY;
+                          e.preventDefault();
+                          e.stopPropagation();
+                          el.setPointerCapture(e.pointerId);
+                          const clamp = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
+                          const onMoveEv = (ev: PointerEvent) => {
+                            props.onChangeBlock!(b.id, {
+                              media: {
+                                ...m,
+                                /* Pull, do not push: dragging left should bring
+                                 * what is off the right edge into view. */
+                                focalX: clamp(fx - (ev.clientX - sx) / r.width),
+                                focalY: clamp(fy - (ev.clientY - sy) / r.height),
+                              },
+                            });
+                          };
+                          const onUp = () => {
+                            el.removeEventListener('pointermove', onMoveEv);
+                            el.removeEventListener('pointerup', onUp);
+                            el.removeEventListener('pointercancel', onUp);
+                          };
+                          el.addEventListener('pointermove', onMoveEv);
+                          el.addEventListener('pointerup', onUp);
+                          el.addEventListener('pointercancel', onUp);
+                        }
+                      : undefined
+                  }
                   style={
                     horizontal
                       ? { flex: 1, minWidth: 0, ...(b.type === 'card' ? { alignSelf: 'stretch' } : {}) }
@@ -396,6 +448,12 @@ export default function Stage(props: StageProps) {
                       block={b}
                       theme={theme}
                       onDark={onDark}
+                      moving={moveId === b.id}
+                      onMove={() => setMoveId(moveId === b.id ? null : b.id)}
+                      onCrop={(crop) =>
+                        props.onChangeBlock &&
+                        props.onChangeBlock(b.id, { media: { ...(b.media || { url: '' }), crop } })
+                      }
                       canAdd={!!props.onAddLike && blocks.length < slot.max}
                       onColor={(role) =>
                         props.onChangeBlock &&

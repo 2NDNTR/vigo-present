@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { Block } from '@/lib/model/types';
+import type { Block, MediaRef } from '@/lib/model/types';
 import type { BrandTheme, ColorRole } from '@/lib/brand/themes';
 import { colorLabel } from '@/lib/brand/themes';
 
@@ -19,7 +19,16 @@ import { colorLabel } from '@/lib/brand/themes';
  *
  * Even the colour is not a colour: it is a role from the theme, so a rebrand
  * carries it.
+ *
+ * A picture gets a different bar, because a picture has a different question.
+ * Colour means nothing on a photograph; SHAPE means everything, and the shape
+ * a layout happens to give a picture is not a decision anybody made. So the
+ * five shapes, then Move to say which part of the picture is in frame. Still
+ * no free transform, no rotation, no opacity: pick a shape and pick what it
+ * frames, and the layout keeps its geometry either way.
  */
+
+const RATIOS: NonNullable<MediaRef['crop']>[] = ['1:1', '3:4', '9:16', '5:4', '16:9'];
 export default function BlockBar({
   block,
   theme,
@@ -28,6 +37,9 @@ export default function BlockBar({
   onColor,
   onAdd,
   onDelete,
+  moving,
+  onMove,
+  onCrop,
 }: {
   block: Block;
   theme: BrandTheme;
@@ -37,9 +49,14 @@ export default function BlockBar({
   onColor: (role: ColorRole | 'auto') => void;
   onAdd: () => void;
   onDelete: () => void;
+  /** media only: the picture is in move mode and can be dragged in its frame */
+  moving?: boolean;
+  onMove?: () => void;
+  onCrop?: (crop: MediaRef['crop']) => void;
 }) {
   const [colors, setColors] = useState(false);
   const current = block.style?.color || 'auto';
+  const isMedia = (block.type === 'image' || block.type === 'video') && !!block.media?.url;
 
   /*
    * The swatch shows the colour the block IS, not the colour someone has
@@ -57,18 +74,48 @@ export default function BlockBar({
 
   return (
     <div
-      className="bbar"
+      className={'bbar' + (isMedia ? ' media' : '')}
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
     >
-      <button
-        className={'bbar-btn' + (colors ? ' on' : '')}
-        title="Colour"
-        aria-label="Colour"
-        onClick={() => setColors(!colors)}
-      >
-        <span className="bbar-swatch" style={{ background: shown }} />
-      </button>
+      {isMedia && onCrop ? (
+        <>
+          <button
+            className={'bbar-chip' + (!block.media?.crop ? ' on' : '')}
+            title="Fill the area the layout gives it"
+            onClick={() => onCrop(undefined)}
+          >
+            Fill
+          </button>
+          {RATIOS.map((r) => (
+            <button
+              key={r}
+              className={'bbar-chip' + (block.media?.crop === r ? ' on' : '')}
+              title={'Crop to ' + r}
+              onClick={() => onCrop(r)}
+            >
+              {r}
+            </button>
+          ))}
+          <span className="bbar-sep" />
+          <button
+            className={'bbar-btn wide' + (moving ? ' on' : '')}
+            title="Drag the picture inside its frame"
+            onClick={onMove}
+          >
+            Move
+          </button>
+        </>
+      ) : (
+        <button
+          className={'bbar-btn' + (colors ? ' on' : '')}
+          title="Colour"
+          aria-label="Colour"
+          onClick={() => setColors(!colors)}
+        >
+          <span className="bbar-swatch" style={{ background: shown }} />
+        </button>
+      )}
 
       {canAdd ? (
         <button className="bbar-btn" title="Add another like this" aria-label="Add another like this" onClick={onAdd}>

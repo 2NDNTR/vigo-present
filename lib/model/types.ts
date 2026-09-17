@@ -92,6 +92,14 @@ export interface MediaRef {
   focalX?: number;   // 0..1
   focalY?: number;   // 0..1
   zoom?: number;     // 1 = cover
+  /**
+   * The shape the picture is cropped to. Absent means it fills the area the
+   * layout gave it, which is the right answer most of the time and stays the
+   * default. A ratio here is a decision about the PICTURE — a portrait of two
+   * people wants 3:4 wherever it lands — so it rides with the media and
+   * survives a change of layout.
+   */
+  crop?: '1:1' | '3:4' | '9:16' | '5:4' | '16:9';
   alt?: string;
   poster?: string;
   autoplay?: boolean;

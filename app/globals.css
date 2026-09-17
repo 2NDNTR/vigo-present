@@ -874,6 +874,18 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 }
 
 .media-el { width: 100%; height: 100%; position: relative; overflow: hidden; }
+/* A chosen shape is the largest box of that shape that fits, centred. The
+   picture still covers it, so picking a shape never letterboxes anything — it
+   decides what is in frame, and the focal point decides which part. This box
+   is only here to be measured against: the size itself is one min() in
+   container units on the picture, because aspect-ratio with max-width and
+   max-height cannot do it (measured: the clamped axis moves and the other
+   one stays, so the shape breaks in whichever direction is tight). */
+.cropfit {
+  width: 100%; height: 100%;
+  container-type: size;
+  display: flex; align-items: center; justify-content: center;
+}
 .media-el img, .media-el video { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 .ph {
@@ -1811,6 +1823,31 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 }
 .bbar-btn:hover, .bbar-btn.on { background: rgba(23, 24, 26, 0.08); }
 .bbar-btn.danger:hover { background: #c0392b; color: #fff; }
+/* Ratios read as words, not icons: "3:4" is unambiguous and an icon of a
+   rectangle is a rectangle. */
+/* Eight controls will not fit over a picture in a four-up grid, and a bar
+   clipped by the edge of the slide is worse than a bar on two lines. */
+.bbar.media { flex-wrap: wrap; justify-content: center; max-width: calc(var(--u) * 330px); }
+
+.bbar-chip {
+  height: calc(var(--u) * 28px);
+  padding: 0 calc(var(--u) * 9px);
+  border: 0; border-radius: calc(var(--u) * 7px);
+  background: none; color: #17181a; cursor: pointer;
+  font: inherit; font-size: calc(var(--u) * 15px); font-weight: 550;
+  letter-spacing: .01em; white-space: nowrap;
+}
+.bbar-chip:hover { background: rgba(23, 24, 26, 0.08); }
+.bbar-chip.on { background: #17181a; color: #fff; }
+.bbar-btn.wide { width: auto; padding: 0 calc(var(--u) * 10px); font-size: calc(var(--u) * 15px); font-weight: 550; }
+
+/* A picture being repositioned says so with the cursor — it is the only cue
+   that the next drag moves the content and not the block. */
+.blockslot.moving { cursor: grab; }
+.blockslot.moving:active { cursor: grabbing; }
+.blockslot.moving .media-el { outline: calc(var(--u) * 2px) solid var(--app-focus); outline-offset: calc(var(--u) * -2px); }
+.blockslot.moving img, .blockslot.moving video { pointer-events: none; }
+
 .bbar-sep {
   width: 1px;
   align-self: stretch;

@@ -191,9 +191,29 @@ export default function BlockView({ block, ctx }: { block: Block; ctx: RenderCtx
       }
       const objectPosition = `${Math.round((m.focalX ?? 0.5) * 100)}% ${Math.round((m.focalY ?? 0.5) * 100)}%`;
       const transform = m.zoom && m.zoom !== 1 ? `scale(${m.zoom})` : undefined;
-      return (
-        <div {...wrapProps} style={{ ...wrapProps.style, height: '100%' }}>
-          <div className="media-el">
+      /* A crop is the largest box of that shape that fits the area, centred.
+       * The picture still COVERS its box, so choosing a shape never letterboxes
+       * anything — it decides what is in frame, and the focal point decides
+       * which part. That pairing is the whole feature: a 4:3 photograph of two
+       * men in a 16:9 well is either a crop somebody chose or a crop the layout
+       * chose by accident.
+       *
+       * Container units do the arithmetic. `aspect-ratio` alone cannot: with a
+       * width of 100% a max-height clamps the height and leaves the width
+       * behind, and with a height of 100% it fails the same way the other way
+       * round — measured both, both wrong. `min(100cqw, 100cqh * ratio)` is the
+       * largest box of that shape in one expression, with no measuring. */
+      const cropped = !!m.crop;
+      const [rw, rh] = cropped ? m.crop!.split(':').map(Number) : [0, 0];
+      const media = (
+        <div
+          className="media-el"
+          style={
+            cropped
+              ? { width: `min(100cqw, calc(100cqh * ${rw} / ${rh}))`, height: 'auto', aspectRatio: `${rw} / ${rh}` }
+              : undefined
+          }
+        >
             {block.type === 'video' ? (
               <video
                 src={resolved}
@@ -208,7 +228,11 @@ export default function BlockView({ block, ctx }: { block: Block; ctx: RenderCtx
             ) : (
               <img src={resolved} alt={m.alt || ''} style={{ objectPosition, transform }} />
             )}
-          </div>
+        </div>
+      );
+      return (
+        <div {...wrapProps} style={{ ...wrapProps.style, height: '100%' }}>
+          {cropped ? <div className="cropfit">{media}</div> : media}
         </div>
       );
     }
