@@ -244,6 +244,13 @@ export default function Editor({ id }: { id: string }) {
    * a slide any smaller than that is a thumbnail, and there is a whole strip
    * of those. */
   const [zoom, setZoom] = useState(0);
+  /* Guardrail notices you have read. Keyed by page AND rule, so dismissing the
+   * timeline advice on page four does not silence it on page nine, and it is
+   * kept for the session only — a note about this page is worth saying again
+   * tomorrow, but not twice in one sitting. `leaving` is the one on its way
+   * out, held for the length of the slide-up. */
+  const [readNotices, setReadNotices] = useState<string[]>([]);
+  const [leaving, setLeaving] = useState<string | null>(null);
 
   const pageIndex = useMemo(() => (pres ? pres.pages.findIndex((p) => p.id === currentId) : -1), [pres, currentId]);
   const page = pageIndex >= 0 ? pres!.pages[pageIndex] : null;
@@ -505,7 +512,18 @@ export default function Editor({ id }: { id: string }) {
       }))
     ),
     ...pageGuardrails(page, template, getTheme(page.brandOverride || pres.brand)),
-  ];
+  ].filter((w) => !readNotices.includes(page.id + ':' + w.id));
+
+  /* Out of the DOM only after it has finished shrinking: remove it on the
+   * click and the tabs below jump up instead of rising. */
+  const dismiss = (id: string) => {
+    const key = page.id + ':' + id;
+    setLeaving(key);
+    window.setTimeout(() => {
+      setReadNotices((r) => (r.includes(key) ? r : [...r, key]));
+      setLeaving(null);
+    }, 200);
+  };
 
   return (
     <div className="editor">
@@ -832,12 +850,14 @@ export default function Editor({ id }: { id: string }) {
             <div className="panel-notices">
               {warnings.slice(0, 3).map((w) => (
                 <div
-                  className="warn"
+                  className={'warn' + (w.tone === 'warn' ? ' hard' : '') + (leaving === page.id + ':' + w.id ? ' leaving' : '')}
                   key={w.id}
-                  style={w.tone === 'info' ? { background: '#f4f6f8', borderColor: '#e0e5ea', color: '#5f6368' } : undefined}
                 >
-                  <span>{w.tone === 'warn' ? '△' : 'ⓘ'}</span>
-                  <span>{w.text}</span>
+                  <span className="warn-i">{w.tone === 'warn' ? '△' : 'ⓘ'}</span>
+                  <span className="warn-t">{w.text}</span>
+                  <button className="warn-x" onClick={() => dismiss(w.id)} aria-label="Dismiss" title="Dismiss">
+                    ✕
+                  </button>
                 </div>
               ))}
             </div>

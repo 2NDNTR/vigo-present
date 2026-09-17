@@ -386,7 +386,7 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 .tabbtn.on { background: #fff; color: var(--app-ink); font-weight: 550; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
 
 /* Notices sit above the tabs and scroll away with the content. */
-.panel-notices { padding: 18px 0 4px; }
+.panel-notices { padding: 0; }
 
 /* The title field grows to fit its own text instead of sitting at a fixed
    width that chops the name mid-word. The wrapper's ::after draws the same
@@ -509,11 +509,45 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 .rolebtn .rn { font-size: 13px; }
 .rolebtn .rs { font-size: 11px; color: var(--app-ink-3); }
 
+/* THE CREATIVE DIRECTOR'S MARGIN NOTE
+ * Highlighter yellow, because that is what this is: someone reading over your
+ * shoulder and marking the line they would look at again. It has to catch the
+ * eye from across a panel and then be dismissable in one click, or it stops
+ * being advice and becomes a scold that lives on the screen.
+ * A hard warning — text that will be cut off on a projector — gets a heavier
+ * edge, not a different colour: one voice, two volumes. */
 .warn {
-  display: flex; gap: 8px; padding: 10px 12px; border-radius: 8px; background: #fdf6e6;
-  border: 1px solid #f0dfae; font-size: 12.5px; line-height: 1.45; color: #6a5209; margin-bottom: 10px;
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 10px 10px 10px 12px; border-radius: 8px;
+  background: #F4FF8F;
+  border: 1px solid rgba(120,130,0,0.28);
+  font-size: 12.5px; line-height: 1.45; color: #3d4200;
+  margin-bottom: 10px;
+  max-height: 200px; overflow: hidden;
+  transition: max-height .2s ease, opacity .16s ease,
+              margin-top .2s ease, margin-bottom .2s ease,
+              padding-top .2s ease, padding-bottom .2s ease, border-width .2s ease;
 }
+.panel-notices .warn:first-child { margin-top: 14px; }
+.panel-notices .warn:last-child { margin-bottom: 12px; }
+.warn.hard { border-color: rgba(120,130,0,0.55); box-shadow: inset 2px 0 0 #E4F000; }
 .warn b { font-weight: 600; }
+.warn-i { flex: none; opacity: .7; }
+.warn-t { flex: 1 1 auto; min-width: 0; }
+.warn-x {
+  flex: none; width: 18px; height: 18px; margin: -1px -2px 0 0;
+  border: 0; border-radius: 4px; background: transparent; cursor: pointer;
+  color: rgba(61,66,0,0.5); font-size: 10px; line-height: 1;
+  display: grid; place-items: center;
+}
+.warn-x:hover { background: rgba(61,66,0,0.14); color: #3d4200; }
+/* Everything below rises into the space rather than snapping into it. The
+   selector carries the container because :first-child and :last-child set the
+   margins this has to zero, and a bare .warn.leaving loses to them. */
+.panel-notices .warn.leaving {
+  max-height: 0; opacity: 0;
+  margin-top: 0; margin-bottom: 0; padding-top: 0; padding-bottom: 0; border-width: 0;
+}
 
 .dropzone {
   border: 1px dashed var(--app-line);
@@ -2005,7 +2039,7 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 .tabbtn.on { box-shadow: var(--e1); }
 
 .canvas-shell { border-radius: var(--r-md); overflow: hidden; box-shadow: var(--e2); }
-.panel-notices { padding: 14px 0 2px; }
+.panel-notices { padding: 0; }
 .warn { border-radius: var(--r-sm); }
 
 /* Panel sections lose their rules: on a white card floating in space, a
@@ -2382,3 +2416,20 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
   background: #fff; box-shadow: 0 1px 3px rgba(16,24,40,0.35), inset 0 0 0 1px rgba(16,24,40,0.18);
 }
 .strip-zoom input[type='range']:focus-visible { outline: 2px solid var(--app-focus); outline-offset: 3px; }
+
+/* -------------------------------------------------------------- add list
+ * One row per thing you can add, label over hint. The greyed-out half of this
+ * list used to sit here in full, which made a menu of seven look like a menu
+ * of fourteen; it is folded away now, and what is left is only what works.
+ */
+.addlist { display: grid; gap: 6px; }
+.addbtn {
+  display: block; width: 100%; text-align: left; cursor: pointer;
+  padding: 9px 12px; border: 1px solid var(--app-line); border-radius: var(--r-sm);
+  background: #fff; color: var(--app-ink);
+}
+.addbtn:hover { border-color: rgba(16,24,40,0.24); background: rgba(16,24,40,0.02); }
+.addbtn b { display: block; font-size: 12.5px; font-weight: 550; line-height: 1.3; }
+.addbtn i { display: block; font-style: normal; font-size: 11.5px; color: var(--app-ink-3); line-height: 1.35; }
+.addbtn.off { cursor: default; opacity: .5; background: transparent; }
+.addbtn.off:hover { border-color: var(--app-line); background: transparent; }
