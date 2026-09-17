@@ -784,6 +784,11 @@ export default function Editor({ id }: { id: string }) {
               }}
             />
           )}
+          {/* THE MODULE — everything that describes this one page. It is the
+              scroll container and the positioning context, so the layout sheet
+              covers the module and nothing above it, and a long panel cannot
+              make the sheet taller than the screen. */}
+          <div className="ed-module">
           {/* Page guidance sits above the tabs, so it holds one position
               whichever tab is open rather than appearing only under Pages. */}
           {warnings.length > 0 && (
@@ -905,6 +910,7 @@ export default function Editor({ id }: { id: string }) {
               }
             />
           )}
+          </div>
         </div>
       </div>
 
