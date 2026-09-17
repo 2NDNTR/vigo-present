@@ -430,10 +430,6 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 
 .ed-body { flex: 1; display: flex; min-height: 0; }
 
-.ed-left {
-  width: 216px; flex: none; background: #fff; border-right: 1px solid var(--app-line-soft);
-  overflow-y: auto; padding: 12px 12px 120px;
-}
 .ed-center { flex: 1; min-width: 0; overflow-y: auto; padding: 34px; display: flex; flex-direction: column; align-items: center; gap: 28px; }
 /* The column itself does not scroll — the MODULE inside it does. An absolutely
    positioned sheet (the layout browser) resolves `bottom: 0` against its
@@ -455,21 +451,7 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
   padding: 0 18px 60px;
 }
 
-.navsection { font-size: 10.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--app-ink-3); padding: 14px 6px 6px; display:flex; align-items:center; gap:6px; }
-.navsection input { border:0; background:transparent; outline:none; font: inherit; color: inherit; letter-spacing: inherit; text-transform: inherit; width: 100%; }
 
-.navpage { position: relative; margin-bottom: 8px; cursor: pointer; }
-.navpage .thumb {
-  aspect-ratio: 16/9; border-radius: 6px; overflow: hidden; border: 1px solid var(--app-line);
-  background: #fff; position: relative;
-}
-.navpage.on .thumb { border-color: var(--app-accent); box-shadow: 0 0 0 2px var(--app-accent); }
-.navpage .num { position: absolute; left: -2px; bottom: -2px; font-size: 10px; color: var(--app-ink-3); }
-.navpage .rowline { display: flex; align-items: center; justify-content: space-between; padding: 4px 2px 0; }
-.navpage .pname { font-size: 11px; color: var(--app-ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.navpage.dragover-top .thumb { box-shadow: 0 -3px 0 var(--app-focus); }
-.navpage.dragover-bottom .thumb { box-shadow: 0 3px 0 var(--app-focus); }
-.navpage.dragging { opacity: 0.35; }
 
 .addpage {
   width: 100%; height: 40px; border: 1px dashed var(--app-line); background: #fff; border-radius: 8px;
@@ -1199,7 +1181,7 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
   .ed-right { display: none; }
 }
 @media (max-width: 860px) {
-  .ed-left { display: none; }
+  .ed-strip { display: none; }
   .wrap { padding: 0 20px; }
   .dash-head { padding: 40px 0 24px; flex-direction: column; align-items: flex-start; }
 }
@@ -1981,14 +1963,12 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
    is the whole "widget" feeling in three declarations: inset them, round
    them, and let a shadow do the separating that a border was doing. */
 .ed-body { padding: 12px; gap: 12px; background: var(--app-bg); }
-.ed-left,
 .ed-right {
   background: var(--app-panel);
   border: 0;
   border-radius: var(--r-md);
   box-shadow: var(--e1);
 }
-.ed-left { padding: 12px 10px 100px; }
 .ed-right { padding: 0; }
 .ed-module { padding: 0 16px 60px; }
 .ed-center { padding: 22px 6px; }
@@ -2273,3 +2253,81 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
   background: #fff; color: var(--app-ink); z-index: 5;
 }
 .notes-compose .mention-menu button:hover { background: rgba(16,24,40,0.07); }
+
+/* ============================================================== the strip
+ * The pages, along the bottom. A rail on the left showed five of sixteen and
+ * charged 216px of canvas for it; the same strip lying down shows eight to
+ * fourteen and gives the width back. A deck is a sequence, and a sequence
+ * reads left to right.
+ */
+.ed-strip {
+  --tw: 132px;
+  flex: none;
+  display: flex; align-items: stretch; gap: 12px;
+  padding: 8px 12px 10px;
+  background: var(--app-panel);
+  border-top: 1px solid var(--app-line-soft);
+  z-index: 20;
+}
+.strip-scroll {
+  flex: 1 1 auto; min-width: 0;
+  display: flex; align-items: flex-start; gap: 8px;
+  overflow-x: auto; overflow-y: visible;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+}
+
+.strip-item { position: relative; flex: none; width: var(--tw); cursor: pointer; }
+/* A section break is a rule between two pages, not a heading above a column —
+   there is no column any more. */
+.strip-item.sec { border-left: 1px solid var(--app-line); padding-left: 9px; margin-left: 5px; }
+.strip-sec {
+  height: 14px; display: flex; align-items: center; overflow: hidden;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--app-ink-3);
+}
+.strip-sec input {
+  width: 100%; border: 0; background: transparent; outline: none;
+  font: inherit; color: inherit; letter-spacing: inherit; text-transform: inherit;
+}
+.strip-thumb {
+  aspect-ratio: 16/9; border-radius: 5px; overflow: hidden;
+  border: 1px solid var(--app-line); background: #fff; position: relative;
+}
+.strip-item.on .strip-thumb { border-color: var(--app-accent); box-shadow: 0 0 0 2px var(--app-accent); }
+.strip-item.dragging { opacity: 0.35; }
+.strip-item.dragover-left .strip-thumb { box-shadow: -3px 0 0 var(--app-focus); }
+.strip-item.dragover-right .strip-thumb { box-shadow: 3px 0 0 var(--app-focus); }
+
+.strip-cap {
+  display: flex; align-items: center; gap: 4px; padding: 3px 1px 0;
+  font-size: 10.5px; color: var(--app-ink-3); line-height: 1.2;
+}
+.strip-cap b { font-weight: 600; color: var(--app-ink-2); flex: none; }
+.strip-cap .tname { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.strip-more {
+  flex: none; width: 16px; height: 16px; border: 0; background: none; cursor: pointer;
+  color: var(--app-ink-3); font-size: 12px; line-height: 1; border-radius: 3px;
+  opacity: 0; transition: opacity .12s;
+}
+.strip-item:hover .strip-more, .strip-item.on .strip-more { opacity: 1; }
+.strip-more:hover { background: rgba(16,24,40,0.08); color: var(--app-ink); }
+/* Small is for reading the shape of a deck, not its titles. */
+.ed-strip[data-size='s'] .strip-cap .tname { display: none; }
+
+.strip-menu { position: fixed; top: auto; left: auto; z-index: 60; }
+
+.strip-add {
+  flex: none; width: var(--tw); margin-top: 14px; aspect-ratio: 16/9;
+  border: 1px dashed var(--app-line); border-radius: 5px; background: #fff;
+  cursor: pointer; color: var(--app-ink-3); font-size: 17px;
+}
+.strip-add:hover { border-color: var(--app-accent); color: var(--app-ink); }
+
+.strip-tools {
+  flex: none; display: flex; flex-direction: column; align-items: flex-end;
+  justify-content: center; gap: 6px;
+  padding-left: 12px; border-left: 1px solid var(--app-line-soft);
+}
+.strip-count { font-size: 11px; color: var(--app-ink-3); white-space: nowrap; }
+.strip-size button { min-width: 26px; font-size: 11px; font-weight: 600; }
