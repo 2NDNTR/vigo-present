@@ -1832,6 +1832,40 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 /* No room above — the block is at the top of the slide — so the bar drops
    inside it. Better over the top of a picture than clipped off the slide. */
 .bbar.flip { bottom: auto; top: calc(var(--u) * 14px); }
+/* ----------------------------------------------------- remove this row
+ * A milestone, a logo or a bullet is removed where it is, the same as a block
+ * is. Sized in design units so it stays the same size relative to the slide at
+ * any zoom, and on hover so a page being read is not covered in bins.
+ */
+.rowdel {
+  position: absolute;
+  top: calc(var(--u) * -6px);
+  right: calc(var(--u) * -6px);
+  z-index: 7;
+  width: calc(var(--u) * 24px);
+  height: calc(var(--u) * 24px);
+  display: grid; place-items: center;
+  padding: 0; border: 0; border-radius: 50%;
+  background: rgba(23, 24, 26, 0.72);
+  color: #fff;
+  font-size: calc(var(--u) * 13px);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease, background 120ms ease;
+}
+.tl-item, .logoitem, .checkrow, .bulletrow { position: relative; }
+.tl-item:hover > .rowdel,
+.logoitem:hover > .rowdel,
+.checkrow:hover > .rowdel,
+.bulletrow:hover > .rowdel,
+.rowdel:focus-visible { opacity: 1; }
+.rowdel:hover { background: #c0392b; }
+/* A row of text has no margin to hang in, so its bin sits inside the line. */
+.checkrow > .rowdel, .bulletrow > .rowdel {
+  top: 50%; right: calc(var(--u) * -4px);
+  transform: translateY(-50%);
+}
+
 /* A picture is a thing you press. Saying so costs one declaration and saves
    the person wondering whether anything is there. */
 .slot.editable .media-el { cursor: pointer; }

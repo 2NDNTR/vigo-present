@@ -312,14 +312,11 @@ export default function Inspector(props: InspectorProps) {
                   >
                     + Add logo
                   </button>
-                  <button
-                    className="btn sm"
-                    disabled={logosOf(block).length <= 1}
-                    onClick={() => props.onChangeBlock(block.id, logosPatch(logosOf(block).slice(0, -1)))}
-                  >
-                    Remove last
-                  </button>
                 </div>
+                <p className="tiny" style={{ marginTop: 7 }}>
+                  To remove one, hover it on the page and use the bin — any of them, not just the
+                  last.
+                </p>
                 <p className="tiny" style={{ marginTop: 7 }}>
                   Drag a mark from Assets onto any cell. Marks are always fitted whole, never
                   cropped or stretched. A cell with no artwork keeps its name set in type, so a
@@ -363,16 +360,11 @@ export default function Inspector(props: InspectorProps) {
                   >
                     + Add milestone
                   </button>
-                  <button
-                    className="btn sm"
-                    disabled={entriesOf(block).length <= 1}
-                    onClick={() =>
-                      props.onChangeBlock(block.id, entriesPatch(entriesOf(block).slice(0, -1)))
-                    }
-                  >
-                    Remove last
-                  </button>
                 </div>
+                <p className="tiny" style={{ marginTop: 7 }}>
+                  To remove one, hover it on the page and use the bin — any of them, not just the
+                  last.
+                </p>
               </div>
             )}
 
@@ -386,14 +378,11 @@ export default function Inspector(props: InspectorProps) {
                   >
                     + Add item
                   </button>
-                  <button
-                    className="btn sm"
-                    disabled={(block.items || []).length <= 1}
-                    onClick={() => props.onChangeBlock(block.id, { items: (block.items || []).slice(0, -1) })}
-                  >
-                    Remove last
-                  </button>
                 </div>
+                <p className="tiny" style={{ marginTop: 7 }}>
+                  To remove one, hover it on the page and use the bin — any of them, not just the
+                  last.
+                </p>
               </div>
             )}
 

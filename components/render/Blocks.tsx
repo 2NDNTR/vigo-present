@@ -293,6 +293,12 @@ export default function BlockView({ block, ctx }: { block: Block; ctx: RenderCtx
           <div className="checklist">
             {items.map((it, i) => (
               <div className={block.type === 'checklist' ? 'checkrow' : 'bulletrow'} key={i}>
+                {ctx.editable && items.length > 1 && (
+                  <RowDel
+                    label="Remove this point"
+                    onDelete={() => set({ items: items.filter((_, n) => n !== i) })}
+                  />
+                )}
                 {block.type === 'checklist' ? <span className="ck">✓</span> : <span className="bd" />}
                 <EditableText
                   className="tt"
@@ -407,6 +413,12 @@ export default function BlockView({ block, ctx }: { block: Block; ctx: RenderCtx
               const resolved = mediaUrl(e.media);
               return (
                 <div className="tl-item" key={i}>
+                  {ctx.editable && entries.length > 1 && (
+                    <RowDel
+                      label="Remove this milestone"
+                      onDelete={() => set(entriesPatch(entries.filter((_, n) => n !== i)))}
+                    />
+                  )}
                   {withMedia && (
                     <div
                       className={'tl-media' + (resolved ? '' : ' empty')}
@@ -522,6 +534,12 @@ export default function BlockView({ block, ctx }: { block: Block; ctx: RenderCtx
               const resolved = mediaUrl(l.media);
               return (
                 <div className="logoitem" key={i}>
+                  {ctx.editable && logos.length > 1 && (
+                    <RowDel
+                      label="Remove this logo"
+                      onDelete={() => set(logosPatch(logos.filter((_, n) => n !== i)))}
+                    />
+                  )}
                   <div
                     className={'logocell' + (resolved ? ' art' : '')}
                     onDragOver={ctx.editable ? (ev) => ev.preventDefault() : undefined}
@@ -825,5 +843,42 @@ function MediaBlock({
     <div {...wrapProps} style={{ ...wrapProps.style, height: '100%' }}>
       {cropped ? <div className="cropfit">{media}</div> : media}
     </div>
+  );
+}
+
+/**
+ * REMOVE THIS ONE.
+ * ---------------------------------------------------------------------------
+ * Rows inside a block — milestones, logos, bullets — could only be removed
+ * from the end. "Add milestone" then "Remove last" is a stack, not a list, and
+ * the thing people actually want to take out is almost never the last one: it
+ * is the 2020 card in the middle, and the only way to reach it was to delete
+ * the three after it and retype them.
+ *
+ * So the control goes on the row, where the row is, the same as it does for a
+ * block, an asset tile and a note. It appears on hover and is never offered
+ * for the last remaining row, because a timeline with nothing in it is not a
+ * state anyone is trying to reach.
+ */
+function RowDel({ label, onDelete }: { label: string; onDelete: () => void }) {
+  return (
+    <button
+      className="rowdel"
+      title={label}
+      aria-label={label}
+      /* The row underneath selects on mousedown and some rows are editable
+       * text; neither should happen on the way to a delete. */
+      onMouseDown={(e) => e.stopPropagation()}
+      onClick={(e) => {
+        e.stopPropagation();
+        onDelete();
+      }}
+    >
+      <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M4 7h16" />
+        <path d="M10 4h4a1 1 0 0 1 1 1v2H9V5a1 1 0 0 1 1-1z" />
+        <path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12" />
+      </svg>
+    </button>
   );
 }
