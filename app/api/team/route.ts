@@ -33,6 +33,27 @@ export async function POST(req: Request) {
   return NextResponse.json({ ok: true });
 }
 
+/**
+ * Reset a colleague's password — which means CLEAR it, never set it. Their
+ * next sign-in chooses a new one, exactly as a new joiner's does.
+ *
+ * Administrators only. Letting any member clear any other member's password
+ * would make every account as strong as the weakest one, and the first thing
+ * anyone could do with an editor's account is take the owner's.
+ */
+export async function PATCH(req: Request) {
+  const me = await currentUser();
+  if (!me) return unauthorized();
+  if (me.role !== 'admin') {
+    return NextResponse.json({ error: 'Only an administrator can reset a password.' }, { status: 403 });
+  }
+  const { id } = await req.json().catch(() => ({}));
+  if (!id) return NextResponse.json({ error: 'Missing account' }, { status: 400 });
+  const r = await q('update users set password_hash = null where id = $1 returning email', [id]);
+  if (!r.rowCount) return NextResponse.json({ error: 'No such account.' }, { status: 404 });
+  return NextResponse.json({ ok: true, email: r.rows[0].email });
+}
+
 export async function DELETE(req: Request) {
   const me = await currentUser();
   if (!me) return unauthorized();

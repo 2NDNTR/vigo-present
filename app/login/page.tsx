@@ -12,6 +12,12 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [missing, setMissing] = useState<string[]>([]);
+  /* Recovery is folded away rather than absent: a reset link in plain sight on
+   * a sign-in page is the thing people click instead of remembering, and this
+   * one is only for the day somebody genuinely cannot get in. */
+  const [stuck, setStuck] = useState(false);
+  const [key, setKey] = useState('');
+  const [note, setNote] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -30,6 +36,32 @@ export default function LoginPage() {
     setBusy(false);
     if (res.error) return setError(res.error);
     router.push('/dashboard');
+  };
+
+  const recover = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setNote('');
+    setBusy(true);
+    try {
+      const r = await fetch('/api/auth/reset', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), key }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) setError(j.error || 'That did not work.');
+      else {
+        setKey('');
+        setPassword('');
+        setStuck(false);
+        setNote('Password cleared. Type the password you want from now on and sign in.');
+      }
+    } catch {
+      setError('Could not reach the server.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -82,6 +114,12 @@ export default function LoginPage() {
             </div>
           )}
 
+          {note && (
+            <div className="banner" style={{ marginBottom: 14 }}>
+              {note}
+            </div>
+          )}
+
           <button
             className="btn primary lg"
             style={{ width: '100%', justifyContent: 'center' }}
@@ -92,10 +130,51 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="tiny" style={{ marginTop: 16 }}>
-          No account? Ask whoever set this up to add your email — it takes a moment and needs no
-          invitation email.
-        </p>
+        {stuck ? (
+          <form onSubmit={recover} style={{ marginTop: 22 }}>
+            <div className="label" style={{ marginBottom: 6 }}>Recovery key</div>
+            <input
+              className="field"
+              type="password"
+              autoComplete="off"
+              value={key}
+              onChange={(e) => setKey(e.target.value)}
+              placeholder="The key set on the server"
+            />
+            <p className="tiny" style={{ margin: '8px 0 10px' }}>
+              This clears the password on the account above so you can choose a new one — it never
+              sets a password and never signs anyone in. The key is <code>ADMIN_RESET_KEY</code> in
+              the project settings on the server; whoever runs this can add one.
+            </p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn" type="button" onClick={() => { setStuck(false); setError(''); }}>
+                Back
+              </button>
+              <button
+                className="btn primary"
+                type="submit"
+                disabled={busy || !email.trim() || !key}
+                style={{ flex: 1, justifyContent: 'center' }}
+              >
+                {busy ? 'Working…' : 'Clear my password'}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <>
+            <p className="tiny" style={{ marginTop: 16 }}>
+              No account? Ask whoever set this up to add your email — it takes a moment and needs no
+              invitation email.
+            </p>
+            <button
+              className="btn ghost sm"
+              style={{ marginTop: 10, padding: 0 }}
+              onClick={() => { setStuck(true); setNote(''); setError(''); }}
+            >
+              Can&rsquo;t sign in?
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
