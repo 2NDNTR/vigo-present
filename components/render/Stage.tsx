@@ -8,6 +8,7 @@ import type { RetailerRef } from '@/lib/brand/retailers';
 import { retailerSrc } from '@/lib/brand/retailers';
 import { getTheme, themeVars } from '@/lib/brand/themes';
 import { getTemplate } from '@/lib/templates/registry';
+import { collapseLayout } from '@/lib/templates/collapse';
 import BlockView from './Blocks';
 import { mediaUrl, useAssetRegistry } from '@/lib/assets/registry';
 
@@ -111,7 +112,13 @@ export default function Stage(props: StageProps) {
 
   const onDark = luminance(pageBg) < 0.5;
 
-  const areas = template.layout.areas.map((a) => `"${a}"`).join(' ');
+  /* The grid follows the content. A column whose slots are all empty is not
+   * drawn, so deleting the third product leaves a proper two-up rather than
+   * two products and a hole. Nothing in the page's data changes — put a block
+   * back in that slot and the column returns. */
+  const grid = collapseLayout(template.layout, (key) => !(page.slots[key] || []).length);
+  const areas = grid.areas.map((a) => `"${a}"`).join(' ');
+  const gone = new Set(grid.dropped);
 
   // Optional page chrome: a running headline top-left, the brand logo top-right.
   // Available on every layout, off by default.
@@ -226,8 +233,8 @@ export default function Stage(props: StageProps) {
       <div
         className="stage-grid"
         style={{
-          gridTemplateColumns: template.layout.columns,
-          gridTemplateRows: template.layout.rows,
+          gridTemplateColumns: grid.columns,
+          gridTemplateRows: grid.rows,
           gridTemplateAreas: areas,
           // NOTE: all four sides are set as longhand on purpose. Mixing the
           // `padding` shorthand with a `paddingTop` longhand in one React style
@@ -241,6 +248,9 @@ export default function Stage(props: StageProps) {
         }}
       >
         {template.slots.map((slot) => {
+          /* Its column closed up. Rendering it anyway would put it in some
+           * other column's cell, which is worse than not drawing it. */
+          if (gone.has(slot.key)) return null;
           const blocks = page.slots[slot.key] || [];
           // A block that is alone on the page — no headline, no image, no
           // siblings — is free to be set to fill it. Counted across every slot

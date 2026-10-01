@@ -2,9 +2,11 @@
 
 import React, { useRef, useState } from 'react';
 import type { Block, MediaRef, Page, PageBackground, Presentation } from '@/lib/model/types';
+import { uid } from '@/lib/model/types';
 import { RETAILERS, retailerDef } from '@/lib/brand/retailers';
 import type { PageTemplate } from '@/lib/templates/registry';
 import { TEMPLATES, getTemplate } from '@/lib/templates/registry';
+import { collapseLayout } from '@/lib/templates/collapse';
 import Select from '@/components/ui/Select';
 import LayoutPicker from './LayoutPicker';
 import Collapse from './Collapse';
@@ -493,6 +495,11 @@ export default function Inspector(props: InspectorProps) {
 
         {/* Shown, not named. See LayoutPicker for why. */}
         <LayoutPicker brand={presentation.brand} templateId={page.templateId} onPick={props.onSwapTemplate} />
+
+        {/* A column that closed up because you emptied it. The page is drawn
+            for what is on it, so this is the way back — and it has to exist
+            somewhere, or removing the third product would be a one-way door. */}
+        <ClosedColumns page={page} template={template} onChangePage={props.onChangePage} />
 
         <Collapse title="Labels &amp; logo" note="top of the page">
         <div className="label" style={{ marginBottom: 6 }}>Running label</div>
@@ -1070,5 +1077,56 @@ function ColourRole({
         </span>
       ) : null}
     </span>
+  );
+}
+
+
+/**
+ * The columns a page has closed up, and the way to open them again.
+ *
+ * Removing the last block from a column collapses it, which is what makes a
+ * three-up become a proper two-up. That has to be reversible from somewhere
+ * obvious, and it belongs here with the other things that are true of the PAGE
+ * rather than of a block — there is nothing left on the canvas to click.
+ *
+ * Restoring puts an empty block of the right kind back, which is precisely
+ * what was removed: a well waiting for a drop.
+ */
+function ClosedColumns({
+  page,
+  template,
+  onChangePage,
+}: {
+  page: Page;
+  template: PageTemplate;
+  onChangePage: (patch: Partial<Page>) => void;
+}) {
+  const grid = collapseLayout(template.layout, (key) => !(page.slots[key] || []).length);
+  const closed = template.slots.filter((s) => grid.dropped.includes(s.key));
+  if (!closed.length) return null;
+
+  const restore = (key: string) => {
+    const slot = template.slots.find((s) => s.key === key);
+    const takesMedia = !!slot?.accepts.some((a) => a === 'image' || a === 'video');
+    const block: Block = takesMedia
+      ? { id: uid('b'), type: 'image' }
+      : { id: uid('b'), type: 'text', text: '', style: { role: 'body', color: 'auto', align: 'left' } };
+    onChangePage({ slots: { ...page.slots, [key]: [block] } });
+  };
+
+  return (
+    <div className="warn" style={{ marginTop: 12 }}>
+      <span>ⓘ</span>
+      <span>
+        <b>The page closed up around what you removed.</b> Put one back to widen it again.
+        <span style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+          {closed.map((s) => (
+            <button key={s.key} className="btn sm" onClick={() => restore(s.key)}>
+              + {s.label}
+            </button>
+          ))}
+        </span>
+      </span>
+    </div>
   );
 }
