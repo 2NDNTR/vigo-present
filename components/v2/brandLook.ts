@@ -24,7 +24,7 @@ export function brandLook(id: string): BrandLook {
   const theme = (THEMES as Record<string, (typeof THEMES)['vigo']>)[id];
   const sig = SIGNATURE[id as BrandId];
   if (!theme || !sig) {
-    return { ground: '#e3c5b0', ink: '#101322', swatch: '#98d0d9', wordmark: id.toUpperCase() };
+    return { ground: '#e3c5b0', ink: '#000000', swatch: '#98d0d9', wordmark: id.toUpperCase() };
   }
   return {
     ground: theme.colors[sig.ground],
