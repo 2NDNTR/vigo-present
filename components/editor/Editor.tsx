@@ -94,23 +94,41 @@ export default function Editor({ id }: { id: string }) {
       .then((s) => s.get(id))
       .then((p) => {
         if (!p) return setMissing(true);
+        baseVersion.current = Number((p as any).version) || 0;
         setPres(p);
         setCurrentId(p.pages[0]?.id || '');
       })
       .catch(() => setMissing(true));
   }, [id]);
 
-  /* ------------------------------------------------------------ autosave */
+  /* ------------------------------------------------------------ autosave
+   * One save at a time, always checked against the version the server last
+   * gave back. Edits clone the deck, so a version stamped on one copy is lost
+   * by the next; keeping it here instead is what stops the editor from
+   * colliding with its own previous save. */
+  const baseVersion = useRef(0);
+  const inFlight = useRef<Promise<void>>(Promise.resolve());
+  const send = useCallback((next: Presentation) => {
+    const run = inFlight.current.then(async () => {
+      const s = await getStore();
+      const payload = { ...next, version: baseVersion.current } as Presentation;
+      await s.save(payload);
+      const v = Number((payload as any).version);
+      if (v) baseVersion.current = v;
+    });
+    inFlight.current = run.catch(() => {});
+    return run;
+  }, []);
+
   const queueSave = useCallback((next: Presentation) => {
     setSaved('saving');
     clearTimeout(timer.current);
     pending.current = next;
     timer.current = setTimeout(async () => {
-      const s = await getStore();
       try {
         pending.current = null;
-        await s.save(next);
-        setSaved('saved');
+        await send(next);
+        if (!pending.current) setSaved('saved');
       } catch (e: any) {
         if (e instanceof ConflictError || e?.name === 'ConflictError') {
           setSaved('error');
@@ -128,22 +146,21 @@ export default function Editor({ id }: { id: string }) {
         }
       }
     }, 600);
-  }, []);
+  }, [send]);
 
   /** Saves a queued edit now rather than in 600ms — before a version is taken or restored. */
   const flushSave = useCallback(async () => {
     const next = pending.current;
-    if (!next) return;
     clearTimeout(timer.current);
     pending.current = null;
     try {
-      const s = await getStore();
-      await s.save(next);
+      if (next) await send(next);
+      await inFlight.current;
       setSaved('saved');
     } catch {
       setSaved('error');
     }
-  }, []);
+  }, [send]);
 
   const presRef = useRef<Presentation | null>(null);
   presRef.current = pres;
@@ -641,6 +658,7 @@ export default function Editor({ id }: { id: string }) {
                   className="btn sm"
                   onClick={() => {
                     presRef.current = conflict.latest;
+                    baseVersion.current = Number((conflict.latest as any).version) || 0;
                     setPres(conflict.latest);
                     setConflict(null);
                     setSaved('saved');
@@ -653,6 +671,7 @@ export default function Editor({ id }: { id: string }) {
                   onClick={() => {
                     const cur = presRef.current;
                     if (!cur) return;
+                    baseVersion.current = Number((conflict.latest as any).version) || 0;
                     const forced = { ...cur, version: conflict.latest.version } as Presentation;
                     setConflict(null);
                     presRef.current = forced;

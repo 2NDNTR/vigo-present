@@ -3,6 +3,7 @@ import { uid } from '@/lib/model/types';
 import type { BrandId } from '@/lib/brand/themes';
 import { createPage, getTemplate, TEMPLATES } from '@/lib/templates/registry';
 import { remapSlots } from '@/lib/model/remap';
+import { tidyPage } from '@/lib/model/tidy';
 
 /**
  * THE ASSISTANT — the deck is edited by asking.
@@ -20,7 +21,7 @@ import { remapSlots } from '@/lib/model/remap';
  * something the person gave — their words or their image.
  */
 
-export type OpKind = 'set_text' | 'add_page' | 'copy_page' | 'delete_page' | 'move_page' | 'change_layout' | 'set_image';
+export type OpKind = 'set_text' | 'tidy_page' | 'add_page' | 'copy_page' | 'delete_page' | 'move_page' | 'change_layout' | 'set_image';
 
 export interface Fill {
   slot: string;
@@ -86,9 +87,9 @@ export const DECK_SCHEMA = {
       items: {
         type: 'object',
         properties: {
-          op: { type: 'string', enum: ['set_text', 'add_page', 'copy_page', 'delete_page', 'move_page', 'change_layout', 'set_image'] },
+          op: { type: 'string', enum: ['set_text', 'tidy_page', 'add_page', 'copy_page', 'delete_page', 'move_page', 'change_layout', 'set_image'] },
           fromPresentationId: { type: 'string', description: 'copy_page: id of the team presentation the page comes from; pageId is then the page in THAT presentation' },
-          pageId: { type: 'string', description: 'id of an existing page, exactly as given' },
+          pageId: { type: 'string', description: 'id of an existing page, exactly as given; for tidy_page, "all" tidies every page' },
           blockId: { type: 'string', description: 'id of an existing block on that page, exactly as given' },
           text: { type: 'string' },
           support: { type: 'string' },
@@ -188,6 +189,13 @@ export interface Applied {
   lines: { pageId?: string; text: string; caution?: boolean }[];
   focus?: string;
   skipped: number;
+  /** why each skipped change was left out, in plain words */
+  reasons?: string[];
+}
+
+function skip(out: Applied, why: string) {
+  out.skipped++;
+  (out.reasons ||= []).push(why);
 }
 
 const digits = (s: string) => (s.match(/\d+(?:[.,]\d+)?/g) || []).map((d) => d.replace(',', '.'));
@@ -235,7 +243,7 @@ function setWords(b: Block, src: Partial<Fill>, m: Material, out: Applied, pageN
     const v = src.value.trim().slice(0, 40);
     const check = figureCheck(v, m);
     if (check === 'invented') {
-      out.skipped++;
+      skip(out, `a figure nobody gave (${v})`);
     } else {
       const before = b.value;
       b.value = v;
@@ -291,16 +299,32 @@ export function applyDeckOps(d: Presentation, ops: DeckOp[], m: Material): Appli
       case 'set_text': {
         const b = page && Object.values(page.slots).flat().find((x) => x.id === op.blockId);
         if (!page || !b) {
-          out.skipped++;
+          skip(out, 'a block that is not in this deck');
           break;
         }
         setWords(b, op, m, out, pageNo(page.id), page.id);
         out.focus = page.id;
         break;
       }
+      case 'tidy_page': {
+        const targets = op.pageId === 'all' ? d.pages : page ? [page] : [];
+        if (!targets.length) {
+          skip(out, 'a page that is not in this deck');
+          break;
+        }
+        let any = 0;
+        targets.forEach((p) => {
+          const n = tidyPage(p);
+          any += n;
+          if (n) out.lines.push({ pageId: p.id, text: `Page ${pageNo(p.id)}: reformatted to the layout's styling (${n} ${n === 1 ? 'fix' : 'fixes'})` });
+        });
+        if (!any) out.lines.push({ pageId: targets[0].id, text: 'Already consistent: nothing to reformat' });
+        out.focus = targets[0].id;
+        break;
+      }
       case 'add_page': {
         if (!layoutOk(op.layout)) {
-          out.skipped++;
+          skip(out, 'a layout that is not approved');
           break;
         }
         const np = createPage(op.layout!, op.section || undefined, d.brand as BrandId);
@@ -345,6 +369,7 @@ export function applyDeckOps(d: Presentation, ops: DeckOp[], m: Material): Appli
         const at = op.afterPageId === 'start' ? 0 : d.pages.findIndex((p) => p.id === op.afterPageId) + 1 || d.pages.length;
         d.pages.splice(at, 0, np);
         out.skipped += quiet.skipped;
+        (quiet.reasons || []).forEach((r) => (out.reasons ||= []).push(r));
         out.lines.push({
           pageId: np.id,
           caution: quiet.lines.some((l) => l.caution),
@@ -356,7 +381,7 @@ export function applyDeckOps(d: Presentation, ops: DeckOp[], m: Material): Appli
       case 'copy_page': {
         const src = op.pageData;
         if (!src || !TEMPLATES.some((t) => t.id === src.templateId)) {
-          out.skipped++;
+          skip(out, 'a page that could not be found in the team library');
           break;
         }
         // a fresh copy with new ids; it takes this deck's brand unless the source page was itself an exception
@@ -371,7 +396,7 @@ export function applyDeckOps(d: Presentation, ops: DeckOp[], m: Material): Appli
       }
       case 'delete_page': {
         if (!page || d.pages.length === 1) {
-          out.skipped++;
+          skip(out, 'a page that is not in this deck (or the only page)');
           break;
         }
         const n = pageNo(page.id);
@@ -382,7 +407,7 @@ export function applyDeckOps(d: Presentation, ops: DeckOp[], m: Material): Appli
       }
       case 'move_page': {
         if (!page) {
-          out.skipped++;
+          skip(out, 'a page that is not in this deck');
           break;
         }
         d.pages = d.pages.filter((p) => p.id !== page.id);
@@ -394,7 +419,7 @@ export function applyDeckOps(d: Presentation, ops: DeckOp[], m: Material): Appli
       }
       case 'change_layout': {
         if (!page || !layoutOk(op.layout) || op.layout === page.templateId) {
-          out.skipped++;
+          skip(out, 'a layout change to an unapproved or identical layout');
           break;
         }
         const t = getTemplate(op.layout!);
@@ -408,7 +433,7 @@ export function applyDeckOps(d: Presentation, ops: DeckOp[], m: Material): Appli
       case 'set_image': {
         const media = op.image ? m.media(op.image) : undefined;
         if (!page || !media || !placeImage(page, media, op.blockId)) {
-          out.skipped++;
+          skip(out, 'a picture that could not be found');
           break;
         }
         out.lines.push({ pageId: page.id, text: `Page ${pageNo(page.id)}: placed ${short(media.alt || 'the picture', 32)}` });
@@ -416,7 +441,7 @@ export function applyDeckOps(d: Presentation, ops: DeckOp[], m: Material): Appli
         break;
       }
       default:
-        out.skipped++;
+        skip(out, 'something it cannot do');
     }
   }
   return out;

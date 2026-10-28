@@ -47,6 +47,7 @@ export interface AgentResult {
   deck: Presentation;
   lines: Applied['lines'];
   skipped: number;
+  reasons: string[];
   focus?: string;
   placed: string[];
   usage: { input_tokens: number; output_tokens: number };
@@ -67,6 +68,7 @@ You work in steps with tools:
 - finish: end with a short reply to the person. Always act through these tools and always end by calling finish; never answer in plain text alone.
 
 Operations for edit_deck:
+- tidy_page: reformat a page (pageId) or every page ("all") back onto its layout's approved styling — one-off sizes, roles and crops are removed so repeated items match. Use it whenever someone asks to clean up, reformat, fix, tidy or make a page consistent; it is the only way styling can be corrected. Then check the result: shorten words that are now too long for the layout, and if the content does not suit the layout, change_layout to one that fits.
 - set_text: change the words of an existing block (text, support, label, value, items).
 - add_page: a new page in an approved layout after afterPageId, with fills by slot.
 - copy_page: copy a page from another team presentation (fromPresentationId + that deck's pageId) after afterPageId. Prefer this to rebuilding a page a teammate already made; then adjust its words with set_text.
@@ -74,6 +76,8 @@ Operations for edit_deck:
 - set_image: a picture from search_photos (asset id) or an attachment (att1…), on a block or the page's first picture area.
 
 Attachments: a screenshot of a slide or chart is a reference — rebuild it with the same structure and figures in an approved layout. A product or lifestyle photo is material — place it.
+
+Reading requests: "this page", "here" and "the page" always mean the page marked OPEN NOW — never ask which page. "The deck", "everything" or "all pages" mean every page.
 
 Hard rules:
 - Never invent a figure, date, customer, claim or statistic. Figures come from the person, an attachment, this deck, or a team deck you read. If a figure is needed and you do not have one, leave it out and say so in your reply.
@@ -142,6 +146,7 @@ export async function runAgent(input: AgentInput, step: (text: string) => void):
   const placed = new Set<string>();
   const usage = { input_tokens: 0, output_tokens: 0 };
   let skipped = 0;
+  const reasons: string[] = [];
   let focus: string | undefined;
 
   // everything the agent has legitimately seen; a figure it writes must appear somewhere in here
@@ -260,6 +265,7 @@ export async function runAgent(input: AgentInput, step: (text: string) => void):
       const res = applyDeckOps(deck, ops, { media, said, seen: sources, sawImage: input.images.length > 0 });
       lines.push(...res.lines);
       skipped += res.skipped;
+      reasons.push(...(res.reasons || []));
       if (res.focus) focus = res.focus;
       const touched = new Set(res.lines.map((l) => l.pageId).filter(Boolean) as string[]);
       const view = deck.pages
@@ -271,9 +277,7 @@ export async function runAgent(input: AgentInput, step: (text: string) => void):
         .join('\n');
       return [
         res.lines.length ? 'Applied:\n' + res.lines.map((l) => '- ' + l.text).join('\n') : 'Nothing was applied.',
-        res.skipped
-          ? `Refused ${res.skipped}: an id that does not exist, a layout that is not approved, or a figure that is not in anything you were given or read.`
-          : '',
+        res.skipped ? `Refused ${res.skipped}: ${(res.reasons || []).join('; ')}.` : '',
         `The deck now has ${deck.pages.length} pages. Page order: ${deck.pages.map((p, i) => `${i + 1}=${p.id}`).join(', ')}`,
         summary ? 'Affected pages now:\n' + summary : '',
       ]
@@ -371,6 +375,7 @@ export async function runAgent(input: AgentInput, step: (text: string) => void):
     deck,
     lines,
     skipped,
+    reasons,
     focus,
     placed: [...placed],
     usage,
@@ -380,6 +385,7 @@ export async function runAgent(input: AgentInput, step: (text: string) => void):
 function describeOps(ops: DeckOp[]): string {
   const n = (k: string) => ops.filter((o) => o.op === k).length;
   const bits = [
+    n('tidy_page') && 'reformatting to the layout',
     n('set_text') && `rewriting ${n('set_text')} ${n('set_text') === 1 ? 'block' : 'blocks'}`,
     n('add_page') && `adding ${n('add_page')} ${n('add_page') === 1 ? 'page' : 'pages'}`,
     n('copy_page') && `copying ${n('copy_page')} ${n('copy_page') === 1 ? 'page' : 'pages'} from the library`,

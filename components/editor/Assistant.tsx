@@ -92,7 +92,8 @@ async function downscale(file: File, max = 1568): Promise<string> {
 }
 
 function suggestionsFor(page: Page | undefined, warnings: string[]): string[] {
-  const out = warnings.slice(0, 1).map((w) => 'Fix this: ' + w.replace(/\.$/, '').toLowerCase());
+  const out = ['Reformat this page so it is clean and consistent.', 'Reformat the whole deck for consistency.'];
+  warnings.slice(0, 1).forEach((w) => out.push('Fix this: ' + w.replace(/\.$/, '').toLowerCase()));
   const has = (t: string) => page && Object.values(page.slots).flat().some((b) => b.type === t);
   if (has('metric')) out.push('Update the figures on this page.');
   out.push('Make the headline on this page sharper.');
@@ -274,7 +275,7 @@ export default function Assistant({
         pending: false,
         steps,
         text: done.reply || 'Done.',
-        result: { lines: done.lines, skipped: done.skipped || 0, focus: done.focus },
+        result: { lines: done.lines, skipped: done.skipped || 0, reasons: done.reasons || [], focus: done.focus },
         before,
       });
     } catch {
@@ -314,6 +315,7 @@ export default function Assistant({
               Attach a screenshot or photo and the page is built from it.
             </p>
             <ul>
+              <li>Reformat this page so it is clean and consistent.</li>
               <li>Engagement is at +55%.</li>
               <li>Add a page on the olive oil range after page 8.</li>
               <li>Rebuild page 6 from this screenshot.</li>
@@ -365,8 +367,7 @@ export default function Assistant({
                   </ul>
                   {t.result.skipped > 0 && !t.undone && (
                     <p className="asst-note">
-                      {t.result.skipped === 1 ? 'One change was' : t.result.skipped + ' changes were'} left out: a figure you
-                      didn&rsquo;t give, or something not in this deck.
+                      Left out: {[...new Set(t.result.reasons || [])].join('; ') || `${t.result.skipped} change${t.result.skipped === 1 ? '' : 's'}`}.
                     </p>
                   )}
                   {t.undone ? (

@@ -136,6 +136,7 @@ export async function POST(req: Request) {
           pages: out.deck.pages,
           lines: out.lines,
           skipped: out.skipped,
+          reasons: out.reasons,
           focus: out.focus,
           placed: out.placed,
         });
