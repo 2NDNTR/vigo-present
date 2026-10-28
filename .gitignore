@@ -20,3 +20,6 @@ tsconfig.tsbuildinfo
 .DS_Store
 *.pem
 npm-debug.log*
+
+# local embedded postgres
+/.pgdata

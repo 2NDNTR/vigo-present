@@ -76,7 +76,7 @@ async function pool(): Promise<any> {
         // check is skipped, which is what every managed provider expects.
         connectionString: sslRelaxed(CONN),
         ssl: CONN.includes('sslmode=disable') ? false : { rejectUnauthorized: false },
-        max: 3,
+        max: Number(process.env.PG_POOL_MAX || 3),
         idleTimeoutMillis: 10_000,
       });
     })();
@@ -84,107 +84,72 @@ async function pool(): Promise<any> {
   return poolPromise;
 }
 
+/**
+ * Applies every migration in `lib/server/migrations.ts` that this database has
+ * not seen, once per cold start. An advisory lock serialises two instances
+ * starting at the same moment; each step commits on its own, so a failure
+ * leaves the database at the last good step and the next start retries.
+ */
 async function migrate(): Promise<void> {
   if (!migrated) {
     migrated = (async () => {
       const p = await pool();
-      await p.query(`
-        create table if not exists users (
-          id            text primary key,
-          email         text unique not null,
-          name          text not null default '',
-          password_hash text,
-          role          text not null default 'editor',
-          created_at    bigint not null,
-          last_seen     bigint
+      const { MIGRATIONS } = await import('./migrations');
+      const client = await p.connect();
+      try {
+        await client.query('select pg_advisory_lock(727274)');
+        await client.query(
+          `create table if not exists schema_migrations (id text primary key, applied_at bigint not null)`
         );
-
-        create table if not exists presentations (
-          id          text primary key,
-          org_id      text not null default 'vigo-importing',
-          title       text not null,
-          brand       text not null,
-          status      text not null default 'draft',
-          slug        text unique,
-          locked      boolean not null default false,
-          doc         jsonb not null,
-          version     integer not null default 1,
-          created_by  text,
-          updated_by  text,
-          created_at  bigint not null,
-          updated_at  bigint not null
+        const done = new Set<string>(
+          (await client.query('select id from schema_migrations')).rows.map((r: { id: string }) => r.id)
         );
-        create index if not exists presentations_org_idx
-          on presentations(org_id, updated_at desc);
-
-        create table if not exists assets (
-          id          text primary key,
-          brand       text not null,
-          category    text not null,
-          name        text not null,
-          file_name   text not null,
-          url         text not null,
-          kind        text not null default 'image',
-          width       integer,
-          height      integer,
-          size        bigint,
-          uploaded_by text,
-          created_at  bigint not null
-        );
-        create index if not exists assets_brand_idx on assets(brand, category);
-
-        create table if not exists presence (
-          presentation_id text not null,
-          user_id         text not null,
-          page_id         text,
-          seen_at         bigint not null,
-          primary key (presentation_id, user_id)
-        );
-        create index if not exists presence_deck_idx on presence(presentation_id, seen_at);
-
-        create table if not exists notes (
-          id              text primary key,
-          presentation_id text not null,
-          page_id         text,
-          author_id       text not null,
-          body            text not null,
-          mentions        jsonb not null default '[]'::jsonb,
-          resolved        boolean not null default false,
-          created_at      bigint not null
-        );
-        create index if not exists notes_deck_idx on notes(presentation_id, created_at);
-      `);
-
-      // The first account, so somebody can get in and add everyone else.
-      //
-      // The id is DERIVED FROM THE EMAIL rather than a fixed 'usr_admin'.
-      // With a fixed id, changing ADMIN_EMAIL made this insert collide on the
-      // primary key — the old row still held that id under the old address —
-      // and because the seed runs inside the migration, that single failure
-      // took down every database call in the app. A per-email id cannot
-      // collide: a new address is simply a new row.
-      //
-      // The whole seed is also non-fatal. Being unable to create the first
-      // account is worth logging, but it must never stop the app from serving
-      // people who already have one.
-      const admin = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
-      if (admin) {
-        const { createHash } = await import('crypto');
-        const adminId = 'usr_' + createHash('sha1').update(admin).digest('hex').slice(0, 16);
-        try {
-          await p.query(
-            `insert into users (id, email, name, role, created_at)
-             values ($1, $2, $3, 'admin', $4)
-             on conflict (email) do update set role = 'admin'`,
-            [adminId, admin, 'Administrator', Date.now()]
-          );
-        } catch (e) {
-          console.error('admin seed failed (continuing):', e);
+        for (const m of MIGRATIONS) {
+          if (done.has(m.id)) continue;
+          await client.query('begin');
+          try {
+            if (m.sql) await client.query(m.sql);
+            if (m.run) await m.run((text, params) => client.query(text, params as any[]));
+            await client.query('insert into schema_migrations (id, applied_at) values ($1, $2)', [m.id, Date.now()]);
+            await client.query('commit');
+          } catch (e) {
+            await client.query('rollback');
+            throw new Error(`migration ${m.id} failed: ${(e as Error).message}`);
+          }
         }
+        await seedAdmin(client);
+      } catch (e) {
+        migrated = null; // let the next request try again rather than caching the failure
+        throw e;
+      } finally {
+        await client.query('select pg_advisory_unlock(727274)').catch(() => {});
+        client.release();
       }
     })();
   }
   return migrated;
+}
+
+/**
+ * The first account, so somebody can get in and add everyone else. The id is
+ * derived from the email (a changed ADMIN_EMAIL is a new row, not a primary
+ * key collision), and a failure here is logged, never fatal.
+ */
+async function seedAdmin(client: any): Promise<void> {
+  const admin = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+  if (!admin) return;
+  try {
+    const { createHash } = await import('crypto');
+    const adminId = 'usr_' + createHash('sha1').update(admin).digest('hex').slice(0, 16);
+    await client.query(
+      `insert into users (id, email, name, role, platform_admin, created_at)
+       values ($1, $2, 'Administrator', 'admin', true, $3)
+       on conflict (email) do update set role = 'admin', platform_admin = true`,
+      [adminId, admin, Date.now()]
+    );
+  } catch (e) {
+    console.error('admin seed failed (continuing):', e);
+  }
 }
 
 export async function q(text: string, params: any[] = []): Promise<any> {
