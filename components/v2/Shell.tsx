@@ -39,6 +39,7 @@ const NAV: { href: string; label: string; icon: React.ReactNode; match: (p: stri
   { href: '/presentations', label: 'Presentations', icon: <IconDecks />, match: (p) => p.startsWith('/presentations') },
   { href: '/media', label: 'Media library', icon: <IconMedia />, match: (p) => p.startsWith('/media') },
   { href: '/shared', label: 'Shared links', icon: <IconLink />, match: (p) => p.startsWith('/shared') },
+  { href: '/framework', label: 'Design framework', icon: <IconFramework />, match: (p) => p.startsWith('/framework') },
   { href: '/settings', label: 'Settings', icon: <IconSettings />, match: (p) => p.startsWith('/settings') },
 ];
 
@@ -165,6 +166,9 @@ function IconMedia() {
 }
 function IconLink() {
   return <Svg><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1" /><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1" /></Svg>;
+}
+function IconFramework() {
+  return <Svg><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 21V9" /></Svg>;
 }
 function IconSettings() {
   return <Svg><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></Svg>;

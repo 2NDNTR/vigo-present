@@ -4,6 +4,7 @@ import type { BrandId } from '@/lib/brand/themes';
 import { createPage, getTemplate, TEMPLATES } from '@/lib/templates/registry';
 import { remapSlots } from '@/lib/model/remap';
 import { tidyPage } from '@/lib/model/tidy';
+import { enforcePage } from '@/lib/design/framework';
 import { pageGuardrails } from '@/lib/guardrails';
 import { getTheme } from '@/lib/brand/themes';
 
@@ -472,5 +473,11 @@ export function applyDeckOps(d: Presentation, ops: DeckOp[], m: Material): Appli
         skip(out, 'something it cannot do');
     }
   }
+  // every page an edit touched answers to the design framework before it is shown to anyone
+  const touched = new Set(out.lines.map((l) => l.pageId).filter(Boolean) as string[]);
+  d.pages.forEach((p) => {
+    if (!touched.has(p.id)) return;
+    enforcePage(p).forEach((fix) => out.lines.push({ pageId: p.id, text: `Page ${pageNo(p.id)}: ${fix}` }));
+  });
   return out;
 }

@@ -742,3 +742,29 @@
   .v2 .ml-rail { position: static; flex-direction: row; flex-wrap: wrap; }
   .v2 .ml-folder { width: auto; }
 }
+
+/* design framework page */
+.v2 .fw-sec { margin-bottom: 48px; }
+.v2 .fw-sec > .t-section { margin-bottom: 8px; }
+.v2 .fw-principles { list-style: none; margin: 14px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; counter-reset: p; }
+.v2 .fw-principles li { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; display: flex; flex-direction: column; gap: 6px; }
+.v2 .fw-principles b { font-size: 15px; }
+.v2 .fw-principles span { font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+.v2 .fw-type { margin-top: 14px; border-radius: 14px; padding: 8px 28px; box-shadow: 0 0 0 1px var(--line); }
+.v2 .fw-type-row { display: grid; grid-template-columns: 150px 1fr; gap: 24px; align-items: baseline; padding: 18px 0; border-bottom: 1px solid rgba(0,0,0,.08); }
+.v2 .fw-type-row:last-child { border-bottom: 0; }
+.v2 .fw-type-meta { font: 600 12px/1.4 var(--ui, 'Geist', system-ui); text-transform: capitalize; display: flex; flex-direction: column; color: inherit; opacity: .8; }
+.v2 .fw-type-meta em { font-style: normal; font-weight: 400; opacity: .7; text-transform: none; }
+.v2 .fw-colours { margin-top: 14px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.v2 .fw-colour { background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
+.v2 .fw-colour i { height: 84px; box-shadow: inset 0 -1px 0 var(--line); }
+.v2 .fw-colour b { padding: 12px 14px 2px; font-size: 14px; }
+.v2 .fw-colour span { padding: 0 14px 14px; font-size: 12.5px; color: var(--muted); }
+.v2 .fw-cat { margin-top: 24px; }
+.v2 .fw-cat h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 10px; }
+.v2 .fw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; }
+.v2 .fw-layout { margin: 0; }
+.v2 .fw-stage { border-radius: 10px; overflow: hidden; box-shadow: 0 0 0 1px var(--line), 0 8px 24px -14px rgba(0,0,0,.3); pointer-events: none; }
+.v2 .fw-layout figcaption { margin-top: 10px; display: flex; flex-direction: column; gap: 2px; }
+.v2 .fw-layout figcaption b { font-size: 14px; }
+.v2 .fw-layout figcaption span { font-size: 12.5px; color: var(--muted); line-height: 1.45; }

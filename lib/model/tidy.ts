@@ -1,5 +1,6 @@
 import type { Block, Page } from '@/lib/model/types';
 import { getTemplate } from '@/lib/templates/registry';
+import { enforcePage } from '@/lib/design/framework';
 
 /**
  * TIDY — put a page back on its layout's approved styling.
@@ -44,8 +45,9 @@ export function tidyPage(page: Page): number {
       if (b.type === 'text') {
         const i = texts.indexOf(b);
         const j = fromEnd ? refText.length - texts.length + i : i;
-        const r = refText[Math.max(0, Math.min(refText.length - 1, j))];
-        want = r?.style ? { ...r.style } : undefined;
+        // beyond what the layout was designed to hold, extra lines are supporting copy, never another title
+        const r = j >= 0 && j < refText.length ? refText[j] : undefined;
+        want = r?.style ? { ...r.style } : { role: j < 0 && i === 0 ? 'eyebrow' : 'body', color: 'auto', align: refText[0]?.style?.align || 'left' } as Block['style'];
       } else {
         const r = ref.find((x) => x.type === b.type);
         want = r?.style ? { ...r.style } : undefined;
@@ -86,5 +88,7 @@ export function tidyPage(page: Page): number {
     bg.media.zoom = 1;
     changed++;
   }
+  // and the framework's mechanical rules on top: one title, type that fits
+  changed += enforcePage(page).length;
   return changed;
 }

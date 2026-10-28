@@ -183,6 +183,19 @@ export function assetPath(id?: string): string | undefined {
   return byId[id]?.path;
 }
 
+/**
+ * How a picture should be presented, by what it is (design framework):
+ * a product shot or logo is shown whole on a clean tile; a photograph fills
+ * its frame. Looked up by library id, then by address; unknown is a photo.
+ */
+export function pictureTreatment(m?: { assetId?: string; url?: string }): 'product' | 'photo' {
+  if (!m) return 'photo';
+  let rec = m.assetId ? byId[m.assetId] : undefined;
+  if (!rec && m.url) rec = Object.values(byId).find((r) => r.path === m.url);
+  const c = rec?.category as string | undefined;
+  return c === 'Product Photography' || c === 'Logos' || c === 'Packaging' ? 'product' : 'photo';
+}
+
 export function isPlaceholderLibrary(): boolean {
   return usingPlaceholders;
 }

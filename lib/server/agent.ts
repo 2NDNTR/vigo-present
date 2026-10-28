@@ -3,6 +3,7 @@ import { messagesFetch } from '@/lib/server/anthropic';
 import type { MediaRef, Presentation } from '@/lib/model/types';
 import { q } from '@/lib/server/db';
 import { visibleBrands, type Access } from '@/lib/server/access';
+import { RULES_TEXT, reviewDeck, type PictureKind } from '@/lib/design/framework';
 import { applyDeckOps, DECK_SCHEMA, deckForModel, type Applied, type DeckOp } from '@/lib/ingest/sidekick';
 
 /**
@@ -79,6 +80,8 @@ Operations for edit_deck:
 - set_image: a picture from search_photos (asset id) or an attachment (att1…), on a block or the page's first picture area.
 
 Attachments: a screenshot of a slide or chart is a reference — rebuild it with the same structure and figures in an approved layout. A product or lifestyle photo is material — place it.
+
+${RULES_TEXT}
 
 What "clean and consistent" means here, so reformat requests get finished, not half-done:
 - One idea per page and one title per page. A cover has one title (plus at most an eyebrow and a line); remove a second title.
@@ -182,13 +185,22 @@ export async function runAgent(input: AgentInput, step: (text: string) => void):
         const label = `"${x.name}" (${x.category === 'Product Photography' ? 'product photo' : x.category === 'Logos' ? 'LOGO' : x.category.toLowerCase()})`;
         named.set(x.id, label);
         named.set(x.url, label);
+        const k = x.category === 'Logos' ? 'logo' : x.category === 'Product Photography' ? 'product' : x.category === 'Video' ? 'video' : x.category === 'Lifestyle' ? 'lifestyle' : 'other';
+        kinds.set(x.id, k);
+        kinds.set(x.url, k);
       });
     } catch {
       /* names are a help, not a requirement */
     }
   };
   await learn([deck]);
+  const kinds = new Map<string, 'logo' | 'product' | 'lifestyle' | 'video' | 'other'>();
   const pic = (m: MediaRef) => named.get(m.assetId || '') || named.get(m.url) || `"${m.alt || 'unnamed picture'}"`;
+  const kindOf: PictureKind = (m) => kinds.get(m.assetId || '') || kinds.get(m.url);
+  const review = (pages?: Set<string>) => {
+    const issues = reviewDeck(deck, kindOf).filter((x) => !pages || pages.has(x.pageId) || x.rule === 'colour-rhythm');
+    return issues.length ? 'DESIGN REVIEW (fix these, or say why not):\n' + issues.map((x) => '- ' + x.text).join('\n') : 'DESIGN REVIEW: no issues.';
+  };
   let sources = deckForModel(deck, '', pic);
   const readDecks = new Map<string, Presentation>();
 
@@ -319,6 +331,7 @@ export async function runAgent(input: AgentInput, step: (text: string) => void):
         res.skipped ? `Refused ${res.skipped}: ${(res.reasons || []).join('; ')}.` : '',
         `The deck now has ${deck.pages.length} pages. Page order: ${deck.pages.map((p, i) => `${i + 1}=${p.id}`).join(', ')}`,
         summary ? 'Affected pages now:\n' + summary : '',
+        review(touched),
       ]
         .filter(Boolean)
         .join('\n\n');
@@ -341,6 +354,8 @@ export async function runAgent(input: AgentInput, step: (text: string) => void):
     text:
       'THE DECK BEING EDITED\n' +
       deckForModel(deck, input.openPageId, pic) +
+      '\n\n' +
+      review() +
       '\n\nAPPROVED LAYOUTS\n' +
       input.layouts +
       `\n\nThe deck's brand photo library has ${input.photos.length} photos (use search_photos).` +

@@ -715,6 +715,13 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
   object-position: center center !important;
   transform: none !important;
 }
+/* Design framework: in a square product frame a PHOTOGRAPH fills the frame
+   (cropped around its centre) instead of floating in it; a product shot stays
+   whole on a clean white tile. */
+.slot.sq .blockslot:has(.media-el.photo) { background: none; }
+.slot.sq .media-el.photo img,
+.slot.sq .media-el.photo video { object-fit: cover; }
+.slot.sq .blockslot:has(.media-el.product) { background: #fff; box-shadow: inset 0 0 0 1px rgba(0,0,0,.06); }
 /* A reel frame is already the native shape of the content, so filling it is
    right — a 9:16 export fills edge to edge and nothing is lost. */
 .slot.reel .media-el img,
@@ -940,8 +947,15 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
   height: 100%;
   display: block;
   object-fit: contain;
-  object-position: center center !important;
 }
+.card-el .cimg:not(.photo) img { object-position: center center !important; }
+/* Design framework: pictures are treated by what they are. A product shot is
+   shown whole on a clean white tile (packshots are shot on white, so the tile
+   disappears into them); a photograph fills its frame edge to edge, at a 4:3
+   that suits food and people, cropped around its focal point. */
+.card-el .cimg.product { background: #fff; box-shadow: inset 0 0 0 1px rgba(0,0,0,.06); }
+.card-el .cimg.photo { padding: 0; aspect-ratio: 4 / 3; max-height: 60%; background: color-mix(in srgb, currentColor 8%, transparent); }
+.card-el .cimg.photo img { object-fit: cover; }
 .card-body { display: flex; flex-direction: column; gap: calc(var(--u) * 12px); }
 .price-row {
   display: flex;

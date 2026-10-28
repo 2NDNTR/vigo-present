@@ -90,9 +90,18 @@ export default function EditableText({
       }
     }
 
-    // step down until the widest word stops overflowing its column
-    for (let i = 0; i < 20; i++) {
-      if (el.scrollWidth <= el.clientWidth + 1) break;
+    // step down until the widest word stops overflowing its column. A box that
+    // grows with its text (a metric's figure) never overflows itself, so the
+    // area it sits in is measured too: nothing may run past its slot.
+    const area = el.closest('.slot') as HTMLElement | null;
+    let areaW = 0;
+    if (area) {
+      const cs = getComputedStyle(area);
+      areaW = area.clientWidth - parseFloat(cs.paddingLeft || '0') - parseFloat(cs.paddingRight || '0');
+    }
+    for (let i = 0; i < 24; i++) {
+      const wide = areaW > 0 && el.getBoundingClientRect().width > areaW + 1;
+      if (el.scrollWidth <= el.clientWidth + 1 && !wide) break;
       f = Math.max(MIN_FIT, f - 0.04);
       el.style.setProperty('--tt-fit', String(f));
       if (f <= MIN_FIT) break;

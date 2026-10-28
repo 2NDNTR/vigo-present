@@ -8,7 +8,7 @@ import { logosOf, logosPatch } from '@/lib/model/logos';
 import type { BrandTheme, TypeRole } from '@/lib/brand/themes';
 import { typeVars, u } from './typeVars';
 import EditableText from './EditableText';
-import { mediaUrl } from '@/lib/assets/registry';
+import { mediaUrl, pictureTreatment } from '@/lib/assets/registry';
 
 export interface RenderCtx {
   theme: BrandTheme;
@@ -624,7 +624,7 @@ export default function BlockView({ block, ctx }: { block: Block; ctx: RenderCtx
         <div {...wrapProps} style={{ ...wrapProps.style, height: '100%' }}>
           <div className="card-el">
             {showImage ? (
-              <div className="cimg">
+              <div className={'cimg ' + pictureTreatment(block.media)}>
                 {mediaUrl(block.media) ? (
                   <img
                     src={mediaUrl(block.media)}
@@ -804,7 +804,7 @@ function MediaBlock({
   const [rw, rh] = cropped ? m!.crop!.split(':').map(Number) : [0, 0];
   const media = (
     <div
-      className="media-el"
+      className={'media-el ' + pictureTreatment(m)}
       style={
         cropped
           ? { width: `min(100cqw, calc(100cqh * ${rw} / ${rh}))`, height: 'auto', aspectRatio: `${rw} / ${rh}` }
