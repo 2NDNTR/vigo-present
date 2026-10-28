@@ -10,7 +10,6 @@ import HistoryWidget from './HistoryWidget';
 import { brandLook } from '@/components/v2/brandLook';
 import { remapSlots } from '@/lib/model/remap';
 import Assistant from '@/components/editor/Assistant';
-import { applyDeckOps, type Applied } from '@/lib/ingest/sidekick';
 import Brandmark from '@/components/ui/Brandmark';
 import AddPageModal from './AddPageModal';
 import SharePanel from './SharePanel';
@@ -859,13 +858,11 @@ export default function Editor({ id }: { id: string }) {
                   body: JSON.stringify({ label, reason: 'ai-accept' }),
                 }).catch(() => {});
               }}
-              onApply={(ops, material) => {
-                let result: Applied | undefined;
+              onApplyPages={(pages) =>
                 update((d) => {
-                  result = applyDeckOps(d, ops, material);
-                });
-                return result;
-              }}
+                  d.pages = pages;
+                })
+              }
               onRestore={(snap) =>
                 update((d) => {
                   const keep = (d as any).version;

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { MediaRef, Page, Presentation } from '@/lib/model/types';
 import type { BrandId } from '@/lib/brand/themes';
-import { deckForModel, layoutsForModel, type Applied, type DeckOp, type DeckReply, type Material } from '@/lib/ingest/sidekick';
+import type { Applied } from '@/lib/ingest/sidekick';
 import { allAssets, storableUrl } from '@/lib/assets/registry';
 import { uploadShared } from '@/lib/assets/sharedUpload';
 
@@ -36,12 +36,37 @@ interface Turn {
   pending?: boolean;
   failed?: boolean;
   result?: Applied;
+  /** what the agent did on the way, shown as it happens */
+  steps?: string[];
   /** the deck as it was before this turn's edits, for Undo */
   before?: Presentation;
   undone?: boolean;
 }
 
 let seq = 0;
+
+/** Swaps the agent's attachment placeholders for stored pictures; drops any that could not be stored. */
+function resolveAttachments(pages: Page[], urls: Record<string, MediaRef>): Page[] {
+  const fix = (m?: MediaRef) => {
+    if (!m?.url?.startsWith('attachment:')) return m;
+    const got = urls[m.url.slice('attachment:'.length)];
+    return got ? { ...m, ...got } : undefined;
+  };
+  return pages.map((p) => {
+    const np: Page = { ...p, slots: {} };
+    Object.entries(p.slots).forEach(([k, list]) => {
+      np.slots[k] = list
+        .map((b) => (b.media ? { ...b, media: fix(b.media) } : b))
+        .filter((b) => !(b.type === 'image' && b.media === undefined && p.slots[k].find((x) => x.id === b.id)?.media));
+    });
+    const bg: any = p.background;
+    if (bg?.kind === 'image' && bg.media?.url?.startsWith('attachment:')) {
+      const m = fix(bg.media);
+      np.background = m ? { ...bg, media: m } : ({ kind: 'theme' } as Page['background']);
+    }
+    return np;
+  });
+}
 
 async function downscale(file: File, max = 1568): Promise<string> {
   const url = URL.createObjectURL(file);
@@ -82,7 +107,7 @@ export default function Assistant({
   warnings,
   prefill,
   onPrefillUsed,
-  onApply,
+  onApplyPages,
   onRestore,
   onFocusPage,
   beforeEdit,
@@ -93,8 +118,8 @@ export default function Assistant({
   warnings: string[];
   prefill?: string | null;
   onPrefillUsed: () => void;
-  /** applies the operations to the deck through the editor's normal update (undo stack, autosave) */
-  onApply: (ops: DeckOp[], m: Material) => Applied | undefined;
+  /** replaces the deck's pages through the editor's normal update (undo stack, autosave) */
+  onApplyPages: (pages: Page[]) => void;
   onRestore: (snapshot: Presentation) => void;
   onFocusPage: (id: string) => void;
   /** flushes pending saves and records a version before a change */
@@ -168,73 +193,90 @@ export default function Assistant({
 
     const deckBrand = presentation.brand as BrandId;
     const library = allAssets().filter((a) => a.brand === deckBrand && (a.kind || 'image') === 'image' && !a.local);
+    const photos = library
+      .map((a) => ({ id: a.id, name: a.name, category: a.category, url: storableUrl(a), width: a.width, height: a.height }))
+      .filter((p) => p.url);
+    const steps: string[] = [];
     try {
       const r = await fetch('/api/assist/deck', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          presentationId: presentation.id,
+          presentation,
+          openPageId: page?.id || '',
           request,
-          deck: deckForModel(presentation, page?.id || ''),
-          layouts: layoutsForModel(),
-          assets: library
-            .slice(0, 120)
-            .map((a) => `${a.id} — ${a.name}, ${a.category}`)
-            .join('\n'),
+          photos,
           images: sent.map((a) => ({ id: a.id, dataUrl: a.dataUrl })),
           history: feed.filter((t) => !t.pending && !t.failed).map((t) => ({ role: t.role, text: t.text })),
         }),
       });
-      const j: DeckReply & { error?: string } = await r.json().catch(() => ({ error: 'The reply could not be read.' }));
-      if (!r.ok) {
+      if (!r.ok || !r.body) {
+        const j = await r.json().catch(() => ({}));
         patch(aiId, { pending: false, failed: true, text: j.error || 'That could not be finished. Your deck is unchanged.' });
         return;
       }
-      const ops = j.ops || [];
-      if (!ops.length) {
-        patch(aiId, { pending: false, text: j.reply || 'Nothing needed changing.' });
+
+      // the agent's steps arrive one JSON line at a time
+      let done: any = null;
+      let failed = '';
+      const reader = r.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      for (;;) {
+        const { value, done: end } = await reader.read();
+        if (value) buf += dec.decode(value, { stream: true });
+        let nl: number;
+        while ((nl = buf.indexOf('\n')) >= 0) {
+          const line = buf.slice(0, nl).trim();
+          buf = buf.slice(nl + 1);
+          if (!line) continue;
+          try {
+            const ev = JSON.parse(line);
+            if (ev.type === 'step') {
+              steps.push(ev.text);
+              patch(aiId, { steps: [...steps], text: ev.text + '…' });
+            } else if (ev.type === 'done') done = ev;
+            else if (ev.type === 'error') failed = ev.error;
+          } catch {
+            /* a partial line; the rest arrives next */
+          }
+        }
+        if (end) break;
+      }
+      if (failed || !done) {
+        patch(aiId, { pending: false, failed: true, steps, text: failed || 'The connection dropped. Your deck is unchanged.' });
+        return;
+      }
+      if (!done.lines?.length) {
+        patch(aiId, { pending: false, steps, text: done.reply || 'Nothing needed changing.' });
         return;
       }
 
-      // attachments the assistant chose to place are stored in the brand's library first
-      const placed = new Set<string>();
-      ops.forEach((o) => {
-        if (o.image) placed.add(o.image);
-        (o.fills || []).forEach((f) => f.image && placed.add(f.image));
-      });
-      const uploaded: Record<string, MediaRef> = {};
-      for (const a of sent) {
-        if (!placed.has(a.id)) continue;
+      // attachments the agent placed on a page are stored in the brand library; the rest are only references
+      const urls: Record<string, MediaRef> = {};
+      for (const id of (done.placed || []) as string[]) {
+        const a = sent.find((x) => x.id === id);
+        if (!a) continue;
         try {
-          const s = await uploadShared(a.file, deckBrand, 'Product Photography');
-          uploaded[a.id] = { url: s.url, assetId: s.id, width: s.width, height: s.height, alt: a.file.name, focalX: 0.5, focalY: 0.5, zoom: 1 };
+          const st = await uploadShared(a.file, deckBrand, 'Product Photography');
+          urls[id] = { url: st.url, assetId: st.id, width: st.width, height: st.height, alt: a.file.name, focalX: 0.5, focalY: 0.5, zoom: 1 };
         } catch {
-          /* storage unavailable: the words still apply, the picture is skipped */
+          /* storage unavailable: the picture is left out, the words still apply */
         }
       }
-      const media = (id: string): MediaRef | undefined => {
-        if (uploaded[id]) return uploaded[id];
-        const a = library.find((x) => x.id === id);
-        if (!a) return undefined;
-        const url = storableUrl(a);
-        return url ? { url, assetId: a.id, width: a.width, height: a.height, alt: a.name, focalX: 0.5, focalY: 0.5, zoom: 1 } : undefined;
-      };
+      const pages = resolveAttachments(done.pages as Page[], urls);
 
       const before = JSON.parse(JSON.stringify(presentation)) as Presentation;
       await beforeEdit('Before: ' + (request || 'image request').slice(0, 70));
-      const said = [...feed.filter((t) => t.role === 'you').map((t) => t.text), request].join('\n');
-      const result = onApply(ops, { media, said, sawImage: sent.length > 0 });
-      if (!result || !result.lines.length) {
-        patch(aiId, {
-          pending: false,
-          text:
-            (j.reply ? j.reply + ' ' : '') +
-            'But nothing could be applied — it pointed at something that is not in this deck. Try naming the page.',
-        });
-        return;
-      }
-      if (result.focus) onFocusPage(result.focus);
-      patch(aiId, { pending: false, text: j.reply || 'Done.', result, before });
+      onApplyPages(pages);
+      if (done.focus) onFocusPage(done.focus);
+      patch(aiId, {
+        pending: false,
+        steps,
+        text: done.reply || 'Done.',
+        result: { lines: done.lines, skipped: done.skipped || 0, focus: done.focus },
+        before,
+      });
     } catch {
       patch(aiId, { pending: false, failed: true, text: 'The connection dropped. Your deck is unchanged.' });
     } finally {
@@ -287,6 +329,25 @@ export default function Assistant({
                     <img key={i} src={src} alt="" />
                   ))}
                 </div>
+              )}
+              {t.role === 'ai' && t.steps && t.steps.length > 0 && !t.pending && (
+                <details className="asst-steps">
+                  <summary>
+                    {t.steps.length} {t.steps.length === 1 ? 'step' : 'steps'}
+                  </summary>
+                  <ol>
+                    {t.steps.map((x, i) => (
+                      <li key={i}>{x}</li>
+                    ))}
+                  </ol>
+                </details>
+              )}
+              {t.role === 'ai' && t.pending && t.steps && t.steps.length > 1 && (
+                <ol className="asst-live">
+                  {t.steps.slice(0, -1).map((x, i) => (
+                    <li key={i}>{x}</li>
+                  ))}
+                </ol>
               )}
               {t.text && <div className={'asst-bubble' + (t.pending ? ' pending' : '')}>{t.text}</div>}
               {t.result && (

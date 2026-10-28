@@ -20,7 +20,7 @@ import { remapSlots } from '@/lib/model/remap';
  * something the person gave — their words or their image.
  */
 
-export type OpKind = 'set_text' | 'add_page' | 'delete_page' | 'move_page' | 'change_layout' | 'set_image';
+export type OpKind = 'set_text' | 'add_page' | 'copy_page' | 'delete_page' | 'move_page' | 'change_layout' | 'set_image';
 
 export interface Fill {
   slot: string;
@@ -47,6 +47,10 @@ export interface DeckOp {
   section?: string;
   fills?: Fill[];
   image?: string;
+  /** copy_page: the team presentation the page comes from */
+  fromPresentationId?: string;
+  /** copy_page: the source page itself, filled in by the server, never by the model */
+  pageData?: Page;
 }
 
 export interface DeckReply {
@@ -82,7 +86,8 @@ export const DECK_SCHEMA = {
       items: {
         type: 'object',
         properties: {
-          op: { type: 'string', enum: ['set_text', 'add_page', 'delete_page', 'move_page', 'change_layout', 'set_image'] },
+          op: { type: 'string', enum: ['set_text', 'add_page', 'copy_page', 'delete_page', 'move_page', 'change_layout', 'set_image'] },
+          fromPresentationId: { type: 'string', description: 'copy_page: id of the team presentation the page comes from; pageId is then the page in THAT presentation' },
           pageId: { type: 'string', description: 'id of an existing page, exactly as given' },
           blockId: { type: 'string', description: 'id of an existing block on that page, exactly as given' },
           text: { type: 'string' },
@@ -173,6 +178,8 @@ export interface Material {
   media: (id: string) => MediaRef | undefined;
   /** everything the person typed in this conversation, for the figure check */
   said: string;
+  /** material the assistant read (this deck, team decks): a figure from here must match exactly */
+  seen?: string;
   /** a picture was attached: figures may come from it */
   sawImage: boolean;
 }
@@ -189,8 +196,12 @@ const digits = (s: string) => (s.match(/\d+(?:[.,]\d+)?/g) || []).map((d) => d.r
 function figureCheck(value: string, m: Material): 'ok' | 'image' | 'invented' {
   const need = digits(value);
   if (!need.length) return 'ok';
+  // the person's own words: the numbers are enough ("engagement is 55 percent" gives +55%)
   const have = digits(m.said);
   if (need.every((d) => have.includes(d))) return 'ok';
+  // anything else it read: only the figure exactly as written there
+  const norm = (s: string) => s.toLowerCase().replace(/\s+/g, '');
+  if (m.seen && norm(m.seen).includes(norm(value))) return 'ok';
   return m.sawImage ? 'image' : 'invented';
 }
 
@@ -339,6 +350,22 @@ export function applyDeckOps(d: Presentation, ops: DeckOp[], m: Material): Appli
           caution: quiet.lines.some((l) => l.caution),
           text: `Added page ${at + 1}: ${t.name}${quiet.lines.some((l) => l.caution) ? ' (figures read from your image — check them)' : ''}`,
         });
+        out.focus = np.id;
+        break;
+      }
+      case 'copy_page': {
+        const src = op.pageData;
+        if (!src || !TEMPLATES.some((t) => t.id === src.templateId)) {
+          out.skipped++;
+          break;
+        }
+        // a fresh copy with new ids; it takes this deck's brand unless the source page was itself an exception
+        const np = JSON.parse(JSON.stringify(src)) as Page;
+        np.id = uid('pg');
+        Object.values(np.slots).forEach((list) => list.forEach((b) => (b.id = uid('b'))));
+        const at = op.afterPageId === 'start' ? 0 : d.pages.findIndex((p) => p.id === op.afterPageId) + 1 || d.pages.length;
+        d.pages.splice(at, 0, np);
+        out.lines.push({ pageId: np.id, text: `Copied in as page ${at + 1}: ${getTemplate(np.templateId).name}` });
         out.focus = np.id;
         break;
       }
