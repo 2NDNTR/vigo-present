@@ -13,18 +13,19 @@ export default function PublicClient({ slug }: { slug: string }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    getStore()
-      .then(async (s) => {
-        if (s.kind !== 'api') return s.getBySlug(slug);
-        // Shared backend: the server decides what this viewer may see.
-        const r = await fetch('/api/public/' + encodeURIComponent(slug), { cache: 'no-store' });
-        if (r.status === 401) {
-          setState('locked');
-          return undefined;
-        }
-        if (!r.ok) return null;
-        return (await r.json()).presentation as Presentation;
-      })
+    (async () => {
+      // The server is asked first, whatever this browser thinks the backend
+      // is: it alone decides what a viewer may see. Only when it has no such
+      // deck does a local copy of the app (no database) look in this browser.
+      const r = await fetch('/api/public/' + encodeURIComponent(slug), { cache: 'no-store' }).catch(() => null);
+      if (r && r.status === 401) {
+        setState('locked');
+        return undefined;
+      }
+      if (r && r.ok) return (await r.json()).presentation as Presentation;
+      const s = await getStore();
+      return s.kind === 'api' ? null : s.getBySlug(slug);
+    })()
       .then((res) => {
         if (res === undefined) return;
         if (!res) return setState('missing');
