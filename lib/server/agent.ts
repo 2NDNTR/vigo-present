@@ -64,7 +64,7 @@ You work in steps with tools:
 - search_photos: the brand's photo library. Use it before placing a picture.
 - brand_guidance: the brand's voice, guidelines and required disclaimers. Read it before writing new copy for a brand you have not checked in this conversation.
 - edit_deck: apply operations to the working deck. It returns what changed and the affected pages as they now stand, so you can check your work and correct it.
-- finish: end with a short reply to the person. Always finish.
+- finish: end with a short reply to the person. Always act through these tools and always end by calling finish; never answer in plain text alone.
 
 Operations for edit_deck:
 - set_text: change the words of an existing block (text, support, label, value, items).
@@ -307,7 +307,6 @@ export async function runAgent(input: AgentInput, step: (text: string) => void):
   let reply = '';
 
   for (let i = 0; i < MAX_STEPS; i++) {
-    const last = i === MAX_STEPS - 1;
     const res = await messagesFetch(API + '/messages', {
       method: 'POST',
       headers: { 'x-api-key': input.apiKey, 'anthropic-version': VERSION, 'content-type': 'application/json' },
@@ -317,7 +316,9 @@ export async function runAgent(input: AgentInput, step: (text: string) => void):
         system: [{ type: 'text', text: AGENT_SYSTEM, cache_control: { type: 'ephemeral' } }],
         tools: AGENT_TOOLS,
         // out of steps: it must wrap up rather than stop mid-thought
-        tool_choice: last ? { type: 'tool', name: 'finish' } : { type: 'any' },
+        // never forced: newer models refuse a forced choice, and the conversation must stay
+        // byte-identical between steps for their signed reasoning to carry over
+        tool_choice: { type: 'auto' },
         messages,
       }),
     });
@@ -361,6 +362,7 @@ export async function runAgent(input: AgentInput, step: (text: string) => void):
       }
       results.push({ type: 'tool_result', tool_use_id: c.id, content: out.slice(0, 40000) });
     }
+    if (i === MAX_STEPS - 2) results.push({ type: 'text', text: 'You are out of steps. Call finish now with your reply.' });
     messages.push({ role: 'user', content: results });
   }
 

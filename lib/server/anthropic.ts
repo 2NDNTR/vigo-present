@@ -27,14 +27,14 @@ function relax(body: any) {
   const ask =
     choice.type === 'tool'
       ? `Answer only by calling the ${choice.name} tool.`
-      : 'Act only by calling the tools. End by calling finish.';
-  const messages = body.messages.map((m: any) => ({ ...m }));
-  const last = messages[messages.length - 1];
-  if (last?.role === 'user') {
-    last.content =
-      typeof last.content === 'string'
-        ? last.content + '\n\n' + ask
-        : [...last.content, { type: 'text', text: ask }];
-  }
-  return { ...body, tool_choice: { type: 'auto' }, messages };
+      : 'Act only by calling the tools.';
+  // the instruction goes in the system prompt, never into the messages: changing an
+  // earlier message would invalidate the model's signed reasoning on the next call
+  const system =
+    typeof body.system === 'string'
+      ? body.system + '\n\n' + ask
+      : Array.isArray(body.system)
+        ? [...body.system, { type: 'text', text: ask }]
+        : ask;
+  return { ...body, tool_choice: { type: 'auto' }, system };
 }
