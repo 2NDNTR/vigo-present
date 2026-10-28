@@ -47,7 +47,7 @@ export function surfaceOf(page: Page): Surface {
   if (bg?.kind === 'image' || bg?.kind === 'video') return 'photo';
   if (bg?.kind === 'color') {
     const c = bg.color || '';
-    if (c === 'white' || c === 'cream') return 'light';
+    if (c === 'white' || c === 'cream' || c === 'paleCream') return 'light';
     if (c === 'black' || c === 'brandPrimary') return 'dark';
     return 'colour';
   }
@@ -239,7 +239,7 @@ Layout
 - The layout decides positions, sizes and spacing. Pick the layout whose composition fits the content: cards for 3 parallel ideas, metrics for figures, split image/text for one idea with one picture, quote for one voice.
 - Grids are compositions: fill a 3-card layout with 3, not 2.
 Colour
-- Light pages are the default. Dark and photo pages give weight to openings, section breaks and closings. A coloured page is an accent: never two in a row, and about one page in four at most.
+- Light pages are the default. Dark and photo pages give weight to openings, section breaks and closings. A coloured page (set_surface, approved colours only) is an accent: never two in a row, and about one page in four, or one in three when someone asks for more colour.
 Pictures
 - Every item in a row has the same kind of picture: all dishes, all products, or none.
 - Logos are never pictures. They belong on covers (the brand mark) and logo pages.

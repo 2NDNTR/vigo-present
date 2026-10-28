@@ -176,6 +176,8 @@ export interface PageBackground {
   color?: ColorRole;
   media?: MediaRef;
   overlay?: Overlay;
+  /** set on purpose (a person or the assistant chose this colour): reformatting keeps it */
+  chosen?: boolean;
 }
 
 export interface Page {

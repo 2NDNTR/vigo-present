@@ -6,7 +6,7 @@ import { remapSlots } from '@/lib/model/remap';
 import { tidyPage } from '@/lib/model/tidy';
 import { enforcePage } from '@/lib/design/framework';
 import { pageGuardrails } from '@/lib/guardrails';
-import { getTheme } from '@/lib/brand/themes';
+import { colorLabel, getTheme } from '@/lib/brand/themes';
 
 /**
  * THE ASSISTANT — the deck is edited by asking.
@@ -24,7 +24,7 @@ import { getTheme } from '@/lib/brand/themes';
  * something the person gave — their words or their image.
  */
 
-export type OpKind = 'set_text' | 'remove_block' | 'tidy_page' | 'add_page' | 'copy_page' | 'delete_page' | 'move_page' | 'change_layout' | 'set_image';
+export type OpKind = 'set_text' | 'set_surface' | 'remove_block' | 'tidy_page' | 'add_page' | 'copy_page' | 'delete_page' | 'move_page' | 'change_layout' | 'set_image';
 
 export interface Fill {
   slot: string;
@@ -53,6 +53,8 @@ export interface DeckOp {
   image?: string;
   /** copy_page: the team presentation the page comes from */
   fromPresentationId?: string;
+  /** set_surface: an approved page colour key, or 'default' */
+  colour?: string;
   /** copy_page: the source page itself, filled in by the server, never by the model */
   pageData?: Page;
 }
@@ -90,7 +92,7 @@ export const DECK_SCHEMA = {
       items: {
         type: 'object',
         properties: {
-          op: { type: 'string', enum: ['set_text', 'remove_block', 'tidy_page', 'add_page', 'copy_page', 'delete_page', 'move_page', 'change_layout', 'set_image'] },
+          op: { type: 'string', enum: ['set_text', 'set_surface', 'remove_block', 'tidy_page', 'add_page', 'copy_page', 'delete_page', 'move_page', 'change_layout', 'set_image'] },
           fromPresentationId: { type: 'string', description: 'copy_page: id of the team presentation the page comes from; pageId is then the page in THAT presentation' },
           pageId: { type: 'string', description: 'id of an existing page, exactly as given; for tidy_page, "all" tidies every page' },
           blockId: { type: 'string', description: 'id of an existing block on that page, exactly as given' },
@@ -104,6 +106,7 @@ export const DECK_SCHEMA = {
           section: { type: 'string', description: 'add_page: a section name, only when it starts a new section' },
           fills: { type: 'array', items: FILL, description: 'add_page: the words and pictures for the new page, by slot' },
           image: { type: 'string', description: 'set_image: a library asset id or an attachment id' },
+          colour: { type: 'string', description: 'set_surface: one of the brand\'s approved page colours by key, or "default" for the layout\'s own' },
         },
         required: ['op'],
       },
@@ -320,6 +323,31 @@ export function applyDeckOps(d: Presentation, ops: DeckOp[], m: Material): Appli
           break;
         }
         setWords(b, op, m, out, pageNo(page.id), page.id);
+        out.focus = page.id;
+        break;
+      }
+      case 'set_surface': {
+        if (!page) {
+          skip(out, 'a page that is not in this deck');
+          break;
+        }
+        const theme = getTheme((page.brandOverride || d.brand) as BrandId);
+        const ok: string[] = (theme as any).surfaceColors || Object.keys(theme.colors);
+        const t = getTemplate(page.templateId);
+        if (page.background?.kind === 'image' || page.background?.kind === 'video') {
+          skip(out, 'a colour on a photo page (it keeps its photograph)');
+          break;
+        }
+        if (op.colour === 'default') {
+          page.background = t.background && t.background.kind !== 'image' ? JSON.parse(JSON.stringify(t.background)) : { kind: 'theme', overlay: 'none' };
+          out.lines.push({ pageId: page.id, text: `Page ${pageNo(page.id)}: back to the layout's own background` });
+        } else if (op.colour && ok.includes(op.colour)) {
+          page.background = { kind: 'color', color: op.colour as any, overlay: 'none', chosen: true };
+          out.lines.push({ pageId: page.id, text: `Page ${pageNo(page.id)}: background ${colorLabel(theme, op.colour as any)}` });
+        } else {
+          skip(out, `a colour that is not an approved page colour for ${theme.name} (${op.colour || 'none'})`);
+          break;
+        }
         out.focus = page.id;
         break;
       }

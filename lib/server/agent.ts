@@ -3,6 +3,7 @@ import { messagesFetch } from '@/lib/server/anthropic';
 import type { MediaRef, Presentation } from '@/lib/model/types';
 import { q } from '@/lib/server/db';
 import { visibleBrands, type Access } from '@/lib/server/access';
+import { colorLabel, getTheme, type BrandId } from '@/lib/brand/themes';
 import { RULES_TEXT, reviewDeck, type PictureKind } from '@/lib/design/framework';
 import { applyDeckOps, DECK_SCHEMA, deckForModel, type Applied, type DeckOp } from '@/lib/ingest/sidekick';
 
@@ -75,6 +76,7 @@ You work in steps with tools:
 Operations for edit_deck:
 - tidy_page: reformat a page (pageId) or every page ("all") back onto its layout's approved styling — one-off sizes, roles and crops are removed so repeated items match. Use it whenever someone asks to clean up, reformat, fix, tidy or make a page consistent; it is the only way styling can be corrected. Then check the result: shorten words that are now too long for the layout, and if the content does not suit the layout, change_layout to one that fits.
 - set_text: change the words of an existing block (text, support, label, value, items).
+- set_surface: give a page (no photo background) one of the brand's approved page colours, by key, or "default" for the layout's own. Text colour follows automatically. For "more colourful": dark pages for the opening, section breaks and the close; approved colour pages as accents; and colourful photography (search_photos). Coloured pages still follow the rhythm (never two in a row), though when the person asks for more colour, one in three is fine.
 - remove_block: take a block off a page — duplicated words, placeholder text ("First point", "Lorem ipsum", "Add a headline"), a picture that does not belong.
 - add_page: a new page in an approved layout after afterPageId, with fills by slot.
 - copy_page: copy a page from another team presentation (fromPresentationId + that deck's pageId) after afterPageId. Prefer this to rebuilding a page a teammate already made; then adjust its words with set_text.
@@ -96,7 +98,7 @@ Reading requests: "this page", "here" and "the page" always mean the page marked
 
 Hard rules:
 - Never invent a figure, date, customer, claim or statistic. Figures come from the person, an attachment, this deck, or a team deck you read. If a figure is needed and you do not have one, leave it out and say so in your reply.
-- You cannot choose fonts, colours, sizes, positions or backgrounds. Brand styling is automatic.
+- You cannot choose fonts, sizes or positions, and type colour follows the page automatically. Page colour is yours to choose, but only from the brand's approved page colours, with set_surface.
 - Only use ids you have seen in tool results, the deck, the layouts or the attachments.
 - Do the work, don't describe it: if the request is clear, make the edits. If it is ambiguous in a way that would change the wrong thing, finish with one short question and no edits.
 - Be economical: read what you need, not the whole library.
@@ -368,6 +370,8 @@ export async function runAgent(input: AgentInput, step: (text: string) => void):
     text:
       'THE DECK BEING EDITED\n' +
       deckForModel(deck, input.openPageId, pic) +
+      '\n\nAPPROVED PAGE COLOURS (for set_surface)\n' +
+      surfaces(deck) +
       '\n\n' +
       review() +
       '\n\nAPPROVED LAYOUTS\n' +
@@ -479,10 +483,23 @@ async function thumbnail(url: string): Promise<string | null> {
   }
 }
 
+/** Each brand used in the deck, with the page colours it allows. */
+function surfaces(deck: Presentation): string {
+  const brands = new Set<string>([deck.brand, ...deck.pages.map((p) => p.brandOverride).filter(Boolean) as string[]]);
+  return [...brands]
+    .map((b) => {
+      const t = getTheme(b as BrandId);
+      const list = (t as any).surfaceColors || Object.keys(t.colors);
+      return `${t.name}: ` + list.map((c: string) => `${c} (${colorLabel(t, c as any)}, ${t.colors[c as keyof typeof t.colors]})`).join(', ');
+    })
+    .join('\n');
+}
+
 function describeOps(ops: DeckOp[]): string {
   const n = (k: string) => ops.filter((o) => o.op === k).length;
   const bits = [
     n('tidy_page') && 'reformatting to the layout',
+    n('set_surface') && 'colouring pages',
     n('remove_block') && `removing ${n('remove_block')} ${n('remove_block') === 1 ? 'item' : 'items'}`,
     n('set_text') && `rewriting ${n('set_text')} ${n('set_text') === 1 ? 'block' : 'blocks'}`,
     n('add_page') && `adding ${n('add_page')} ${n('add_page') === 1 ? 'page' : 'pages'}`,

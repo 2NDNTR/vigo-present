@@ -76,7 +76,7 @@ export function tidyPage(page: Page): number {
   }
   // the page surface: the layout's own, unless the page is a photograph or film
   const bg = page.background;
-  if (!bg || bg.kind === 'color' || bg.kind === 'theme') {
+  if (!bg || ((bg.kind === 'color' || bg.kind === 'theme') && !bg.chosen)) {
     const want = t.background ? JSON.parse(JSON.stringify(t.background)) : { kind: 'theme', overlay: 'none' };
     const plain = (x: any) => (x ? { kind: x.kind, color: x.kind === 'color' ? x.color ?? null : null } : null);
     if (!same(plain(bg), plain(want))) {
