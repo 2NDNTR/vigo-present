@@ -9,6 +9,8 @@ export const metadata: Metadata = {
 const FONTS =
   'https://fonts.googleapis.com/css2' +
   '?family=Inter:wght@400;500;600;700' +
+  // Geist sets the app itself; the brand faces below set the slides.
+  '&family=Geist:wght@400;500;600' +
   '&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600' +
   '&family=Archivo:wght@400;500;600;700' +
   '&family=Cormorant+Garamond:wght@400;500;600' +
