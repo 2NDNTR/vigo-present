@@ -42,34 +42,59 @@ export default function Presenter({
     return () => mq.removeEventListener('change', on);
   }, []);
 
+  /* ------------------------------------------------------ idle chrome
+   * The controls are there the moment the mouse moves and gone a couple of
+   * seconds after it stops, so the deck has the screen to itself while someone
+   * talks over it. Touch and keyboard bring them back the same way. */
+  const [idle, setIdle] = useState(false);
+  useEffect(() => {
+    let t = 0;
+    const wake = () => {
+      setIdle(false);
+      window.clearTimeout(t);
+      t = window.setTimeout(() => setIdle(true), 2600);
+    };
+    wake();
+    const evs = ['mousemove', 'pointerdown', 'keydown', 'touchstart'] as const;
+    evs.forEach((e) => window.addEventListener(e, wake, { passive: true }));
+    return () => {
+      window.clearTimeout(t);
+      evs.forEach((e) => window.removeEventListener(e, wake));
+    };
+  }, []);
+
+  const [full, setFull] = useState(false);
+  useEffect(() => {
+    const on = () => setFull(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', on);
+    return () => document.removeEventListener('fullscreenchange', on);
+  }, []);
+  const toggleFull = () => {
+    if (document.fullscreenElement) document.exitFullscreen?.();
+    else document.documentElement.requestFullscreen?.().catch(() => {});
+  };
+  const canFull = typeof document !== 'undefined' && !!document.fullscreenEnabled;
+
   /* ---------------------------------------------------------- keyboard */
+  const indexRef = useRef(0);
+  indexRef.current = index;
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && onExit) onExit();
-      if (mode === 'horizontal' && !narrow && scroller.current) {
-        const el = scroller.current;
-        if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
-          e.preventDefault();
-          el.scrollBy({ left: el.clientWidth, behavior: 'smooth' });
-        }
-        if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
-          e.preventDefault();
-          el.scrollBy({ left: -el.clientWidth, behavior: 'smooth' });
-        }
-      }
-      if (mode === 'slide' && !narrow) {
-        if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
-          e.preventDefault();
-          setIndex((i) => Math.min(pages.length - 1, i + 1));
-        }
-        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-          e.preventDefault();
-          setIndex((i) => Math.max(0, i - 1));
-        }
+      if ((e.target as HTMLElement)?.closest?.('input, textarea')) return;
+      if (e.key === 'Escape' && onExit && !document.fullscreenElement) onExit();
+      if (e.key === 'f' || e.key === 'F') toggleFull();
+      if (narrow) return;
+      const fwd = ['ArrowRight', 'ArrowDown', 'PageDown', ' '].includes(e.key);
+      const back = ['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key);
+      if (fwd || back || e.key === 'Home' || e.key === 'End') {
+        e.preventDefault();
+        const i = indexRef.current;
+        goto(e.key === 'Home' ? 0 : e.key === 'End' ? pages.length - 1 : fwd ? Math.min(pages.length - 1, i + 1) : Math.max(0, i - 1));
       }
     };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, narrow, pages.length, onExit]);
 
   /* ------------------------------------------- track position in scroll */
@@ -105,7 +130,7 @@ export default function Presenter({
   const root = useRef<HTMLDivElement>(null);
   useEntrance(root, scroller, mode === 'slide' && !narrow ? index : pages.length + ':' + narrow + mode);
 
-  const goto = (i: number) => {
+  function goto(i: number) {
     setIndex(i);
     if (mode === 'scroll' && !narrow && scroller.current) {
       scroller.current.scrollTo({ top: i * scroller.current.clientHeight, behavior: 'smooth' });
@@ -115,35 +140,57 @@ export default function Presenter({
     }
   };
 
+  const name = (i: number) => pages[i]?.sectionStart || 'Page ' + (i + 1);
   const chrome = (
-    <>
+    <div className={'pchrome2' + (idle ? ' idle' : '')}>
       <div className="pbar">
         <i style={{ width: ((index + 1) / pages.length) * 100 + '%' }} />
       </div>
-      {!narrow && (
-        <div className="pnav">
+      {mode === 'scroll' && (
+        <nav className="prail" aria-label="Pages">
           {pages.map((p, i) => (
-            <i key={p.id} className={i === index ? 'on' : ''} onClick={() => goto(i)} />
-          ))}
-        </div>
-      )}
-      <div className="pchrome">
-        <span>
-          {label ? label + ' · ' : ''}
-          {presentation.title}
-        </span>
-        <span style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-          <span className="mono-num">
-            {index + 1} / {pages.length}
-          </span>
-          {onExit && (
-            <button className="btn sm" style={{ background: 'rgba(255,255,255,0.16)', border: 0, color: '#fff' }} onClick={onExit}>
-              Close
+            <button key={p.id} className={i === index ? 'on' : ''} onClick={() => goto(i)} aria-label={name(i)}>
+              <span>{name(i)}</span>
             </button>
-          )}
+          ))}
+        </nav>
+      )}
+      <div className="pdock" role="toolbar" aria-label="Presentation controls">
+        <span className="pdock-title">{presentation.title}</span>
+        <span className="pdock-sep" />
+        <button className="pdock-btn" onClick={() => goto(Math.max(0, index - 1))} disabled={index === 0} aria-label="Previous page">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" /></svg>
+        </button>
+        <span className="pdock-count">
+          <b>{index + 1}</b> / {pages.length}
         </span>
+        <button
+          className="pdock-btn"
+          onClick={() => goto(Math.min(pages.length - 1, index + 1))}
+          disabled={index === pages.length - 1}
+          aria-label="Next page"
+        >
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3 5 5-5 5" /></svg>
+        </button>
+        {canFull && (
+          <>
+            <span className="pdock-sep" />
+            <button className="pdock-btn" onClick={toggleFull} aria-label={full ? 'Exit full screen' : 'Full screen'} title="Full screen (F)">
+              {full ? (
+                <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2v4H2M10 2v4h4M6 14v-4H2M10 14v-4h4" /></svg>
+              ) : (
+                <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4" /></svg>
+              )}
+            </button>
+          </>
+        )}
+        {onExit && (
+          <button className="pdock-close" onClick={onExit}>
+            Close
+          </button>
+        )}
       </div>
-    </>
+    </div>
   );
 
   /* ------------------------------------------------------------ mobile */
@@ -171,12 +218,9 @@ export default function Presenter({
             <Stage page={pages[index]} brand={presentation.brand} retailer={presentation.retailer} mode="fixed" />
           </div>
         </div>
-        <button className="parrow left" onClick={() => goto(Math.max(0, index - 1))} aria-label="Previous">
-          ‹
-        </button>
-        <button className="parrow right" onClick={() => goto(Math.min(pages.length - 1, index + 1))} aria-label="Next">
-          ›
-        </button>
+        {/* the two halves of the screen turn the page, as a clicker would */}
+        <button className="pzone left" onClick={() => goto(Math.max(0, index - 1))} aria-label="Previous page" tabIndex={-1} />
+        <button className="pzone right" onClick={() => goto(Math.min(pages.length - 1, index + 1))} aria-label="Next page" tabIndex={-1} />
         {chrome}
       </div>
     );

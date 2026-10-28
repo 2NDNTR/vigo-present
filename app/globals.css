@@ -1513,7 +1513,7 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
  * Two letters and a colour derived from the person's own name: a row of
  * identical grey circles says someone is here, which is not the question.
  */
-.presence { display: flex; align-items: center; gap: -6px; margin-right: 4px; }
+.presence { display: flex; align-items: center; gap: 0; margin-right: 4px; }
 .pres-dot {
   width: 26px; height: 26px; border-radius: 50%;
   display: grid; place-items: center;
@@ -2551,3 +2551,234 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 /* An open companion panel: its button holds a black "pressed" state, so Share stays the one orange action. */
 .btn.on { background: var(--app-ink, #000); color: #fff; border-color: var(--app-ink, #000); }
 .btn.on:hover { background: #1f1f1f; }
+
+/* ============================================================ pop-ups (V2)
+   Pop-ups are drawn at the end of <body> (components/ui/Portal) and set every
+   colour themselves, so whatever panel opened one can never bleed into it. */
+.scrim-modal { background: rgba(0, 0, 0, 0.42); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); padding: 24px 16px; }
+.modal {
+  color: #000; background: #fff; font-family: var(--ui, 'Geist', 'Inter', system-ui, sans-serif);
+  border-radius: 16px; box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 24px 64px rgba(0,0,0,.28);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.modal-head { padding: 28px 32px 0; flex: none; }
+.modal-body { padding: 22px 32px 28px; overflow: auto; flex: 1 1 auto; min-height: 0; }
+.modal-foot { padding: 16px 32px; border-top: 1px solid #ebe9e4; background: #fbfbf9; flex: none; position: static; }
+.modal h2 { color: #000; font-size: 24px; line-height: 1.15; font-weight: 600; letter-spacing: -0.02em; }
+.modal p.sub { color: #5d6069; font-size: 14px; line-height: 1.5; max-width: 52ch; }
+.modal .field { color: #000; background: #fff; }
+.modal .btn { color: #000; }
+.modal .btn.primary { color: #fff; }
+.modal .btn.ghost { color: #3b3e45; }
+.modal .btn.ghost:hover { background: #f0efeb; color: #000; }
+
+.stepbar { display: flex; align-items: center; gap: 6px; margin-bottom: 18px; }
+.stepbar i { width: 28px; height: 4px; border-radius: 4px; background: #e6e4df; }
+.stepbar i.done { background: #000; }
+.stepbar span { margin-left: 8px; font-size: 12px; color: #777b86; }
+
+.choice { color: #000; background: #fff; border: 1px solid #e3e1dc; border-radius: 12px; padding: 12px 16px 12px 12px; margin-bottom: 8px; gap: 16px; transition: border-color .12s, box-shadow .12s; }
+.choice:hover { border-color: #b9b6ae; }
+.choice.on { border-color: #000; box-shadow: inset 0 0 0 1px #000; }
+.choice:focus-visible { outline: 2px solid var(--app-accent, #ff5634); outline-offset: 2px; }
+.choice > span:last-child { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.choice-name { display: block; color: #000; font-size: 15px; font-weight: 600; line-height: 1.25; }
+.choice-desc { display: block; color: #5d6069; font-size: 13px; line-height: 1.45; margin: 0; }
+
+.choice-brand {
+  position: relative; flex: none; width: 92px; height: 60px; border-radius: 8px; overflow: hidden;
+  display: grid; place-items: center; padding: 10px 12px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08);
+}
+.choice-brand img { max-width: 100%; max-height: 30px; object-fit: contain; }
+.choice-brand b { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-align: center; line-height: 1.1; }
+.choice-brand i { position: absolute; right: 0; bottom: 0; width: 18px; height: 18px; border-top-left-radius: 6px; }
+
+.choice-count {
+  flex: none; width: 60px; height: 60px; border-radius: 8px; background: #f4f3ef;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: 11px; color: #777b86; line-height: 1.1;
+}
+.choice-count b { font-size: 20px; font-weight: 600; color: #000; letter-spacing: -0.02em; }
+.choice.on .choice-count { background: #000; color: #a6a6a6; }
+.choice.on .choice-count b { color: #fff; }
+
+@media (max-width: 560px) {
+  .modal-head { padding: 22px 20px 0; }
+  .modal-body { padding: 18px 20px 22px; }
+  .modal-foot { padding: 14px 20px; }
+  .choice-brand { width: 64px; height: 48px; }
+}
+
+/* ======================================================= presenter (V2)
+   One dock, centred at the foot of the screen, that steps aside when the
+   mouse rests. Black glass and white type over any brand's pages. */
+.present-root { background: #000; }
+.pchrome2 { position: fixed; inset: 0; pointer-events: none; z-index: 30; font-family: 'Geist', 'Inter', system-ui, sans-serif; }
+.pchrome2 > * { pointer-events: auto; transition: opacity 320ms ease, transform 320ms ease; }
+.pchrome2.idle > .pdock { opacity: 0; transform: translate(-50%, 10px); pointer-events: none; }
+.pchrome2.idle > .prail { opacity: 0; }
+.pchrome2.idle > .pbar { opacity: 0.6; }
+.pchrome2.idle ~ .pzone, .present-root:has(.pchrome2.idle) { cursor: none; }
+
+.pchrome2 .pbar { position: absolute; left: 0; right: 0; top: 0; height: 2px; background: rgba(255,255,255,.12); }
+.pchrome2 .pbar i { display: block; height: 100%; background: #fff; transition: width 260ms cubic-bezier(.2,.8,.3,1); }
+
+.pdock {
+  position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 4px; padding: 6px 6px 6px 16px; max-width: calc(100vw - 32px);
+  background: rgba(10,10,10,.72); color: #fff; border-radius: 999px;
+  backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.1), 0 12px 32px rgba(0,0,0,.35);
+  font-size: 13px; white-space: nowrap;
+}
+.pdock-title { max-width: 32ch; overflow: hidden; text-overflow: ellipsis; color: rgba(255,255,255,.78); }
+.pdock-sep { width: 1px; height: 18px; background: rgba(255,255,255,.16); margin: 0 8px; }
+.pdock-count { min-width: 56px; text-align: center; color: rgba(255,255,255,.6); font-variant-numeric: tabular-nums; }
+.pdock-count b { color: #fff; font-weight: 600; }
+.pdock-btn {
+  width: 32px; height: 32px; border-radius: 50%; border: 0; background: transparent; color: #fff; cursor: pointer;
+  display: grid; place-items: center; transition: background 120ms ease;
+}
+.pdock-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.pdock-btn:hover:not(:disabled) { background: rgba(255,255,255,.14); }
+.pdock-btn:disabled { opacity: .3; cursor: default; }
+.pdock-btn:focus-visible, .pdock-close:focus-visible, .prail button:focus-visible { outline: 2px solid #ff5634; outline-offset: 2px; }
+.pdock-close {
+  margin-left: 6px; height: 32px; padding: 0 14px; border-radius: 999px; border: 0; cursor: pointer;
+  background: #fff; color: #000; font: inherit; font-weight: 550;
+}
+.pdock-close:hover { background: #e9e9e9; }
+
+/* page rail: one tick per page, the current one longest; hover names it */
+.prail { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 2px; }
+.prail button { position: relative; display: flex; justify-content: flex-end; align-items: center; width: 28px; height: 14px; border: 0; padding: 0; background: none; cursor: pointer; }
+.prail button::after { content: ''; display: block; width: 10px; height: 2px; border-radius: 2px; background: rgba(255,255,255,.4); transition: width 200ms ease, background 200ms ease; }
+.prail button:hover::after { background: rgba(255,255,255,.8); }
+.prail button.on::after { width: 22px; background: #fff; }
+.prail button span {
+  position: absolute; right: 34px; padding: 4px 9px; border-radius: 6px; background: rgba(10,10,10,.8); color: #fff;
+  font-size: 12px; white-space: nowrap; opacity: 0; transform: translateX(4px); transition: opacity 140ms, transform 140ms; pointer-events: none;
+}
+.prail button:hover span, .prail button:focus-visible span { opacity: 1; transform: none; }
+
+/* slides: each half of the screen is a page turn */
+.pzone { position: fixed; top: 0; bottom: 0; width: 50vw; border: 0; background: transparent; z-index: 10; cursor: pointer; padding: 0; }
+.pzone.left { left: 0; cursor: w-resize; }
+.pzone.right { right: 0; cursor: e-resize; }
+
+/* preview toolbar (editor → Preview) */
+.preview-controls {
+  top: 16px; right: auto; left: 50%; transform: translateX(-50%); align-items: center; gap: 6px; padding: 5px;
+  background: rgba(10,10,10,.72); border-radius: 999px; box-shadow: 0 0 0 1px rgba(255,255,255,.1), 0 12px 32px rgba(0,0,0,.35);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); font-family: 'Geist', 'Inter', system-ui, sans-serif;
+  transition: opacity 320ms ease;
+}
+body:has(.pchrome2.idle) .preview-controls { opacity: 0; pointer-events: none; }
+.preview-controls .pv-label { color: rgba(255,255,255,.55); font-size: 12px; padding: 0 8px 0 10px; }
+.preview-controls .seg.dark { background: rgba(255,255,255,.08); backdrop-filter: none; border-radius: 999px; padding: 2px; }
+.preview-controls .seg.dark button { border-radius: 999px; font-size: 12.5px; height: 28px; padding: 0 12px; }
+.preview-controls .seg.dark button.on { background: #fff; color: #000; }
+
+@media (max-width: 760px) {
+  .pdock-title, .pdock-title + .pdock-sep { display: none; }
+  .preview-controls { flex-wrap: wrap; justify-content: center; border-radius: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pchrome2 > *, .pchrome2 .pbar i { transition: none; }
+}
+
+/* ======================================================== editor (V2)
+   A black studio bar over an off-white desk. The bar carries the deck's
+   identity and its few actions; the desk carries the work. Orange appears
+   once — Share — and black marks whatever is open or selected. */
+.editor { background: #f7f7f4; font-family: var(--ui, 'Geist', 'Inter', system-ui, sans-serif); }
+.ed-top {
+  height: 56px; background: #000; color: #fff; border-bottom: 0; padding: 0 12px 0 14px; gap: 16px;
+}
+.ed-top > div:first-child { gap: 10px !important; }
+.ed-home { color: #fff; }
+.ed-home .brandmark { opacity: 1; color: #fff; }
+.ed-home:hover .brandmark { opacity: .8; }
+.ed-top > div:first-child > .btn.ghost { color: rgba(255,255,255,.6); height: 32px; width: 32px; padding: 0; border-radius: 8px; }
+.ed-top > div:first-child > .btn.ghost:hover { color: #fff; background: rgba(255,255,255,.1); }
+.ed-top .ed-title { color: #fff; font-weight: 600; font-size: 15px; border-radius: 6px; }
+.ed-top .ed-title:hover { background: rgba(255,255,255,.08); }
+.ed-top .ed-title:focus { background: rgba(255,255,255,.12); outline: none; box-shadow: inset 0 0 0 1px rgba(255,255,255,.3); }
+
+.savechip { display: inline-flex; align-items: center; gap: 6px; color: #a6a6a6; font-size: 12px; min-width: 76px; }
+.savechip i { width: 6px; height: 6px; border-radius: 50%; background: #5bbf8a; flex: none; transition: background 160ms; }
+.savechip.saving i { background: #a6a6a6; animation: savepulse 900ms ease-in-out infinite; }
+.savechip.error { color: #ff8a73; font-weight: 600; }
+.savechip.error i { background: #ff5634; }
+@keyframes savepulse { 50% { opacity: .3; } }
+
+.undo-group { gap: 2px; padding-left: 10px; margin-left: 2px; border-left: 1px solid rgba(255,255,255,.14); }
+.ed-icon {
+  width: 32px; height: 32px; border-radius: 8px; border: 0; background: transparent; color: #fff; cursor: pointer;
+  display: grid; place-items: center;
+}
+.ed-icon svg, .ed-tools svg, .ed-present svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.ed-icon:hover:not(:disabled) { background: rgba(255,255,255,.1); }
+.ed-icon:disabled { opacity: .3; cursor: default; }
+
+.ed-tools { display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: rgba(255,255,255,.08); }
+.ed-tools button {
+  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border: 0; border-radius: 7px;
+  background: transparent; color: rgba(255,255,255,.78); font: inherit; font-size: 13px; cursor: pointer; white-space: nowrap;
+}
+.ed-tools button:hover { color: #fff; background: rgba(255,255,255,.08); }
+.ed-tools button.on { background: #fff; color: #000; font-weight: 550; }
+.ed-tools button svg { width: 14px; height: 14px; }
+
+.ed-quiet {
+  height: 34px; padding: 0 12px; border: 0; border-radius: 8px; background: transparent; color: rgba(255,255,255,.78);
+  font: inherit; font-size: 13px; cursor: pointer;
+}
+.ed-quiet:hover { color: #fff; background: rgba(255,255,255,.1); }
+.ed-present {
+  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px 0 11px; border: 0; border-radius: 8px;
+  background: #fff; color: #000; font: inherit; font-size: 13px; font-weight: 550; cursor: pointer;
+}
+.ed-present svg { fill: currentColor; stroke: none; width: 14px; height: 14px; }
+.ed-present:hover { background: #e9e9e6; }
+.ed-top .btn.primary { height: 34px; padding: 0 16px; border-radius: 8px; font-weight: 600; }
+.ed-top button:focus-visible { outline: 2px solid #ff5634; outline-offset: 2px; }
+
+/* desk */
+.ed-body { background: #f7f7f4; padding: 14px; gap: 14px; }
+.ed-center { padding: 10px 8px 18px; }
+.canvas-caption { padding: 0 2px 10px; font-size: 12.5px; color: #777b86; }
+.canvas-caption b { color: #000; font-weight: 600; }
+.canvas-caption em { font-style: normal; margin-left: 10px; padding-left: 10px; border-left: 1px solid #d9d7d1; }
+.canvas-brand { display: inline-flex; align-items: center; gap: 7px; color: #3b3e45; }
+.canvas-brand i { width: 10px; height: 10px; border-radius: 3px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); }
+.canvas-shell { border-radius: 10px; box-shadow: 0 0 0 1px rgba(0,0,0,.06), 0 18px 48px -12px rgba(0,0,0,.22); }
+
+/* filmstrip: the open page is ringed in black, not orange */
+.ed-strip { border-radius: 12px; box-shadow: 0 0 0 1px #e9e8e5; }
+.strip-item.on .strip-thumb { border-color: #000; box-shadow: 0 0 0 2px #000; }
+.strip-new:hover { border-color: #000; }
+.strip-sec { color: #777b86; letter-spacing: .06em; }
+
+/* side panel: a white sheet with plain tabs underlined in black */
+.ed-right { width: 312px; border-radius: 12px; box-shadow: 0 0 0 1px #e9e8e5; background: #fff; }
+.ed-tabsbar { padding: 6px 16px 0; margin: 0 -16px 16px; border-bottom: 1px solid #ecebe7; border-radius: 12px 12px 0 0; }
+.ed-tabs { background: none; padding: 0; gap: 18px; border-radius: 0; }
+.ed-tabs .tabbtn {
+  flex: 0 0 auto; height: 42px; padding: 0; border-radius: 0; color: #777b86; font-size: 13px; background: none;
+  box-shadow: inset 0 -2px 0 transparent;
+}
+.ed-tabs .tabbtn:hover { background: none; color: #000; }
+.ed-tabs .tabbtn.on { background: none; color: #000; font-weight: 600; box-shadow: inset 0 -2px 0 #000; }
+
+/* companion panels share the same sheet language */
+.ed-right .wgt { border-radius: 10px; box-shadow: 0 0 0 1px #e6e4df, 0 6px 18px -8px rgba(0,0,0,.14); background: #fff; }
+
+@media (max-width: 1180px) {
+  .ed-tools button svg { display: none; }
+  .ed-quiet { display: none; }
+  .savechip { min-width: 0; }
+}
+.prail button::after { box-shadow: 0 0 0 1px rgba(0,0,0,.18), 0 1px 4px rgba(0,0,0,.25); }
+.preview-controls button:focus:not(:focus-visible), .pdock button:focus:not(:focus-visible) { outline: none; box-shadow: none; }
+.preview-controls button:focus-visible { outline: 2px solid #ff5634; outline-offset: 2px; }

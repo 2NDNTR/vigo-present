@@ -27,23 +27,25 @@ export default function PresentClient({ id }: { id: string }) {
   }, [id]);
 
   if (missing) return <div style={{ padding: 60 }}>Not found.</div>;
-  if (!p || !mode) return <div style={{ padding: 60, color: '#888' }}>Loading…</div>;
+  if (!p || !mode) return <div className="present-root" />;
 
   const view: Presentation = { ...p, share: { ...p.share, mode } };
 
   const controls = (
     <div className="preview-controls">
-      <div className="seg dark">
-        {(['scroll', 'slide'] as PresentationMode[]).map((m) => (
+      <span className="pv-label">Preview</span>
+      {/* The two layouts a shared link can use, plus Slides for presenting in a room. */}
+      <div className="seg dark" role="group" aria-label="Layout">
+        {(['scroll', 'horizontal', 'slide'] as PresentationMode[]).map((m) => (
           <button key={m} className={mode === m ? 'on' : ''} onClick={() => setMode(m)}>
-            {m === 'scroll' ? 'Scroll' : 'Slides'}
+            {m === 'scroll' ? 'Vertical' : m === 'horizontal' ? 'Horizontal' : 'Slides'}
           </button>
         ))}
       </div>
       <div className="seg dark">
         {(['desktop', 'mobile'] as Device[]).map((d) => (
           <button key={d} className={device === d ? 'on' : ''} onClick={() => setDevice(d)}>
-            {d === 'desktop' ? 'Desktop' : 'Mobile'}
+            {d === 'desktop' ? 'Desktop' : 'Phone'}
           </button>
         ))}
       </div>
@@ -70,7 +72,7 @@ export default function PresentClient({ id }: { id: string }) {
 
   return (
     <>
-      <Presenter presentation={view} label="Preview" forceNarrow={false} onExit={() => router.push('/e/' + id)} />
+      <Presenter key={mode} presentation={view} label="Preview" forceNarrow={false} onExit={() => router.push('/e/' + id)} />
       {controls}
     </>
   );

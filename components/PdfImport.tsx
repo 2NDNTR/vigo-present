@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import Portal from '@/components/ui/Portal';
 import { BRAND_ORDER, THEMES } from '@/lib/brand/themes';
 import type { BrandId } from '@/lib/brand/themes';
 import type { Presentation } from '@/lib/model/types';
@@ -150,6 +151,7 @@ export default function PdfImport({
   }
 
   return (
+    <Portal>
     <div className="scrim-modal" onMouseDown={(e) => e.target === e.currentTarget && onCancel()}>
       <div className="modal">
         <div className="modal-head">
@@ -314,6 +316,7 @@ export default function PdfImport({
         </div>
       </div>
     </div>
+    </Portal>
   );
 }
 

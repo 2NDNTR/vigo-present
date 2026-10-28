@@ -176,7 +176,7 @@ export default function Composer({ initialBrand }: { initialBrand?: string }) {
       </div>
 
       {startBlank && (
-        <NewPresentation createdBy={user?.name || 'Vigo team'} onCancel={() => setStartBlank(false)} onCreate={create} />
+        <NewPresentation brand={initialBrand} createdBy={user?.name || 'Vigo team'} onCancel={() => setStartBlank(false)} onCreate={create} />
       )}
       {fromPdf && <PdfImport createdBy={user?.name || 'Vigo team'} onCancel={() => setFromPdf(false)} onCreate={create} />}
     </section>

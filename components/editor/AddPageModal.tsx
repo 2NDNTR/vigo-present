@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Portal from '@/components/ui/Portal';
 import Stage from '@/components/render/Stage';
 import { TEMPLATE_CATEGORIES, templatesByCategory, createPage } from '@/lib/templates/registry';
 import type { BrandId } from '@/lib/brand/themes';
@@ -31,6 +32,7 @@ export default function AddPageModal({
   const visible = groups.filter((g) => cat === 'All' || g.category === cat);
 
   return (
+    <Portal>
     <div className="scrim-modal" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal wide">
         <div className="modal-head" style={{ paddingBottom: 18 }}>
@@ -74,5 +76,6 @@ export default function AddPageModal({
         </div>
       </div>
     </div>
+    </Portal>
   );
 }

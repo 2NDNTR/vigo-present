@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Portal from '@/components/ui/Portal';
 import type { Presentation } from '@/lib/model/types';
 
 export default function SharePanel({
@@ -30,6 +31,7 @@ export default function SharePanel({
   const setShare = (patch: any) => onChange({ share: { ...share, ...patch } });
 
   return (
+    <Portal>
     <div className="scrim-modal" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 520 }}>
         <div className="modal-head">
@@ -202,5 +204,6 @@ export default function SharePanel({
         </div>
       </div>
     </div>
+    </Portal>
   );
 }

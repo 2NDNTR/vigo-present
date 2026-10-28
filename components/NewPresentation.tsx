@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import Portal from '@/components/ui/Portal';
+import { brandLook as look } from '@/components/v2/brandLook';
 import { BRAND_ORDER, THEMES } from '@/lib/brand/themes';
 import type { BrandId } from '@/lib/brand/themes';
 import { STARTERS, buildPresentation } from '@/lib/templates/starters';
@@ -10,18 +12,26 @@ export default function NewPresentation({
   createdBy,
   onCancel,
   onCreate,
+  brand: fixedBrand,
 }: {
   createdBy: string;
+  /** opened from inside a brand: that brand is the answer, so its step is skipped */
+  brand?: string;
   onCancel: () => void;
   onCreate: (p: Presentation) => void;
 }) {
-  const [step, setStep] = useState(0);
+  const [at, setAt] = useState(0);
   const [title, setTitle] = useState('');
-  const [brand, setBrand] = useState<BrandId>('alessi');
+  const known = fixedBrand && (BRAND_ORDER as readonly string[]).includes(fixedBrand) ? (fixedBrand as BrandId) : undefined;
+  const [brand, setBrand] = useState<BrandId>(known || 'alessi');
+  // the steps this person actually sees, in order
+  const flow: (0 | 1 | 2)[] = known ? [0, 2] : [0, 1, 2];
   const [starter, setStarter] = useState('retail');
 
-  const next = () => setStep((s) => Math.min(2, s + 1));
-  const back = () => setStep((s) => Math.max(0, s - 1));
+  const step = flow[at];
+  const last = at === flow.length - 1;
+  const next = () => setAt((s) => Math.min(flow.length - 1, s + 1));
+  const back = () => setAt((s) => Math.max(0, s - 1));
 
   const finish = () => {
     onCreate(
@@ -35,11 +45,18 @@ export default function NewPresentation({
   };
 
   return (
+    <Portal>
     <div className="scrim-modal" onMouseDown={(e) => e.target === e.currentTarget && onCancel()}>
       <div className="modal">
         <div className="modal-head">
-          <div className="steps" style={{ marginBottom: 14 }}>
-            Step {step + 1} of 3
+          <div className="stepbar" aria-label={`Step ${at + 1} of ${flow.length}`}>
+            {flow.map((_, i) => (
+              <i key={i} className={i <= at ? 'done' : ''} />
+            ))}
+            <span>
+              Step {at + 1} of {flow.length}
+              {known ? ', ' + THEMES[known].name : ''}
+            </span>
           </div>
           {step === 0 && (
             <>
@@ -80,12 +97,10 @@ export default function NewPresentation({
               const t = THEMES[b];
               return (
                 <button key={b} className={'choice' + (brand === b ? ' on' : '')} onClick={() => setBrand(b)}>
-                  <span
-                    className="choice-swatch"
-                    style={{
-                      background: `linear-gradient(135deg, ${t.colors.brandPrimary} 0 50%, ${t.colors.cream} 50% 100%)`,
-                    }}
-                  />
+                  <span className="choice-brand" style={{ background: look(b).ground, color: look(b).ink }}>
+                    {look(b).logo ? <img src={look(b).logo} alt="" /> : <b>{look(b).wordmark}</b>}
+                    <i style={{ background: look(b).swatch }} />
+                  </span>
                   <span>
                     <span className="choice-name" style={{ fontFamily: t.fonts.display }}>
                       {t.name}
@@ -99,11 +114,9 @@ export default function NewPresentation({
           {step === 2 &&
             STARTERS.map((s) => (
               <button key={s.id} className={'choice' + (starter === s.id ? ' on' : '')} onClick={() => setStarter(s.id)}>
-                <span
-                  className="choice-swatch"
-                  style={{ display: 'grid', placeItems: 'center', fontSize: 11, fontWeight: 600, color: '#8c9096' }}
-                >
-                  {s.steps.length}
+                <span className="choice-count">
+                  <b>{s.steps.length}</b>
+                  {s.steps.length === 1 ? 'page' : 'pages'}
                 </span>
                 <span>
                   <span className="choice-name">{s.name}</span>
@@ -114,10 +127,10 @@ export default function NewPresentation({
         </div>
 
         <div className="modal-foot">
-          <button className="btn ghost" onClick={step === 0 ? onCancel : back}>
-            {step === 0 ? 'Cancel' : 'Back'}
+          <button className="btn ghost" onClick={at === 0 ? onCancel : back}>
+            {at === 0 ? 'Cancel' : 'Back'}
           </button>
-          {step < 2 ? (
+          {!last ? (
             <button className="btn primary" onClick={next}>
               Continue
             </button>
@@ -129,5 +142,6 @@ export default function NewPresentation({
         </div>
       </div>
     </div>
+    </Portal>
   );
 }

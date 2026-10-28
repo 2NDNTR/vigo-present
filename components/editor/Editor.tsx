@@ -12,6 +12,7 @@ import HistoryWidget from './HistoryWidget';
 import AssetsPanel from './AssetsPanel';
 import BrandPanel from './BrandPanel';
 import AddPanel from './AddPanel';
+import { brandLook } from '@/components/v2/brandLook';
 import Brandmark from '@/components/ui/Brandmark';
 import AddPageModal from './AddPageModal';
 import SharePanel from './SharePanel';
@@ -609,25 +610,28 @@ export default function Editor({ id }: { id: string }) {
               onChange={(e) => update((d) => { d.title = e.target.value; })}
             />
           </span>
-          <span className={'savechip' + (saved === 'error' ? ' bad' : '')}>
+          <span className={'savechip ' + saved} role="status">
+            <i aria-hidden="true" />
             {saved === 'saving' ? 'Saving…' : saved === 'error' ? 'Not saved' : 'Saved'}
           </span>
           <span className="undo-group" data-tick={histTick}>
             <button
-              className="btn sm"
+              className="ed-icon"
               onClick={undo}
               disabled={past.current.length === 0}
               title="Undo (⌘Z)"
+              aria-label="Undo"
             >
-              ↶ Undo
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 3 2.5 6l3 3" /><path d="M2.5 6H10a3.5 3.5 0 0 1 0 7H7" /></svg>
             </button>
             <button
-              className="btn sm ghost"
+              className="ed-icon"
               onClick={redo}
               disabled={future.current.length === 0}
               title="Redo (⇧⌘Z)"
+              aria-label="Redo"
             >
-              ↷
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m10.5 3 3 3-3 3" /><path d="M13.5 6H6a3.5 3.5 0 0 0 0 7h3" /></svg>
             </button>
           </span>
         </div>
@@ -641,38 +645,41 @@ export default function Editor({ id }: { id: string }) {
             pageId={page?.id}
             pageTitleFor={(pid) => pres.pages.find((x) => x.id === pid)?.sectionStart || undefined}
           />
-          <button
-            className={'btn sm' + (companion === 'wizard' ? ' on' : '')}
-            title="Ask for help with this page"
-            onClick={() => setCompanion(companion === 'wizard' ? null : 'wizard')}
-          >
-            Refine with AI
-          </button>
-          <button
-            className={'btn sm' + (companion === 'notes' ? ' on' : '')}
-            title="Notes on this deck"
-            onClick={() => setCompanion(companion === 'notes' ? null : 'notes')}
-          >
-            Notes
-          </button>
-          <button
-            className={'btn sm' + (companion === 'history' ? ' on' : '')}
-            title="Saved versions of this deck"
-            onClick={() => setCompanion(companion === 'history' ? null : 'history')}
-          >
-            History
-          </button>
-          <button className="btn sm" onClick={() => router.push('/present/' + pres.id)}>
-            Preview
-          </button>
+          {/* The deck's companions: one group, one open at a time. */}
+          <div className="ed-tools" role="group" aria-label="Companion panels">
+            {(
+              [
+                ['wizard', 'Refine with AI', 'Ask for changes to this page'],
+                ['notes', 'Notes', 'Notes on this deck'],
+                ['history', 'History', 'Saved versions of this deck'],
+              ] as const
+            ).map(([id, label, hint]) => (
+              <button
+                key={id}
+                className={companion === id ? 'on' : ''}
+                aria-pressed={companion === id}
+                title={hint}
+                onClick={() => setCompanion(companion === id ? null : id)}
+              >
+                {id === 'wizard' && (
+                  <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5v3M8 11.5v3M1.5 8h3M11.5 8h3M3.4 3.4l2 2M10.6 10.6l2 2M3.4 12.6l2-2M10.6 5.4l2-2" /></svg>
+                )}
+                {label}
+              </button>
+            ))}
+          </div>
           {/* A new tab, not this one: the print sheet opens a dialog on load,
               and taking someone's editor away to do it would lose their place. */}
           <button
-            className="btn sm"
+            className="ed-quiet"
             title="Open a print-ready copy and save it as a PDF"
             onClick={() => window.open('/print/' + pres.id, '_blank', 'noopener')}
           >
             PDF
+          </button>
+          <button className="ed-present" onClick={() => router.push('/present/' + pres.id)} title="See it as recipients will">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.2v9.6L12.5 8z" /></svg>
+            Present
           </button>
           <button className="btn sm primary" onClick={() => setSharing(true)}>
             Share
@@ -731,9 +738,13 @@ export default function Editor({ id }: { id: string }) {
           <div className="canvas-frame" ref={setCanvas} onMouseDown={(e) => e.stopPropagation()}>
             <div className="canvas-caption">
               <span>
-                Page {pageIndex + 1} of {pres.pages.length} · {getTemplate(page.templateId).name}
+                <b>{pageIndex + 1}</b> of {pres.pages.length}
+                <em>{page.sectionStart ? page.sectionStart + ', ' : ''}{getTemplate(page.templateId).name}</em>
               </span>
-              <span>{page.brandOverride ? page.brandOverride : pres.brand}</span>
+              <span className="canvas-brand">
+                <i style={{ background: brandLook(page.brandOverride || pres.brand).swatch }} />
+                {getTheme(page.brandOverride || pres.brand).name}
+              </span>
             </div>
             <div className="canvas-shell">
               <Stage
