@@ -23,13 +23,6 @@ import 'server-only';
  * connections constantly and a direct connection runs out of slots.
  */
 
-// The V2 Blob token was saved as BLOG_READ_WRITE_TOKEN; @vercel/blob reads
-// only BLOB_READ_WRITE_TOKEN. Every route that touches storage loads this
-// module first, so the alias is in place before any upload.
-if (!process.env.BLOB_READ_WRITE_TOKEN && process.env.BLOG_READ_WRITE_TOKEN) {
-  process.env.BLOB_READ_WRITE_TOKEN = process.env.BLOG_READ_WRITE_TOKEN;
-}
-
 const CONN_VARS = [
   'POSTGRES_URL',            // Vercel Postgres, Supabase, Neon (compat)
   'DATABASE_URL',            // Neon native, Prisma Postgres, most others
@@ -45,7 +38,15 @@ export const CONN_VAR = CONN_VARS.find((k) => (process.env[k] || '').trim()) || 
 export const CONN = CONN_VAR ? String(process.env[CONN_VAR]).trim() : '';
 
 export const hasDatabase = () => Boolean(CONN);
-export const hasBlob = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOG_READ_WRITE_TOKEN);
+/**
+ * File storage is configured one of two ways. Stores connected before late
+ * 2026 hand the project a read-write token; newer ones hand it only a store id
+ * and the deployment signs in as itself (OIDC). @vercel/blob 2.x accepts
+ * either, and so does everything here.
+ */
+export const blobMode = (): 'token' | 'oidc' | null =>
+  process.env.BLOB_READ_WRITE_TOKEN ? 'token' : process.env.BLOB_STORE_ID ? 'oidc' : null;
+export const hasBlob = () => blobMode() !== null;
 export const hasSecret = () => Boolean(process.env.AUTH_SECRET);
 
 /**

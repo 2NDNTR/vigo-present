@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { hasBlob, hasDatabase, hasSecret, q } from '@/lib/server/db';
+import { blobMode, hasBlob, hasDatabase, hasSecret, q } from '@/lib/server/db';
 import { MIGRATIONS } from '@/lib/server/migrations';
 
 export const dynamic = 'force-dynamic';
@@ -30,6 +30,18 @@ export async function GET() {
     }
   }
 
+  // Can this deployment actually reach its file storage? One tiny listing.
+  let storage: 'ok' | 'unconfigured' | string = 'unconfigured';
+  if (blob) {
+    try {
+      const { list } = await import('@vercel/blob');
+      await list({ limit: 1 });
+      storage = 'ok';
+    } catch (e) {
+      storage = 'error: ' + String((e as Error).message).slice(0, 160);
+    }
+  }
+
   return NextResponse.json(
     {
       ok: true,
@@ -38,13 +50,13 @@ export async function GET() {
       blob,
       secret,
       ai,
-      // temporary: is the misspelled Blob variable present and non-empty?
-      blobAlias: (process.env.BLOG_READ_WRITE_TOKEN || '').startsWith('vercel_blob_rw_') ? 'ok' : process.env.BLOG_READ_WRITE_TOKEN ? 'unexpected-format' : 'absent',
+      blobMode: blobMode(),
+      storage,
       schema,
       missing: [
         !database && 'POSTGRES_URL',
         !secret && 'AUTH_SECRET',
-        !blob && 'BLOB_READ_WRITE_TOKEN',
+        !blob && 'BLOB_STORE_ID or BLOB_READ_WRITE_TOKEN',
         !ai && 'ANTHROPIC_API_KEY',
       ].filter(Boolean),
     },

@@ -29,7 +29,7 @@ export async function uploadShared(
   brand: BrandId,
   category: AssetCategory
 ): Promise<StoredAsset> {
-  const { upload } = await import('@vercel/blob/client');
+  const { upload, uploadPresigned } = await import('@vercel/blob/client');
 
   const folder = CATEGORY_FOLDER[category] || 'misc';
   const base = slug(file.name);
@@ -39,7 +39,10 @@ export async function uploadShared(
 
   const dims = await measure(file);
 
-  const blob = await upload(pathname, file, {
+  // Newer stores sign uploads through the project itself (presigned URLs);
+  // older ones use a read-write token. The server says which.
+  const send = (await storageMode()) === 'oidc' ? uploadPresigned : upload;
+  const blob = await send(pathname, file, {
     access: 'public',
     handleUploadUrl: '/api/assets/upload',
     contentType: file.type || undefined,
@@ -88,6 +91,17 @@ export async function publishUpload(a: {
 }): Promise<void> {
   const file = new File([a.blob], a.fileName, { type: a.type || a.blob.type || 'image/jpeg' });
   await uploadShared(file, a.brand, a.category);
+}
+
+let mode: Promise<string | null> | null = null;
+function storageMode(): Promise<string | null> {
+  if (!mode) {
+    mode = fetch('/api/health', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((j) => (j && j.blobMode) || null)
+      .catch(() => null);
+  }
+  return mode;
 }
 
 export async function deleteShared(id: string): Promise<void> {
