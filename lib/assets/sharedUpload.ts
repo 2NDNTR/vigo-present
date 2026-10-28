@@ -31,7 +31,7 @@ export async function uploadShared(
 ): Promise<StoredAsset> {
   const { upload, uploadPresigned } = await import('@vercel/blob/client');
 
-  const folder = CATEGORY_FOLDER[category] || 'misc';
+  const folder = CATEGORY_FOLDER[category] || slug(String(category)) || 'misc';
   const base = slug(file.name);
   const ext = (file.name.match(/\.[^.]+$/) || ['.jpg'])[0].toLowerCase();
   const fileName = `${base}${ext}`;

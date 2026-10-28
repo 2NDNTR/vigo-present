@@ -24,7 +24,6 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   return NextResponse.json({ ok: true });
 }
 
-const GROUPS = ['Logos', 'Product Photography', 'Lifestyle', 'Video'];
 
 /**
  * Re-files an item: { category } moves it to another group, { brand } to
@@ -43,8 +42,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const brand = typeof body.brand === 'string' ? body.brand : row.brand;
   if (!can(access, row.brand, 'edit') || !can(access, brand, 'edit')) return forbidden();
   const category = typeof body.category === 'string' ? body.category : row.category;
-  if (!GROUPS.includes(category) && category !== row.category) {
-    return NextResponse.json({ error: 'Unknown group' }, { status: 400 });
+  if (category !== row.category) {
+    const f = await q('select 1 from media_folders where name = $1', [category]);
+    if (!f.rows.length) return NextResponse.json({ error: 'No such folder' }, { status: 400 });
   }
   await q('update assets set brand = $2, category = $3 where id = $1', [id, brand, category]);
   return NextResponse.json({ ok: true, brand, category });

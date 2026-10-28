@@ -267,4 +267,30 @@ export const MIGRATIONS: Migration[] = [
       create index audit_events_at_idx on audit_events(at desc);
     `,
   },
+
+  {
+    id: '0005_media_folders',
+    sql: `
+      -- Media folders the team can add at will. An asset's category is the
+      -- name of its folder, so folders and categories are the same thing.
+      create table media_folders (
+        id         text primary key,
+        name       text not null unique,
+        sort       integer not null default 100,
+        created_by text,
+        created_at bigint not null
+      );
+      insert into media_folders (id, name, sort, created_at) values
+        ('logos', 'Logos', 1, 0),
+        ('products', 'Product Photography', 2, 0),
+        ('lifestyle', 'Lifestyle', 3, 0),
+        ('video', 'Video', 4, 0);
+      -- anything already filed under another category keeps a folder of its own
+      insert into media_folders (id, name, sort, created_at)
+        select 'f_' || md5(category), category, 50, 0
+        from (select distinct category from assets) c
+        where category not in ('Logos', 'Product Photography', 'Lifestyle', 'Video')
+        on conflict do nothing;
+    `,
+  },
 ];

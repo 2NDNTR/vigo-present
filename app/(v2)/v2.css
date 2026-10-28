@@ -659,3 +659,86 @@
 .v2 .media-uploading i { position: absolute; inset: 0 auto 0 0; background: var(--ink); transition: width 300ms ease; }
 .v2 .media-uploading span { position: relative; display: block; line-height: 32px; padding: 0 12px; font-size: 12.5px; color: #fff; mix-blend-mode: difference; }
 @media (max-width: 900px) { .v2 .media-drop { inset: 0; } .v2 .media-drop-zones { grid-template-columns: repeat(2, 1fr); } }
+
+/* ================================================== media library (folders)
+   Folder rail on the left, grid on the right. Black marks what is open,
+   selected or about to receive a drop. */
+.v2 .ml-body { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 28px; align-items: start; }
+.v2 .ml-rail { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 2px; }
+.v2 .ml-folder {
+  position: relative; display: flex; align-items: center; gap: 10px; width: 100%; height: 38px; padding: 0 10px; border: 0;
+  border-radius: 9px; background: none; font: inherit; font-size: 13.5px; color: var(--ink); cursor: pointer; text-align: left;
+  transition: background 100ms, transform 100ms;
+}
+.v2 .ml-folder:hover { background: rgba(0,0,0,.05); }
+.v2 .ml-folder.on { background: #fff; box-shadow: 0 0 0 1px var(--line); font-weight: 600; }
+.v2 .ml-folder:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.v2 .ml-rail.receiving .ml-folder:not(:first-child) { outline: 1px dashed #c9c6be; outline-offset: -2px; }
+.v2 .ml-folder.over { background: var(--ink) !important; color: #fff; outline: none !important; transform: translateX(4px); }
+.v2 .ml-folder.over .ml-count { color: #a6a6a6; }
+.v2 .ml-icon { flex: none; width: 16px; height: 12px; border-radius: 2px 3px 3px 3px; border: 1.5px solid currentColor; position: relative; opacity: .7; }
+.v2 .ml-icon::before { content: ''; position: absolute; left: -1.5px; top: -4px; width: 7px; height: 3px; border: 1.5px solid currentColor; border-bottom: 0; border-radius: 2px 2px 0 0; }
+.v2 .ml-icon.all { border-radius: 3px; }
+.v2 .ml-icon.all::before { display: none; }
+.v2 .ml-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.v2 .ml-count { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.v2 .ml-del { display: none; position: absolute; right: 6px; width: 22px; height: 22px; border: 0; border-radius: 6px; background: #fff; color: var(--muted); font-size: 10px; cursor: pointer; }
+.v2 .ml-folder:hover .ml-del { display: grid; place-items: center; }
+.v2 .ml-folder:hover .ml-count:has(+ .ml-del) { visibility: hidden; }
+.v2 .ml-del:hover { color: #b3261e; }
+.v2 .ml-rename, .v2 .ml-new-input input { flex: 1; min-width: 0; height: 28px; border: 1px solid var(--ink); border-radius: 6px; padding: 0 8px; font: inherit; font-size: 13.5px; background: #fff; }
+.v2 .ml-add { margin-top: 8px; height: 36px; border: 1px dashed #c9c6be; border-radius: 9px; background: none; font: inherit; font-size: 13px; color: var(--muted); cursor: pointer; }
+.v2 .ml-add:hover { border-color: var(--ink); color: var(--ink); }
+
+.v2 .ml-main { position: relative; min-height: 60vh; }
+.v2 .ml-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px; transition: opacity 150ms; }
+.v2 .ml-grid.dim { opacity: .25; }
+.v2 .ml-item { margin: 0; cursor: grab; user-select: none; }
+.v2 .ml-item:active { cursor: grabbing; }
+.v2 .ml-item .im { position: relative; aspect-ratio: 4 / 3; border-radius: 10px; overflow: hidden; background: var(--line); transition: box-shadow 100ms; }
+.v2 .ml-item img, .v2 .ml-item video { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+.v2 .ml-item video { pointer-events: auto; }
+.v2 .ml-item.logo .im { background: #fff; box-shadow: inset 0 0 0 1px var(--line); }
+.v2 .ml-item.logo .im img { object-fit: contain; padding: 14%; }
+.v2 .ml-item figcaption { font-size: 13px; margin-top: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.v2 .ml-item figcaption span { display: block; font-size: 12px; color: var(--muted); }
+.v2 .ml-check {
+  position: absolute; top: 8px; left: 8px; width: 22px; height: 22px; border-radius: 50%; background: rgba(255,255,255,.9);
+  box-shadow: 0 0 0 1.5px rgba(0,0,0,.25); opacity: 0; transition: opacity 100ms;
+}
+.v2 .ml-item:hover .ml-check { opacity: 1; }
+.v2 .ml-item.sel .im { box-shadow: 0 0 0 3px var(--ink); }
+.v2 .ml-item.sel .ml-check { opacity: 1; background: var(--ink); box-shadow: none; }
+.v2 .ml-item.sel .ml-check::after { content: ''; position: absolute; left: 7px; top: 5px; width: 6px; height: 10px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+
+.v2 .ml-selbar {
+  position: sticky; top: 12px; z-index: 5; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px;
+  padding: 8px 10px 8px 16px; border-radius: 12px; background: var(--ink); color: #fff; font-size: 13px;
+}
+.v2 .ml-selbar span { color: #a6a6a6; }
+.v2 .ml-selbar select { height: 30px; border-radius: 8px; border: 0; padding: 0 8px; font: inherit; font-size: 13px; color: #000; background: #fff; }
+.v2 .ml-selbar button { height: 30px; padding: 0 12px; border: 0; border-radius: 8px; background: rgba(255,255,255,.12); color: #fff; font: inherit; font-size: 13px; cursor: pointer; }
+.v2 .ml-selbar button:hover { background: rgba(255,255,255,.22); }
+.v2 .ml-selbar button:last-child { margin-left: auto; }
+
+.v2 .ml-dropbox {
+  position: absolute; inset: 0 0 auto 0; min-height: min(60vh, 520px); z-index: 6; border: 2px dashed #b9b6ae; border-radius: 18px;
+  background: rgba(255,255,255,.92); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  text-align: center; padding: 32px; transition: background 120ms, border-color 120ms;
+}
+.v2 .ml-dropbox * { pointer-events: none; }
+.v2 .ml-dropbox b { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+.v2 .ml-dropbox span { font-size: 13.5px; color: var(--muted); max-width: 52ch; }
+.v2 .ml-dropbox em { font-style: normal; font-size: 12.5px; color: var(--muted); }
+.v2 .ml-dropbox.over { border-style: solid; border-color: var(--ink); background: var(--ink); color: #fff; }
+.v2 .ml-dropbox.over span, .v2 .ml-dropbox.over em { color: #a6a6a6; }
+.v2 .ml-progress { position: relative; height: 34px; border-radius: 10px; background: #fff; border: 1px solid var(--line); overflow: hidden; margin-bottom: 14px; }
+.v2 .ml-progress i { position: absolute; inset: 0 auto 0 0; background: var(--ink); transition: width 300ms ease; }
+.v2 .ml-progress span { position: relative; display: block; line-height: 32px; padding: 0 12px; font-size: 12.5px; color: #fff; mix-blend-mode: difference; }
+.ml-ghost { position: fixed; top: -100px; left: -100px; padding: 8px 14px; border-radius: 999px; background: #000; color: #fff; font: 600 13px/1 'Geist', system-ui, sans-serif; }
+
+@media (max-width: 900px) {
+  .v2 .ml-body { grid-template-columns: 1fr; }
+  .v2 .ml-rail { position: static; flex-direction: row; flex-wrap: wrap; }
+  .v2 .ml-folder { width: auto; }
+}
