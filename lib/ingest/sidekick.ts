@@ -201,6 +201,8 @@ export interface Material {
   said: string;
   /** material the assistant read (this deck, team decks): a figure from here must match exactly */
   seen?: string;
+  /** whether a picture is a product shot (from the library); product pages stay white */
+  isProduct?: (m: MediaRef) => boolean;
   /** a picture was attached: figures may come from it */
   sawImage: boolean;
 }
@@ -336,6 +338,13 @@ export function applyDeckOps(d: Presentation, ops: DeckOp[], m: Material): Appli
         const t = getTemplate(page.templateId);
         if (page.background?.kind === 'image' || page.background?.kind === 'video') {
           skip(out, 'a colour on a photo page (it keeps its photograph)');
+          break;
+        }
+        const productPage =
+          t.category === 'Products' ||
+          Object.values(page.slots).some((l) => l.some((b) => b.media?.url && (b.type === 'card' || b.type === 'image') && m.isProduct?.(b.media)));
+        if (productPage && op.colour !== 'default') {
+          skip(out, 'a colour on a product page (product pages stay white so the product shots sit cleanly)');
           break;
         }
         if (op.colour === 'default') {

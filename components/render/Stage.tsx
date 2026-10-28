@@ -10,7 +10,7 @@ import { getTheme, themeVars } from '@/lib/brand/themes';
 import { getTemplate } from '@/lib/templates/registry';
 import { collapseLayout } from '@/lib/templates/collapse';
 import BlockView from './Blocks';
-import { mediaUrl, useAssetRegistry } from '@/lib/assets/registry';
+import { isProductShot, mediaUrl, useAssetRegistry } from '@/lib/assets/registry';
 
 const REF_FIXED = 1600;
 const REF_STACKED = 920;
@@ -97,6 +97,21 @@ export default function Stage(props: StageProps) {
     pageInk = bg.overlay === 'light' ? theme.colors.brandPrimary : theme.colors.white;
   }
 
+  /* DESIGN FRAMEWORK: product pages are white. Product shots are packshots on
+   * white, so on any other surface they sit in visible white boxes. A page in
+   * the Products layouts, or any page showing a product shot, is drawn on
+   * white whatever colour it was given — unless it is a full-bleed photo. */
+  const productPage =
+    !hasMedia &&
+    (template.category === 'Products' ||
+      Object.values(page.slots || {}).some((list) =>
+        (list || []).some((b) => (b.type === 'card' ? b.showImage !== false : b.type === 'image') && isProductShot(b.media))
+      ));
+  if (productPage) {
+    pageBg = theme.colors.white;
+    pageInk = theme.colors[theme.surface.ink];
+  }
+
   const unit = (mode === 'stacked' ? w / REF_STACKED : w / REF_FIXED) || 0.0001;
   const sizing =
     mode === 'fixed' ? { aspectRatio: '16 / 9' } : mode === 'fill' ? { height: '100%' } : {};
@@ -122,7 +137,15 @@ export default function Stage(props: StageProps) {
 
   // Optional page chrome: a running headline top-left, the brand logo top-right.
   // Available on every layout, off by default.
-  const chromeOn = !!(page.headline !== undefined || page.showLogo);
+  /* DESIGN FRAMEWORK: the logo. The cover carries the brand mark its layout
+   * places. Every other page carries the same small mark in the same place,
+   * the upper right, drawn here rather than by the layout so it can never
+   * drift; logos placed inside a page's content are not drawn. Partner and
+   * retailer logo grids are content and are unaffected. */
+  const isCover = template.id === 'cover';
+  const topRight = (template.layout.areas[0] || '').trim().split(/\s+/).pop() || '';
+  const markOnPhoto = hasMedia || !!template.slots.find((s) => s.key === topRight && s.bleed);
+  const chromeOn = !!(page.headline !== undefined || (isCover && page.showLogo));
   const retailerMark = retailerSrc(retailer);
   const chromePad = Math.max(template.layout.pad, 74);
   const CHROME_H = 92;
@@ -139,6 +162,7 @@ export default function Stage(props: StageProps) {
         // any block — the check mark on the capabilities grid, for instance,
         // which is part of that page's design and not a property of a card.
         'tpl-' + template.id + ' ' +
+        (productPage ? 'product-page ' : '') +
         (props.className || '')
       }
       style={{ ...vars, ...sizing, ...(props.style || {}) }}
@@ -207,7 +231,7 @@ export default function Stage(props: StageProps) {
               }}
             />
           ) : null}
-          {page.showLogo ? (
+          {isCover && page.showLogo ? (
             <div className="page-chrome-logo">
               <BlockView block={{ id: page.id + '-lg', type: 'logo' }} ctx={{ theme, onDark, chrome: true }} />
               {/* The account's mark sits after ours, divided by a hairline —
@@ -226,6 +250,21 @@ export default function Stage(props: StageProps) {
                 </>
               ) : null}
             </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      {!isCover ? (
+        <div
+          className="page-mark"
+          style={{ top: `calc(var(--u) * ${Math.max(34, Math.round(template.layout.pad * 0.42))}px)`, right: `calc(var(--u) * ${Math.max(56, template.layout.pad)}px)` }}
+        >
+          <BlockView block={{ id: page.id + '-mark', type: 'logo' }} ctx={{ theme, onDark: markOnPhoto || onDark, chrome: true }} />
+          {retailerMark ? (
+            <>
+              <span className="cobrand-rule" aria-hidden="true" />
+              <img className="cobrand-mark" src={retailerMark} alt={retailer?.name || 'Retailer'} draggable={false} />
+            </>
           ) : null}
         </div>
       ) : null}
@@ -251,7 +290,8 @@ export default function Stage(props: StageProps) {
           /* Its column closed up. Rendering it anyway would put it in some
            * other column's cell, which is worse than not drawing it. */
           if (gone.has(slot.key)) return null;
-          const blocks = page.slots[slot.key] || [];
+          // logos inside content are the cover's alone; elsewhere the page mark carries the brand
+          const blocks = (page.slots[slot.key] || []).filter((b) => isCover || b.type !== 'logo');
           // A block that is alone on the page — no headline, no image, no
           // siblings — is free to be set to fill it. Counted across every slot
           // rather than within one, so a metric beside a headline is excluded.

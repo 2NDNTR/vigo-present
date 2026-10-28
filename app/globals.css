@@ -2882,3 +2882,17 @@ body:has(.pchrome2.idle) .preview-controls { opacity: 0; pointer-events: none; }
 .asst-steps[open] summary::before { transform: rotate(45deg); }
 .asst-steps summary:hover { color: #000; }
 .asst-steps ol { margin: 6px 0 2px; padding-left: 18px; display: grid; gap: 3px; }
+
+/* Product pages are white (design framework), so a product tile needs no edge:
+   the packshot's own white runs straight into the page. */
+.stage.product-page .card-el .cimg.product,
+.stage.product-page .slot.sq .blockslot:has(.media-el.product) { box-shadow: none; background: #fff; }
+
+/* The page mark: one small brand logo in the upper right of every page but
+   the cover (design framework). Absolutely placed in the top margin, so it
+   never moves the layout. */
+.page-mark {
+  position: absolute; z-index: 4; display: flex; align-items: center; gap: calc(var(--u) * 16px);
+  pointer-events: none;
+}
+.page-mark .logo-img { display: block; }

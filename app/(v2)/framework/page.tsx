@@ -19,6 +19,7 @@ const PRINCIPLES: { title: string; body: string }[] = [
   { title: 'The layout decides', body: 'Positions, sizes and spacing come from the approved layouts. Choose the layout that fits the content: cards for parallel ideas, metrics for figures, split for one idea and one picture.' },
   { title: 'Colour is an accent', body: 'Light pages are the default. Dark and photo pages mark openings, section breaks and closings. A coloured page is never next to another, and about one in four at most.' },
   { title: 'Pictures match', body: 'Items in a row share one kind of picture: all dishes, all products, or none. Logos are never photographs; they live on covers and logo pages.' },
+  { title: 'Product pages are white', body: 'Product shots are packshots on white, so any page showing them is drawn on white and the shots sit cleanly, with no box around them. Colour goes on story, data and section pages instead.' },
   { title: 'Nothing left over', body: 'No sample words from a layout, no duplicate pages, no placeholder bullets. The assistant checks every deck for these.' },
 ];
 

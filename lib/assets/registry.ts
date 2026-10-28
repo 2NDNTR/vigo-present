@@ -196,6 +196,14 @@ export function pictureTreatment(m?: { assetId?: string; url?: string }): 'produ
   return c === 'Product Photography' || c === 'Logos' || c === 'Packaging' ? 'product' : 'photo';
 }
 
+/** A product shot (packshot on white) from the library, as opposed to a photograph or a logo. */
+export function isProductShot(m?: { assetId?: string; url?: string }): boolean {
+  if (!m || (!m.assetId && !m.url)) return false;
+  let rec = m.assetId ? byId[m.assetId] : undefined;
+  if (!rec && m.url) rec = Object.values(byId).find((r) => r.path === m.url);
+  return rec?.category === 'Product Photography' || (rec?.category as string) === 'Packaging';
+}
+
 export function isPlaceholderLibrary(): boolean {
   return usingPlaceholders;
 }

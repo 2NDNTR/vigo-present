@@ -329,7 +329,7 @@ export async function runAgent(input: AgentInput, step: (text: string) => void):
         op.pageData = src?.pages.find((p) => p.id === op.pageId);
       }
       step(describeOps(ops));
-      const res = applyDeckOps(deck, ops, { media, said, seen: sources, sawImage: input.images.length > 0 });
+      const res = applyDeckOps(deck, ops, { media, said, seen: sources, sawImage: input.images.length > 0, isProduct: (m) => kindOf(m) === 'product' });
       lines.push(...res.lines);
       skipped += res.skipped;
       reasons.push(...(res.reasons || []));
