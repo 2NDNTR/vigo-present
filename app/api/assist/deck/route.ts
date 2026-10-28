@@ -68,6 +68,13 @@ export async function POST(req: Request) {
     if (m && m[2].length < 7_000_000) images.push({ id: 'att' + (images.length + 1), media: m[1], data: m[2] });
   }
 
+  // the review pass: the editor's renders of the pages just changed (looked at, never placed)
+  const shots: { pageId: string; media: string; data: string }[] = [];
+  for (const sh of Array.isArray(body?.shots) ? body.shots.slice(0, 8) : []) {
+    const m = IMG.exec(String(sh?.dataUrl || ''));
+    if (m && m[2].length < 3_000_000 && typeof sh?.pageId === 'string') shots.push({ pageId: sh.pageId, media: m[1], data: m[2] });
+  }
+
   // earlier turns, words only, alternating and starting with the person
   const history: { role: 'user' | 'assistant'; content: string }[] = [];
   for (const t of Array.isArray(body?.history) ? body.history.slice(-10) : []) {
@@ -122,6 +129,7 @@ export async function POST(req: Request) {
             request,
             history,
             images,
+            shots,
             photos,
             layouts: layoutsForModel(),
             apiKey: key,

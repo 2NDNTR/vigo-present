@@ -4,6 +4,8 @@ import type { BrandId } from '@/lib/brand/themes';
 import { createPage, getTemplate, TEMPLATES } from '@/lib/templates/registry';
 import { remapSlots } from '@/lib/model/remap';
 import { tidyPage } from '@/lib/model/tidy';
+import { pageGuardrails } from '@/lib/guardrails';
+import { getTheme } from '@/lib/brand/themes';
 
 /**
  * THE ASSISTANT — the deck is edited by asking.
@@ -21,7 +23,7 @@ import { tidyPage } from '@/lib/model/tidy';
  * something the person gave — their words or their image.
  */
 
-export type OpKind = 'set_text' | 'tidy_page' | 'add_page' | 'copy_page' | 'delete_page' | 'move_page' | 'change_layout' | 'set_image';
+export type OpKind = 'set_text' | 'remove_block' | 'tidy_page' | 'add_page' | 'copy_page' | 'delete_page' | 'move_page' | 'change_layout' | 'set_image';
 
 export interface Fill {
   slot: string;
@@ -87,7 +89,7 @@ export const DECK_SCHEMA = {
       items: {
         type: 'object',
         properties: {
-          op: { type: 'string', enum: ['set_text', 'tidy_page', 'add_page', 'copy_page', 'delete_page', 'move_page', 'change_layout', 'set_image'] },
+          op: { type: 'string', enum: ['set_text', 'remove_block', 'tidy_page', 'add_page', 'copy_page', 'delete_page', 'move_page', 'change_layout', 'set_image'] },
           fromPresentationId: { type: 'string', description: 'copy_page: id of the team presentation the page comes from; pageId is then the page in THAT presentation' },
           pageId: { type: 'string', description: 'id of an existing page, exactly as given; for tidy_page, "all" tidies every page' },
           blockId: { type: 'string', description: 'id of an existing block on that page, exactly as given' },
@@ -134,20 +136,24 @@ How to write: specific beats clever, one idea per block, plain words — no "lev
 
 /* ------------------------------------------------------------ describe */
 
-function blockLine(b: Block): string {
+function blockLine(b: Block, pic: (m: MediaRef) => string): string {
   const bits = [
     b.text ? `text: ${b.text}` : '',
     b.label ? `label: ${b.label}` : '',
     b.value ? `value: ${b.value}` : '',
     b.support ? `support: ${b.support}` : '',
     b.items?.length ? `items: ${b.items.join(' | ')}` : '',
-    b.media?.url ? `picture: ${b.media.alt || b.media.assetId || 'set'}` : '',
+    b.media?.url && (b.type !== 'card' || b.showImage !== false) ? `picture: ${pic(b.media)}` : '',
   ].filter(Boolean);
   return `    - block ${b.id} (${b.type})${bits.length ? ': ' + bits.join('; ') : ' — empty'}`;
 }
 
 /** The deck as the model may see it: ids, layouts and words. No styling. */
-export function deckForModel(p: Presentation, openPageId: string): string {
+/** How a picture is described to the model: its library name and folder when known. */
+export type PictureNamer = (m: MediaRef) => string;
+const defaultNamer: PictureNamer = (m) => m.alt || m.assetId || 'set';
+
+export function deckForModel(p: Presentation, openPageId: string, pic: PictureNamer = defaultNamer): string {
   const out: string[] = [`Deck: "${p.title}" — brand ${p.brand}${p.retailer ? ', for ' + p.retailer : ''}. ${p.pages.length} pages.`];
   p.pages.forEach((pg, i) => {
     const t = getTemplate(pg.templateId);
@@ -157,9 +163,19 @@ export function deckForModel(p: Presentation, openPageId: string): string {
     t.slots.forEach((s) => {
       const blocks = pg.slots[s.key] || [];
       out.push(`  slot ${s.key} (${s.label}, up to ${s.max}):`);
-      blocks.forEach((b) => out.push(blockLine(b)));
+      blocks.forEach((b) => out.push(blockLine(b, pic)));
       if (!blocks.length) out.push('    (empty)');
     });
+    const bg = pg.background;
+    if (bg?.kind === 'image' || bg?.kind === 'video') out.push(`  background: ${bg.kind}${bg.media?.url ? ' ' + pic(bg.media) : ''}`);
+    else if (bg?.kind === 'color') out.push(`  background: hand-picked colour ${bg.color || ''}`);
+    // the layout's own warnings: too much text, too many items, poor contrast
+    try {
+      const warn = pageGuardrails(pg, t, getTheme(pg.brandOverride || p.brand));
+      warn.forEach((w) => out.push(`  WARNING: ${w.text}`));
+    } catch {
+      /* warnings are advice, never a reason to fail */
+    }
   });
   return out.join('\n');
 }
@@ -303,6 +319,18 @@ export function applyDeckOps(d: Presentation, ops: DeckOp[], m: Material): Appli
           break;
         }
         setWords(b, op, m, out, pageNo(page.id), page.id);
+        out.focus = page.id;
+        break;
+      }
+      case 'remove_block': {
+        const key = page && Object.keys(page.slots).find((k) => page.slots[k].some((b) => b.id === op.blockId));
+        if (!page || !key) {
+          skip(out, 'a block that is not in this deck');
+          break;
+        }
+        const b = page.slots[key].find((x) => x.id === op.blockId)!;
+        page.slots[key] = page.slots[key].filter((x) => x.id !== op.blockId);
+        out.lines.push({ pageId: page.id, text: `Page ${pageNo(page.id)}: removed ${short(b.text || b.label || b.value || b.type, 32)}` });
         out.focus = page.id;
         break;
       }

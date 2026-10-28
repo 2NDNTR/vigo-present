@@ -6,6 +6,7 @@ import type { BrandId } from '@/lib/brand/themes';
 import type { Applied } from '@/lib/ingest/sidekick';
 import { allAssets, storableUrl } from '@/lib/assets/registry';
 import { uploadShared } from '@/lib/assets/sharedUpload';
+import { snapshotPages } from '@/components/editor/snapshot';
 
 /**
  * THE ASSISTANT PANEL
@@ -198,26 +199,19 @@ export default function Assistant({
       .map((a) => ({ id: a.id, name: a.name, category: a.category, url: storableUrl(a), width: a.width, height: a.height }))
       .filter((p) => p.url);
     const steps: string[] = [];
-    try {
+    const history = feed.filter((t) => !t.pending && !t.failed).map((t) => ({ role: t.role, text: t.text }));
+
+    /** One run of the agent; its steps stream into this reply as they happen. */
+    const call = async (body: object): Promise<any> => {
       const r = await fetch('/api/assist/deck', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          presentation,
-          openPageId: page?.id || '',
-          request,
-          photos,
-          images: sent.map((a) => ({ id: a.id, dataUrl: a.dataUrl })),
-          history: feed.filter((t) => !t.pending && !t.failed).map((t) => ({ role: t.role, text: t.text })),
-        }),
+        body: JSON.stringify(body),
       });
       if (!r.ok || !r.body) {
         const j = await r.json().catch(() => ({}));
-        patch(aiId, { pending: false, failed: true, text: j.error || 'That could not be finished. Your deck is unchanged.' });
-        return;
+        throw new Error(j.error || 'That could not be finished. Your deck is unchanged.');
       }
-
-      // the agent's steps arrive one JSON line at a time
       let done: any = null;
       let failed = '';
       const reader = r.body.getReader();
@@ -244,8 +238,23 @@ export default function Assistant({
         }
         if (end) break;
       }
-      if (failed || !done) {
-        patch(aiId, { pending: false, failed: true, steps, text: failed || 'The connection dropped. Your deck is unchanged.' });
+      if (failed || !done) throw new Error(failed || 'The connection dropped. Your deck is unchanged.');
+      return done;
+    };
+
+    try {
+      let done: any;
+      try {
+        done = await call({
+          presentation,
+          openPageId: page?.id || '',
+          request,
+          photos,
+          images: sent.map((a) => ({ id: a.id, dataUrl: a.dataUrl })),
+          history,
+        });
+      } catch (e: any) {
+        patch(aiId, { pending: false, failed: true, steps, text: e?.message || 'That could not be finished. Your deck is unchanged.' });
         return;
       }
       if (!done.lines?.length) {
@@ -265,17 +274,58 @@ export default function Assistant({
           /* storage unavailable: the picture is left out, the words still apply */
         }
       }
-      const pages = resolveAttachments(done.pages as Page[], urls);
+      let pages = resolveAttachments(done.pages as Page[], urls);
 
       const before = JSON.parse(JSON.stringify(presentation)) as Presentation;
       await beforeEdit('Before: ' + (request || 'image request').slice(0, 70));
       onApplyPages(pages);
       if (done.focus) onFocusPage(done.focus);
+      let lines = [...done.lines];
+      let skipped = done.skipped || 0;
+      let reasons: string[] = [...(done.reasons || [])];
+      let reply = done.reply || 'Done.';
+      patch(aiId, { steps, text: 'Checking how the pages look…' });
+
+      // a second look: photograph the pages it changed and let it correct what it sees
+      try {
+        const touched = [...new Set(lines.map((l: any) => l.pageId).filter(Boolean) as string[])]
+          .filter((id) => pages.some((p) => p.id === id))
+          .slice(0, 6);
+        steps.push(`Looking at ${touched.length} ${touched.length === 1 ? 'page' : 'pages'} as they render`);
+        patch(aiId, { steps: [...steps] });
+        const shots = await snapshotPages(
+          touched.map((id) => pages.find((p) => p.id === id)!),
+          deckBrand,
+          presentation.retailer as any
+        );
+        if (shots.length) {
+          const review = await call({
+            presentation: { ...presentation, pages },
+            openPageId: page?.id || '',
+            request,
+            photos,
+            shots,
+            history: [...history, { role: 'you', text: request }, { role: 'ai', text: done.reply || '' }],
+          });
+          if (review.lines?.length) {
+            pages = review.pages as Page[];
+            onApplyPages(pages);
+            if (review.focus) onFocusPage(review.focus);
+            lines = [...lines, ...review.lines];
+            skipped += review.skipped || 0;
+            reasons = [...reasons, ...(review.reasons || [])];
+            if (review.reply) reply = reply + '\n\nOn a second look: ' + review.reply;
+          }
+        }
+      } catch {
+        /* the review is a bonus: the first pass stands without it */
+      }
+
       patch(aiId, {
         pending: false,
         steps,
-        text: done.reply || 'Done.',
-        result: { lines: done.lines, skipped: done.skipped || 0, reasons: done.reasons || [], focus: done.focus },
+        text: reply,
+        result: { lines, skipped, reasons, focus: done.focus },
         before,
       });
     } catch {
