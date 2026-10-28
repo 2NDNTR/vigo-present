@@ -48,6 +48,8 @@ interface Item {
   name?: string;
   category?: AssetCategory;
   fileName?: string;
+  width?: number;
+  height?: number;
 }
 
 export async function POST(req: Request) {
@@ -119,6 +121,8 @@ export async function POST(req: Request) {
         access: 'public',
         addRandomSuffix: false,
         contentType: contentType || undefined,
+        // large files (the reels) go up in parts
+        multipart: buf.length > 20 * 1024 * 1024,
       });
 
       const id = `${brand}-${folder}-${base}`;
@@ -137,8 +141,8 @@ export async function POST(req: Request) {
           fileName,
           blob.url,
           kind,
-          null,
-          null,
+          Number(item.width) || null,
+          Number(item.height) || null,
           buf.length,
           me.id,
           Date.now(),

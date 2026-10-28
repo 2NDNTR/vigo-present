@@ -261,7 +261,8 @@ export type AssetCategory =
   | 'Social'
   | 'Packaging'
   | 'Backgrounds'
-  | 'Icons';
+  | 'Icons'
+  | 'Video';
 
 export const ASSET_CATEGORIES: AssetCategory[] = [
   'Logos',
@@ -273,6 +274,7 @@ export const ASSET_CATEGORIES: AssetCategory[] = [
   'Packaging',
   'Backgrounds',
   'Icons',
+  'Video',
 ];
 
 export function uid(prefix = 'id'): string {

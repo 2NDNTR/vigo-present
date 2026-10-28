@@ -613,3 +613,24 @@
   .v2 *::before,
   .v2 *::after { animation: none !important; transition: none !important; }
 }
+
+/* media library: the four groups, and logos shown whole on a quiet ground */
+.v2 .seg2.groups { margin: -6px 0 18px; }
+.v2 .seg2.groups button span { margin-left: 6px; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.v2 .seg2.groups button[aria-pressed='true'] span { color: inherit; opacity: .6; }
+.v2 .media-item.logo .im { background: #fff; box-shadow: inset 0 0 0 1px var(--line); }
+.v2 .media-item.logo .im img { object-fit: contain; padding: 14%; }
+
+/* settings: importing the live library */
+.v2 .v1import { margin-top: 40px; padding-top: 28px; border-top: 1px solid var(--line); max-width: 720px; }
+.v2 .v1import-counts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.v2 .v1import-counts div { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; }
+.v2 .v1import-counts b { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.v2 .v1import-counts span { font-size: 12.5px; color: var(--muted); }
+.v2 .v1import-bar { position: relative; height: 34px; border-radius: 10px; background: #fff; border: 1px solid var(--line); overflow: hidden; }
+.v2 .v1import-bar i { position: absolute; inset: 0 auto 0 0; background: var(--ink); transition: width 300ms ease; }
+.v2 .v1import-bar span { position: relative; display: block; line-height: 32px; padding: 0 12px; font-size: 12.5px; color: #fff; mix-blend-mode: difference; }
+.v2 .v1import-error { color: #b3261e; font-size: 13px; margin-bottom: 12px; }
+.v2 .v1import-failed { margin-top: 14px; font-size: 12.5px; color: var(--muted); }
+.v2 .v1import-failed ul { margin: 8px 0 0; padding-left: 18px; }
+@media (max-width: 640px) { .v2 .v1import-counts { grid-template-columns: repeat(2, 1fr); } }

@@ -44,6 +44,7 @@ export const CATEGORY_FOLDER: Record<string, string> = {
   Backgrounds: 'backgrounds',
   Logos: 'logos',
   Icons: 'icons',
+  Video: 'video',
 };
 
 export function assetPathFor(a: { brand: string; category: string; fileName: string }): string {

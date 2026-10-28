@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useApp } from '@/components/v2/Shell';
+import V1Import from '@/components/v2/V1Import';
 
 interface Member {
   id: string;
@@ -114,6 +115,7 @@ export default function Settings() {
           </div>
         )}
       </section>
+      {isAdmin && <V1Import />}
     </>
   );
 }
