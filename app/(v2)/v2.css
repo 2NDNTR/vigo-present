@@ -634,3 +634,28 @@
 .v2 .v1import-failed { margin-top: 14px; font-size: 12.5px; color: var(--muted); }
 .v2 .v1import-failed ul { margin: 8px 0 0; padding-left: 18px; }
 @media (max-width: 640px) { .v2 .v1import-counts { grid-template-columns: repeat(2, 1fr); } }
+
+/* media library: drag and drop */
+.v2 .media-page { position: relative; min-height: 70vh; }
+.v2 .media-item[draggable='true'] { cursor: grab; }
+.v2 .media-item[draggable='true']:active { cursor: grabbing; }
+.v2 .media-page.dragging-item .seg2 button:not([aria-pressed='true']) { outline: 1px dashed var(--muted); outline-offset: -3px; }
+.v2 .seg2 button.drop-over { background: var(--ink) !important; color: #fff !important; outline: none !important; }
+.v2 .media-drop {
+  position: fixed; inset: 0 0 0 248px; z-index: 50; background: rgba(247,247,244,.94); backdrop-filter: blur(2px);
+  padding: 48px 40px; overflow: auto; display: flex; flex-direction: column; gap: 26px; justify-content: center;
+}
+.v2 .media-drop-row h3 { margin: 0 0 10px; font-size: 15px; font-weight: 600; }
+.v2 .media-drop-zones { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.v2 .media-drop-zone {
+  min-height: 120px; border: 2px dashed #c9c6be; border-radius: 14px; background: #fff; display: flex; flex-direction: column;
+  justify-content: center; align-items: center; gap: 4px; text-align: center; padding: 16px; transition: background 120ms, border-color 120ms, transform 120ms;
+}
+.v2 .media-drop-zone b { font-size: 16px; font-weight: 600; pointer-events: none; }
+.v2 .media-drop-zone span { font-size: 12.5px; color: var(--muted); pointer-events: none; }
+.v2 .media-drop-zone.over { border-color: var(--ink); border-style: solid; background: var(--ink); color: #fff; transform: scale(1.02); }
+.v2 .media-drop-zone.over span { color: #a6a6a6; }
+.v2 .media-uploading { position: relative; height: 34px; border-radius: 10px; background: #fff; border: 1px solid var(--line); overflow: hidden; margin-bottom: 16px; }
+.v2 .media-uploading i { position: absolute; inset: 0 auto 0 0; background: var(--ink); transition: width 300ms ease; }
+.v2 .media-uploading span { position: relative; display: block; line-height: 32px; padding: 0 12px; font-size: 12.5px; color: #fff; mix-blend-mode: difference; }
+@media (max-width: 900px) { .v2 .media-drop { inset: 0; } .v2 .media-drop-zones { grid-template-columns: repeat(2, 1fr); } }

@@ -23,3 +23,29 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   }
   return NextResponse.json({ ok: true });
 }
+
+const GROUPS = ['Logos', 'Product Photography', 'Lifestyle', 'Video'];
+
+/**
+ * Re-files an item: { category } moves it to another group, { brand } to
+ * another brand. Only the record changes — the file and its address stay put,
+ * so every deck already using it keeps working.
+ */
+export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
+  const me = await currentUser();
+  if (!me) return unauthorized();
+  const { id } = await ctx.params;
+  const body = await req.json().catch(() => ({}));
+  const r = await q('select brand, category from assets where id = $1', [id]);
+  const row = r.rows[0];
+  if (!row) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  const access = await accessFor(me);
+  const brand = typeof body.brand === 'string' ? body.brand : row.brand;
+  if (!can(access, row.brand, 'edit') || !can(access, brand, 'edit')) return forbidden();
+  const category = typeof body.category === 'string' ? body.category : row.category;
+  if (!GROUPS.includes(category) && category !== row.category) {
+    return NextResponse.json({ error: 'Unknown group' }, { status: 400 });
+  }
+  await q('update assets set brand = $2, category = $3 where id = $1', [id, brand, category]);
+  return NextResponse.json({ ok: true, brand, category });
+}

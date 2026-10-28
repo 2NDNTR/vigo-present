@@ -33,11 +33,28 @@ export function useAssets() {
 const label = (c: string) => (c === 'Product Photography' ? 'Products' : c);
 
 /** Photography shown as photography: cropped to a common shape, named underneath. */
-export default function MediaGrid({ assets, showBrand }: { assets: LibraryAsset[]; showBrand?: (id: string) => string }) {
+export default function MediaGrid({
+  assets,
+  showBrand,
+  movable,
+}: {
+  assets: LibraryAsset[];
+  showBrand?: (id: string) => string;
+  /** items can be dragged onto a group or brand to re-file them */
+  movable?: boolean;
+}) {
   return (
     <div className="media-grid">
       {assets.map((a) => (
-        <figure className={'media-item' + (a.category === 'Logos' ? ' logo' : '')} key={a.id}>
+        <figure
+          className={'media-item' + (a.category === 'Logos' ? ' logo' : '')}
+          key={a.id}
+          draggable={movable}
+          onDragStart={(e) => {
+            e.dataTransfer.setData('application/x-vigo-library-id', a.id);
+            e.dataTransfer.effectAllowed = 'move';
+          }}
+        >
           <div className="im">
             {a.kind === 'video' ? (
               <video
