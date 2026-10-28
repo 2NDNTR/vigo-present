@@ -7,17 +7,23 @@
    ========================================================================= */
 
 :root {
-  --app-bg: #faf9f7;
+  /* V2 system — the same tokens the new shell uses (app/(v2)/v2.css), so the
+     editor, dialogs and sign-in read as one product with the dashboard. */
+  --app-bg: #f7f7f4;
   --app-panel: #ffffff;
-  --app-ink: #17181a;
-  --app-ink-2: #5f6368;
-  --app-ink-3: #8c9096;
-  --app-line: rgba(23, 24, 26, 0.1);
-  --app-line-soft: rgba(23, 24, 26, 0.06);
-  --app-accent: #17181a;
-  --app-focus: #2f6df6;
+  --app-ink: #000000;
+  --app-ink-2: #55575e;
+  --app-ink-3: #777b86;
+  --app-line: #e9e8e5;
+  --app-line-soft: #f0efec;
+  /* orange is the primary action, everywhere */
+  --app-accent: #ff5634;
+  --app-accent-press: #e9431f;
+  --app-focus: #ff5634;
+  --app-sand: #e3c5b0;
+  --app-aqua: #98d0d9;
   --radius: 8px;
-  --ui: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --ui: 'Geist', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -36,7 +42,7 @@ a { color: inherit; text-decoration: none; }
 button { font: inherit; color: inherit; }
 input, textarea, select { font: inherit; color: inherit; }
 
-::selection { background: rgba(47, 109, 246, 0.16); }
+::selection { background: rgba(255, 86, 52, 0.18); }
 
 /* ------------------------------------------------------------- primitives */
 
@@ -56,10 +62,10 @@ input, textarea, select { font: inherit; color: inherit; }
   transition: background 120ms ease, border-color 120ms ease, transform 60ms ease;
   white-space: nowrap;
 }
-.btn:hover { background: #fbfbfa; border-color: rgba(23,24,26,0.18); }
+.btn:hover { background: #fff; border-color: #000; }
 .btn:active { transform: translateY(0.5px); }
 .btn.primary { background: var(--app-accent); color: #fff; border-color: var(--app-accent); }
-.btn.primary:hover { background: #000; }
+.btn.primary:hover { background: var(--app-accent-press); border-color: var(--app-accent-press); }
 .btn.ghost { border-color: transparent; background: transparent; }
 .btn.ghost:hover { background: rgba(23,24,26,0.05); }
 .btn.sm { height: 32px; padding: 0 12px; font-size: 13px; }
@@ -75,7 +81,7 @@ input, textarea, select { font: inherit; color: inherit; }
   background: #fff;
   outline: none;
 }
-.field:focus { border-color: rgba(23,24,26,0.4); }
+.field:focus { border-color: #000; }
 textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height: 1.5; }
 
 /*
@@ -125,7 +131,7 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 }
 .selecttrigger:hover { border-color: rgba(23, 24, 26, 0.2); }
 .selecttrigger.open { border-color: rgba(23, 24, 26, 0.3); box-shadow: 0 0 0 3px rgba(23, 24, 26, 0.05); }
-.selecttrigger:focus-visible { border-color: var(--app-focus); box-shadow: 0 0 0 3px rgba(47, 109, 246, 0.16); }
+.selecttrigger:focus-visible { border-color: var(--app-focus); box-shadow: 0 0 0 3px rgba(255, 86, 52, 0.16); }
 .selectvalue { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .selectvalue.placeholder { color: var(--app-ink-3); }
 .selectchev { width: 12px; height: 16px; flex: none; color: var(--app-ink-3); }
@@ -213,7 +219,14 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
   top: 0;
   z-index: 40;
 }
-.brandmark { display: flex; align-items: center; }
+.brandmark { display: flex; align-items: center; gap: 9px; font-family: var(--ui); font-weight: 600; font-size: 15px; letter-spacing: -0.01em; color: #000; white-space: nowrap; }
+.brandmark i { width: 20px; height: 20px; border-radius: 6px; background: var(--app-accent); display: block; flex: none; }
+.brandmark.lg { font-size: 18px; }
+.brandmark.lg i { width: 24px; height: 24px; }
+.brandmark.sm { font-size: 14px; }
+.brandmark.sm i { width: 18px; height: 18px; border-radius: 5px; }
+.ed-home .brandmark { opacity: 0.55; transition: opacity 120ms ease; }
+.ed-home:hover .brandmark { opacity: 1; }
 /* Height only — never width. The logo keeps its own proportions, so replacing
    the file with artwork of different dimensions needs no CSS change. */
 .brandmark img { height: 24px; width: auto; display: block; }
@@ -519,9 +532,9 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 .warn {
   display: flex; align-items: flex-start; gap: 8px;
   padding: 10px 10px 10px 12px; border-radius: 8px;
-  background: #F4FF8F;
-  border: 1px solid rgba(120,130,0,0.28);
-  font-size: 12.5px; line-height: 1.45; color: #3d4200;
+  background: #f3e7dd;
+  border: 1px solid #e3c5b0;
+  font-size: 12.5px; line-height: 1.45; color: #3a2414;
   margin-bottom: 10px;
   max-height: 200px; overflow: hidden;
   transition: max-height .2s ease, opacity .16s ease,
@@ -530,17 +543,17 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 }
 .panel-notices .warn:first-child { margin-top: 14px; }
 .panel-notices .warn:last-child { margin-bottom: 12px; }
-.warn.hard { border-color: rgba(120,130,0,0.55); box-shadow: inset 2px 0 0 #E4F000; }
+.warn.hard { border-color: #ff5634; box-shadow: inset 3px 0 0 #ff5634; }
 .warn b { font-weight: 600; }
 .warn-i { flex: none; opacity: .7; }
 .warn-t { flex: 1 1 auto; min-width: 0; }
 .warn-x {
   flex: none; width: 18px; height: 18px; margin: -1px -2px 0 0;
   border: 0; border-radius: 4px; background: transparent; cursor: pointer;
-  color: rgba(61,66,0,0.5); font-size: 10px; line-height: 1;
+  color: rgba(58,36,20,0.5); font-size: 10px; line-height: 1;
   display: grid; place-items: center;
 }
-.warn-x:hover { background: rgba(61,66,0,0.14); color: #3d4200; }
+.warn-x:hover { background: rgba(58,36,20,0.1); color: #3a2414; }
 /* Everything below rises into the space rather than snapping into it. The
    selector carries the container because :first-child and :last-child set the
    margins this has to zero, and a bare .warn.leaving loses to them. */
@@ -1774,7 +1787,7 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: var(--app-focus, #2f6df6);
+  background: var(--app-focus, #ff5634);
   color: #fff;
   font-size: calc(var(--u) * 18px);
   line-height: 1;
@@ -1942,7 +1955,7 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
   border: 1px solid rgba(23, 24, 26, 0.18);
   display: block;
 }
-.bbar-color.on { box-shadow: inset 0 0 0 calc(var(--u) * 2px) var(--app-focus, #2f6df6); }
+.bbar-color.on { box-shadow: inset 0 0 0 calc(var(--u) * 2px) var(--app-focus, #ff5634); }
 /* The inherited option shows the same colour as the swatch; a dashed ring is
  * what marks it as inherited rather than chosen. */
 .bbar-color i.auto { border-style: dashed; border-width: calc(var(--u) * 1.5px); }
@@ -1995,12 +2008,12 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
    ========================================================================= */
 
 :root {
-  /* A ground with a trace of blue in it. Pure grey under white panels reads
-     as dirty; a few degrees of cool makes the white look intentional. */
-  --app-bg: #f4f6f9;
+  /* V2: the warm off-white of the new shell, so the editor and the
+     dashboard sit on the same ground. */
+  --app-bg: #f7f7f4;
   --app-panel: #ffffff;
-  --app-line: rgba(16, 24, 40, 0.07);
-  --app-line-soft: rgba(16, 24, 40, 0.045);
+  --app-line: #e9e8e5;
+  --app-line-soft: #f0efec;
 
   /* Radii as a scale rather than a single value: controls, panels, and the
      things that want to look like pills each have a place on it. */
@@ -2013,9 +2026,9 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
   /* Three elevations, all cool-tinted and wide. A shadow that is pure black
      at high opacity looks like a drop shadow; one that is slightly blue and
      spread looks like light. */
-  --e1: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.05);
-  --e2: 0 2px 4px rgba(16, 24, 40, 0.03), 0 6px 16px rgba(16, 24, 40, 0.07);
-  --e3: 0 8px 20px rgba(16, 24, 40, 0.08), 0 24px 56px rgba(16, 24, 40, 0.12);
+  --e1: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.05);
+  --e2: 0 2px 4px rgba(0, 0, 0, 0.03), 0 6px 16px rgba(0, 0, 0, 0.07);
+  --e3: 0 8px 20px rgba(0, 0, 0, 0.08), 0 24px 56px rgba(0, 0, 0, 0.12);
 }
 
 /* ------------------------------------------------------------- primitives */
@@ -2030,7 +2043,7 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 .btn.primary { box-shadow: var(--e1); }
 .btn.primary:hover { box-shadow: var(--e2); }
 .btn.ghost { box-shadow: none; }
-.btn.ghost:hover { box-shadow: none; background: rgba(16, 24, 40, 0.05); }
+.btn.ghost:hover { box-shadow: none; background: rgba(0, 0, 0, 0.05); }
 .btn.lg { border-radius: var(--r-md); }
 
 .field {
@@ -2039,15 +2052,15 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
   box-shadow: var(--e1);
 }
 .field:focus {
-  border-color: rgba(47, 109, 246, 0.5);
-  box-shadow: 0 0 0 3px rgba(47, 109, 246, 0.12);
+  border-color: #000;
+  box-shadow: 0 0 0 3px rgba(255, 86, 52, 0.14);
 }
 
 /* Segmented controls become pill tracks — the single most recognisable
    gesture in the references, and the one our tabs and toggles already were in
    all but shape. */
 .seg {
-  background: rgba(16, 24, 40, 0.05);
+  background: rgba(0, 0, 0, 0.05);
   border-radius: var(--r-pill);
   padding: 3px;
   border: 0;
@@ -2061,7 +2074,7 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 /* ---------------------------------------------------------------- surfaces */
 
 .topbar {
-  background: rgba(244, 246, 249, 0.8);
+  background: rgba(247, 247, 244, 0.85);
   border-bottom: 1px solid var(--app-line-soft);
 }
 
@@ -2118,7 +2131,7 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 /* The tab bar keeps its opaque sticky fill — see the note where it is defined
    — and only changes shape. */
 .ed-tabsbar { margin: 0 -16px 14px; padding: 14px 16px 10px; border-radius: var(--r-md) var(--r-md) 0 0; }
-.ed-tabs { border-radius: var(--r-pill); padding: 3px; background: rgba(16, 24, 40, 0.05); }
+.ed-tabs { border-radius: var(--r-pill); padding: 3px; background: rgba(0, 0, 0, 0.05); }
 .tabbtn { border-radius: var(--r-pill); }
 .tabbtn.on { box-shadow: var(--e1); }
 
@@ -2509,3 +2522,32 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 .addbtn i { display: block; font-style: normal; font-size: 11.5px; color: var(--app-ink-3); line-height: 1.35; }
 .addbtn.off { cursor: default; opacity: .5; background: transparent; }
 .addbtn.off:hover { border-color: var(--app-line); background: transparent; }
+
+/* ------------------------------------------------ Refine with AI: proposals */
+.proposal { margin-top: 8px; background: #fff; border: 1px solid var(--app-line); border-radius: 12px; overflow: hidden; }
+.proposal.decided { opacity: 0.62; }
+.proposal-stage { pointer-events: none; border-bottom: 1px solid var(--app-line); }
+.proposal-diffs { list-style: none; margin: 0; padding: 10px 12px 4px; font-size: 12.5px; line-height: 1.45; }
+.proposal-diffs li { padding: 6px 0; border-bottom: 1px solid var(--app-line-soft); }
+.proposal-diffs li:last-child { border-bottom: 0; }
+.proposal-diffs .where { display: block; font-size: 11.5px; color: var(--app-ink-3); margin-bottom: 2px; text-transform: capitalize; }
+.proposal-diffs del { display: block; color: var(--app-ink-3); text-decoration-color: rgba(255, 86, 52, 0.6); }
+.proposal-diffs ins { display: block; text-decoration: none; color: var(--app-ink); background: rgba(152, 208, 217, 0.28); border-radius: 3px; padding: 0 3px; margin-left: -3px; }
+.proposal-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 8px 12px 12px; }
+.proposal-state { margin: 0; padding: 8px 12px 12px; font-size: 12px; color: var(--app-ink-3); }
+
+/* ------------------------------------------------------------- history */
+.hist-save { display: flex; gap: 8px; padding: 12px 14px 4px; }
+.hist-save .field { height: 32px; font-size: 13px; }
+.hist-error { margin: 6px 14px 0; font-size: 12.5px; color: #c4321a; }
+.hist-list { list-style: none; margin: 0; padding: 6px 14px 12px; max-height: 360px; overflow-y: auto; }
+.hist-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--app-line-soft); }
+.hist-list li:last-child { border-bottom: 0; }
+.hist-list li b { display: block; font-size: 13px; font-weight: 500; }
+.hist-list li span { font-size: 12px; color: var(--app-ink-3); }
+.hist-list .hist-empty { display: block; font-size: 12.5px; color: var(--app-ink-3); }
+.hist-tag { font-size: 11.5px !important; padding: 3px 8px; border-radius: 999px; background: var(--app-line-soft); }
+
+/* An open companion panel: its button holds a black "pressed" state, so Share stays the one orange action. */
+.btn.on { background: var(--app-ink, #000); color: #fff; border-color: var(--app-ink, #000); }
+.btn.on:hover { background: #1f1f1f; }

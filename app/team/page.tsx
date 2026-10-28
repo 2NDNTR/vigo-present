@@ -30,7 +30,7 @@ export default function TeamPage() {
 
   useEffect(() => {
     (async () => {
-      if (!(await authRequired())) return router.replace('/dashboard');
+      if (!(await authRequired())) return router.replace('/');
       const u = await fetchUser();
       if (!u) return router.replace('/login');
       setMe(u);
@@ -56,7 +56,7 @@ export default function TeamPage() {
     <div>
       <header className="topbar">
         <Brandmark />
-        <button className="btn ghost sm" onClick={() => router.push('/dashboard')}>
+        <button className="btn ghost sm" onClick={() => router.push('/settings')}>
           Back to presentations
         </button>
       </header>

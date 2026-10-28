@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { q } from '@/lib/server/db';
 import { audit, can, forbidden, signedIn, visibleBrands } from '@/lib/server/access';
+import { writeVersion } from '@/lib/server/versions';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,7 +59,7 @@ export async function POST(req: Request) {
   doc.updatedAt = now;
 
   const existing = await q(
-    'select version, coalesce(brand_id, brand) as brand, archived_at from presentations where id = $1',
+    'select version, status, coalesce(brand_id, brand) as brand, archived_at from presentations where id = $1',
     [body.id]
   );
 
@@ -94,11 +95,16 @@ export async function POST(req: Request) {
        title=$2, brand=$3, brand_id=$3, status=$4, slug=$5, locked=$6, doc=$7,
        version=$8, updated_by=$9, updated_at=$10
      where id=$1 and version=$11`,
-    [doc.id, doc.brand, doc.status, doc.share?.slug || null, !!doc.locked, JSON.stringify(doc), next, me.id, now, current]
+    [doc.id, doc.title, doc.brand, doc.status, doc.share?.slug || null, !!doc.locked, JSON.stringify(doc), next, me.id, now, current]
   );
   if (!upd.rowCount) return conflict(body.id);
 
   await syncPrimaryLink(doc, me.id, now);
+  // Going live keeps a copy of exactly what recipients first saw.
+  if (doc.status === 'published' && row.status !== 'published') {
+    await writeVersion(doc.id, 'Published', 'publish', me.id, now).catch(() => {});
+    await audit(me.id, 'presentation.publish', doc.id);
+  }
   if (doc.brand !== row.brand) await audit(me.id, 'presentation.move', doc.id, { from: row.brand, to: doc.brand });
   return NextResponse.json({ ok: true, version: next });
 }

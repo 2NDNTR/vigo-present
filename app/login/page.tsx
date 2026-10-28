@@ -3,7 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { authRequired, backendStatus, fetchUser, login } from '@/lib/auth';
-import Brandmark from '@/components/ui/Brandmark';
+import './login.css';
+import { THEMES } from '@/lib/brand/themes';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -21,10 +22,10 @@ export default function LoginPage() {
 
   useEffect(() => {
     (async () => {
-      if (!(await authRequired())) return router.replace('/dashboard');
+      if (!(await authRequired())) return router.replace('/');
       const s = await backendStatus();
       setMissing(s.missing || []);
-      if (await fetchUser()) router.replace('/dashboard');
+      if (await fetchUser()) router.replace('/');
     })();
   }, [router]);
 
@@ -35,7 +36,7 @@ export default function LoginPage() {
     const res = await login(email.trim(), password);
     setBusy(false);
     if (res.error) return setError(res.error);
-    router.push('/dashboard');
+    router.push('/');
   };
 
   const recover = async (e: React.FormEvent) => {
@@ -65,15 +66,41 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: 24 }}>
-      <div style={{ width: '100%', maxWidth: 380 }}>
-        <Brandmark size="lg" style={{ marginBottom: 34 }} />
-        <h1 style={{ fontSize: 30, letterSpacing: '-0.03em', margin: '0 0 8px', fontWeight: 600 }}>
-          Sign in
-        </h1>
-        <p className="muted" style={{ margin: '0 0 26px', fontSize: 14.5, lineHeight: 1.5 }}>
-          Use your work email. The first time you sign in, the password you enter becomes your
-          password.
+    <div className="signin">
+      <aside className="signin-side">
+        <div className="signin-mark">
+          <i aria-hidden />
+          Vigo Presents
+        </div>
+        <div>
+          <p className="signin-line">Brand in. Story out.</p>
+          <p className="signin-sub">
+            Presentations for Vigo Importing Co., Vigo Foods and Alessi Foods, built on each brand&rsquo;s own
+            layouts, type and photography.
+          </p>
+          <div className="signin-brands" aria-hidden>
+            {(['corporate', 'vigo', 'alessi'] as const).map((b) => {
+              const t = THEMES[b];
+              const ground = b === 'vigo' ? t.colors.brandYellow : t.colors.cream;
+              return (
+                <span key={b} style={{ background: ground }}>
+                  {t.logo.files?.primary ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={t.logo.files.primary} alt="" />
+                  ) : (
+                    t.logo.text
+                  )}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      </aside>
+      <main className="signin-main">
+      <div className="signin-form">
+        <h1>Sign in</h1>
+        <p className="signin-help">
+          Use your work email. The first time you sign in, the password you choose becomes your password.
         </p>
 
         {missing.length > 0 && (
@@ -176,6 +203,7 @@ export default function LoginPage() {
           </>
         )}
       </div>
+      </main>
     </div>
   );
 }

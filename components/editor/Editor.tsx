@@ -8,6 +8,7 @@ import Inspector, { DeckSettings, AddFromImage } from './Inspector';
 import Presence from './Presence';
 import WizardWidget from './WizardWidget';
 import NotesWidget from './NotesWidget';
+import HistoryWidget from './HistoryWidget';
 import AssetsPanel from './AssetsPanel';
 import BrandPanel from './BrandPanel';
 import AddPanel from './AddPanel';
@@ -119,6 +120,7 @@ export default function Editor({ id }: { id: string }) {
   const [saved, setSaved] = useState<'saved' | 'saving' | 'error'>('saved');
   const [conflict, setConflict] = useState<{ message: string; latest: Presentation } | null>(null);
   const timer = useRef<any>(null);
+  const pending = useRef<Presentation | null>(null);
 
   useEffect(() => {
     getStore()
@@ -135,9 +137,11 @@ export default function Editor({ id }: { id: string }) {
   const queueSave = useCallback((next: Presentation) => {
     setSaved('saving');
     clearTimeout(timer.current);
+    pending.current = next;
     timer.current = setTimeout(async () => {
       const s = await getStore();
       try {
+        pending.current = null;
         await s.save(next);
         setSaved('saved');
       } catch (e: any) {
@@ -157,6 +161,21 @@ export default function Editor({ id }: { id: string }) {
         }
       }
     }, 600);
+  }, []);
+
+  /** Saves a queued edit now rather than in 600ms — before a version is taken or restored. */
+  const flushSave = useCallback(async () => {
+    const next = pending.current;
+    if (!next) return;
+    clearTimeout(timer.current);
+    pending.current = null;
+    try {
+      const s = await getStore();
+      await s.save(next);
+      setSaved('saved');
+    } catch {
+      setSaved('error');
+    }
   }, []);
 
   const presRef = useRef<Presentation | null>(null);
@@ -240,7 +259,7 @@ export default function Editor({ id }: { id: string }) {
    * them so the top-bar buttons can show what is open. One at a time — they
    * occupy the same place, and two feeds stacked over the panel would bury
    * the panel. */
-  const [companion, setCompanion] = useState<null | 'notes' | 'wizard'>(null);
+  const [companion, setCompanion] = useState<null | 'notes' | 'wizard' | 'history'>(null);
   /* How far the slide is pulled in from the widest the window allows. 0 is the
    * default and the normal state; two steps is as far out as it goes, because
    * a slide any smaller than that is a thumbnail, and there is a whole strip
@@ -520,7 +539,7 @@ export default function Editor({ id }: { id: string }) {
     return (
       <div style={{ padding: 60 }}>
         <p>That presentation couldn&rsquo;t be found in this browser.</p>
-        <button className="btn" onClick={() => router.push('/dashboard')}>Back to dashboard</button>
+        <button className="btn" onClick={() => router.push('/')}>Back to dashboard</button>
       </div>
     );
   }
@@ -564,13 +583,13 @@ export default function Editor({ id }: { id: string }) {
               anyone who has not learned it yet. */}
           <button
             className="ed-home"
-            onClick={() => router.push('/dashboard')}
+            onClick={() => router.push('/')}
             title="All presentations"
             aria-label="All presentations"
           >
             <Brandmark size="sm" />
           </button>
-          <button className="btn ghost sm" onClick={() => router.push('/dashboard')} title="All presentations">
+          <button className="btn ghost sm" onClick={() => router.push('/')} title="All presentations">
             ←
           </button>
           {/* data-value drives the width: the wrapper's ::after renders the
@@ -623,18 +642,25 @@ export default function Editor({ id }: { id: string }) {
             pageTitleFor={(pid) => pres.pages.find((x) => x.id === pid)?.sectionStart || undefined}
           />
           <button
-            className={'btn sm' + (companion === 'wizard' ? ' primary' : '')}
+            className={'btn sm' + (companion === 'wizard' ? ' on' : '')}
             title="Ask for help with this page"
             onClick={() => setCompanion(companion === 'wizard' ? null : 'wizard')}
           >
-            Wizard
+            Refine with AI
           </button>
           <button
-            className={'btn sm' + (companion === 'notes' ? ' primary' : '')}
+            className={'btn sm' + (companion === 'notes' ? ' on' : '')}
             title="Notes on this deck"
             onClick={() => setCompanion(companion === 'notes' ? null : 'notes')}
           >
             Notes
+          </button>
+          <button
+            className={'btn sm' + (companion === 'history' ? ' on' : '')}
+            title="Saved versions of this deck"
+            onClick={() => setCompanion(companion === 'history' ? null : 'history')}
+          >
+            History
           </button>
           <button className="btn sm" onClick={() => router.push('/present/' + pres.id)}>
             Preview
@@ -844,6 +870,8 @@ export default function Editor({ id }: { id: string }) {
           {companion === 'wizard' && (
             <WizardWidget
               page={page}
+              brand={(page.brandOverride || pres.brand) as any}
+              presentationId={pres.id}
               onClose={() => setCompanion(null)}
               onApply={(mutate) =>
                 update((d) => {
@@ -853,6 +881,9 @@ export default function Editor({ id }: { id: string }) {
               }
               onSwapTemplate={(id) => swapTemplate(id)}
             />
+          )}
+          {companion === 'history' && (
+            <HistoryWidget presentationId={pres.id} onClose={() => setCompanion(null)} beforeRestore={flushSave} />
           )}
           {companion === 'notes' && (
             <NotesWidget

@@ -323,6 +323,33 @@
 @keyframes v2pulse { 50% { background: var(--accent); } }
 .composer .problem { color: #ffc2b4; font-size: 14px; padding: 0 20px 16px; }
 
+/* outline review: inside the black composer */
+.review-toggle { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.review-toggle input { accent-color: var(--accent); width: 15px; height: 15px; }
+.outline { position: relative; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 14px; padding: 20px 20px 16px; }
+.outline .t-small { color: var(--on-ink-muted); margin-top: 4px; }
+.outline-list { list-style: none; margin: 16px 0 0; padding: 0; max-height: 440px; overflow-y: auto; }
+.outline-list li {
+  display: grid;
+  grid-template-columns: 22px 112px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  animation: v2pop var(--t-panel) var(--ease);
+}
+.outline-list .n { color: var(--on-ink-muted); font-size: 13px; text-align: right; }
+.outline-list .mini { border-radius: 6px; overflow: hidden; }
+.outline-list .txt { min-width: 0; }
+.outline-list .txt b { display: block; font-weight: 500; font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.outline-list .txt span { font-size: 12.5px; color: var(--on-ink-muted); }
+.outline-list .rm { all: unset; cursor: pointer; font-size: 13px; color: var(--on-ink-muted); padding: 6px 8px; border-radius: 6px; }
+.outline-list .rm:hover { color: var(--on-ink); background: rgba(255, 255, 255, 0.08); }
+.outline-list .rm:disabled { opacity: 0.3; cursor: default; }
+.outline-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+.v2 .btn2.quiet.on-dark { color: var(--on-ink); }
+.v2 .btn2.quiet.on-dark:hover { background: rgba(255, 255, 255, 0.08); }
+
 /* --------------------------------------------------------------- brands */
 
 .brand-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }

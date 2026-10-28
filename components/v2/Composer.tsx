@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import NewPresentation from '@/components/NewPresentation';
 import PdfImport from '@/components/PdfImport';
 import { getStore } from '@/lib/store';
+import { getTemplate } from '@/lib/templates/registry';
+import Thumb from '@/components/ui/Thumb';
 import type { Presentation } from '@/lib/model/types';
 import type { BrandId } from '@/lib/brand/themes';
 import { useApp } from './Shell';
@@ -33,6 +35,8 @@ export default function Composer({ initialBrand }: { initialBrand?: string }) {
   const [problem, setProblem] = useState<string | null>(null);
   const [startBlank, setStartBlank] = useState(false);
   const [fromPdf, setFromPdf] = useState(false);
+  const [review, setReview] = useState(true);
+  const [plan, setPlan] = useState<Presentation | null>(null);
 
   useEffect(() => {
     if (!brand && editable.length) setBrand(editable[0].id);
@@ -59,16 +63,26 @@ export default function Composer({ initialBrand }: { initialBrand?: string }) {
         setStep(-1);
         return;
       }
-      setStep(2);
       const p: Presentation = j.presentation;
-      const s = await getStore();
-      await s.save(p);
-      setStep(3);
-      router.push('/e/' + p.id);
+      if (review) {
+        // Nothing is saved until the outline is approved.
+        setPlan(p);
+        setStep(-1);
+        return;
+      }
+      await save(p);
     } catch {
       setProblem('The connection dropped while planning. Your brief is still here, so try again.');
       setStep(-1);
     }
+  };
+
+  const save = async (p: Presentation) => {
+    setStep(2);
+    const s = await getStore();
+    await s.save(p);
+    setStep(3);
+    router.push('/e/' + p.id);
   };
 
   const create = async (p: Presentation) => {
@@ -98,6 +112,21 @@ export default function Composer({ initialBrand }: { initialBrand?: string }) {
       </div>
       )}
 
+      {plan ? (
+        <Outline
+          plan={plan}
+          onChange={setPlan}
+          onBack={() => setPlan(null)}
+          onCreate={() => {
+            const p = plan;
+            setPlan(null);
+            save(p).catch(() => {
+              setProblem('The deck could not be saved. Try again.');
+              setStep(-1);
+            });
+          }}
+        />
+      ) : (
       <div className="box">
         <textarea
           aria-label="Describe the presentation"
@@ -120,7 +149,10 @@ export default function Composer({ initialBrand }: { initialBrand?: string }) {
           </ol>
         ) : (
           <div className="row">
-            <span className="t-small">⌘ Enter to generate</span>
+            <label className="t-small review-toggle">
+              <input type="checkbox" checked={review} onChange={(e) => setReview(e.target.checked)} />
+              Review the outline before it&rsquo;s created
+            </label>
             <button className="btn2 primary lg" onClick={generate} disabled={!brief.trim() || !brand}>
               Generate presentation
             </button>
@@ -132,6 +164,7 @@ export default function Composer({ initialBrand }: { initialBrand?: string }) {
           </p>
         )}
       </div>
+      )}
 
       <div className="others">
         <button onClick={() => setStartBlank(true)} disabled={busy}>
@@ -147,6 +180,69 @@ export default function Composer({ initialBrand }: { initialBrand?: string }) {
       )}
       {fromPdf && <PdfImport createdBy={user?.name || 'Vigo team'} onCancel={() => setFromPdf(false)} onCreate={create} />}
     </section>
+  );
+}
+
+/** The planned deck, page by page, before anything is saved. */
+function Outline({
+  plan,
+  onChange,
+  onBack,
+  onCreate,
+}: {
+  plan: Presentation;
+  onChange: (p: Presentation) => void;
+  onBack: () => void;
+  onCreate: () => void;
+}) {
+  const headline = (pg: Presentation['pages'][number]) => {
+    for (const blocks of Object.values(pg.slots || {})) {
+      for (const b of blocks || []) {
+        if (b.type === 'text' && b.text && ['display', 'headline'].includes(b.style?.role || '')) return b.text;
+      }
+    }
+    for (const blocks of Object.values(pg.slots || {})) for (const b of blocks || []) if (b.text) return b.text;
+    return '';
+  };
+  return (
+    <div className="outline" aria-label="Proposed outline">
+      <div className="outline-head">
+        <div>
+          <h2 className="t-section">{plan.title}</h2>
+          <p className="t-small">{plan.pages.length} pages. Remove any you don&rsquo;t need, then create the deck.</p>
+        </div>
+      </div>
+      <ol className="outline-list">
+        {plan.pages.map((pg, i) => (
+          <li key={pg.id}>
+            <span className="n">{i + 1}</span>
+            <div className="mini">
+              <Thumb page={pg} brand={plan.brand} />
+            </div>
+            <div className="txt">
+              <b>{headline(pg) || getTemplate(pg.templateId)?.name}</b>
+              <span>{getTemplate(pg.templateId)?.name}</span>
+            </div>
+            <button
+              className="rm"
+              aria-label={'Remove page ' + (i + 1)}
+              disabled={plan.pages.length <= 1}
+              onClick={() => onChange({ ...plan, pages: plan.pages.filter((x) => x.id !== pg.id) })}
+            >
+              Remove
+            </button>
+          </li>
+        ))}
+      </ol>
+      <div className="outline-foot">
+        <button className="btn2 quiet on-dark" onClick={onBack}>
+          Change the brief
+        </button>
+        <button className="btn2 primary lg" onClick={onCreate}>
+          Create {plan.pages.length}-page presentation
+        </button>
+      </div>
+    </div>
   );
 }
 

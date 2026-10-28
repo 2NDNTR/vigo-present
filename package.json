@@ -9,7 +9,8 @@
     "assets": "node scripts/build-manifest.js",
     "check:pdf": "tsx scripts/pdf.check.ts fixtures/deck.pdf",
     "check:migrations": "tsx --conditions=react-server scripts/migrations.check.mts",
-    "db:dev": "tsx scripts/dev-db.mts"
+    "db:dev": "tsx scripts/dev-db.mts",
+    "check:api": "tsx scripts/api.check.mts"
   },
   "dependencies": {
     "@vercel/blob": "2.8.2",

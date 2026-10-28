@@ -73,7 +73,7 @@ export async function DELETE(_req: Request, ctx: Ctx) {
   const old = await primaryLink(id, a.user.id);
   const now = Date.now();
   const fresh = old.slug.replace(/-[a-z0-9]{4}$/, '') + '-' + crypto.randomBytes(3).toString('hex').slice(0, 4);
-  await q(`update share_links set revoked_at = $2, id = id || '_r' || $2 where id = $1`, [old.id, now]);
+  await q(`update share_links set revoked_at = $2, id = $3 where id = $1`, [old.id, now, old.id + '_r' + now]);
   await q(
     `insert into share_links (id, presentation_id, slug, access, password_hash, layout, created_by, created_at)
      values ($1, $2, $3, $4, $5, $6, $7, $8)`,
