@@ -38,6 +38,8 @@ export async function GET() {
       blob,
       secret,
       ai,
+      // temporary: is the misspelled Blob variable present and non-empty?
+      blobAlias: (process.env.BLOG_READ_WRITE_TOKEN || '').startsWith('vercel_blob_rw_') ? 'ok' : process.env.BLOG_READ_WRITE_TOKEN ? 'unexpected-format' : 'absent',
       schema,
       missing: [
         !database && 'POSTGRES_URL',
