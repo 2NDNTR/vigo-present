@@ -1,4 +1,5 @@
 import 'server-only';
+import { messagesFetch } from '@/lib/server/anthropic';
 import type { MediaRef, Presentation } from '@/lib/model/types';
 import { q } from '@/lib/server/db';
 import { visibleBrands, type Access } from '@/lib/server/access';
@@ -307,7 +308,7 @@ export async function runAgent(input: AgentInput, step: (text: string) => void):
 
   for (let i = 0; i < MAX_STEPS; i++) {
     const last = i === MAX_STEPS - 1;
-    const res = await fetch(API + '/messages', {
+    const res = await messagesFetch(API + '/messages', {
       method: 'POST',
       headers: { 'x-api-key': input.apiKey, 'anthropic-version': VERSION, 'content-type': 'application/json' },
       body: JSON.stringify({

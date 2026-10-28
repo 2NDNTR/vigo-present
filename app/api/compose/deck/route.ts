@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { messagesFetch } from '@/lib/server/anthropic';
 import { currentUser, unauthorized } from '@/lib/server/auth';
 import { accessFor, can } from '@/lib/server/access';
 import { hasDatabase, q } from '@/lib/server/db';
@@ -96,7 +97,7 @@ export async function POST(req: Request) {
 
   let res: Response;
   try {
-    res = await fetch(API + '/messages', {
+    res = await messagesFetch(API + '/messages', {
       method: 'POST',
       headers: { 'x-api-key': key, 'anthropic-version': VERSION, 'content-type': 'application/json' },
       body: JSON.stringify({

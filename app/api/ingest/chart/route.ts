@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { messagesFetch } from '@/lib/server/anthropic';
 import { currentUser, unauthorized } from '@/lib/server/auth';
 import { CHART_PROMPT, CHART_SCHEMA, validate, toPage } from '@/lib/ingest/chart';
 
@@ -84,7 +85,7 @@ export async function POST(req: Request) {
 
   let res: Response;
   try {
-    res = await fetch(API + '/messages', {
+    res = await messagesFetch(API + '/messages', {
       method: 'POST',
       headers: {
         'x-api-key': key,
