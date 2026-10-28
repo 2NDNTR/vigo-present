@@ -9,11 +9,24 @@ export default function PublicClient({ slug }: { slug: string }) {
   const [p, setP] = useState<Presentation | null>(null);
   const [state, setState] = useState<'loading' | 'ok' | 'missing' | 'locked' | 'unpublished'>('loading');
   const [pw, setPw] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     getStore()
-      .then((s) => s.getBySlug(slug))
+      .then(async (s) => {
+        if (s.kind !== 'api') return s.getBySlug(slug);
+        // Shared backend: the server decides what this viewer may see.
+        const r = await fetch('/api/public/' + encodeURIComponent(slug), { cache: 'no-store' });
+        if (r.status === 401) {
+          setState('locked');
+          return undefined;
+        }
+        if (!r.ok) return null;
+        return (await r.json()).presentation as Presentation;
+      })
       .then((res) => {
+        if (res === undefined) return;
         if (!res) return setState('missing');
         setP(res);
         if (res.status !== 'published') return setState('unpublished');
@@ -43,15 +56,40 @@ export default function PublicClient({ slug }: { slug: string }) {
       <Shell>
         <b style={{ display: 'block', marginBottom: 14 }}>This presentation is password protected.</b>
         <form
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
-            if (pw === p?.share.password) setState('ok');
+            // Local copies of the app (no backend) keep the old in-browser check.
+            if (p?.share.password) {
+              if (pw === p.share.password) setState('ok');
+              else setError('That password is not right.');
+              return;
+            }
+            setBusy(true);
+            setError('');
+            const r = await fetch('/api/public/' + encodeURIComponent(slug), {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ password: pw }),
+            });
+            const j = await r.json().catch(() => ({}));
+            setBusy(false);
+            if (r.ok && j.presentation) {
+              setP(j.presentation);
+              setState('ok');
+            } else setError(j.error || 'That password is not right.');
           }}
           style={{ display: 'flex', gap: 8 }}
         >
           <input className="field" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="Password" type="password" />
-          <button className="btn primary" type="submit">Enter</button>
+          <button className="btn primary" type="submit" disabled={busy || !pw}>
+            {busy ? '…' : 'Enter'}
+          </button>
         </form>
+        {error && (
+          <div role="alert" style={{ marginTop: 10, color: '#ffb4a6' }}>
+            {error}
+          </div>
+        )}
       </Shell>
     );
 
