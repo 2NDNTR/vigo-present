@@ -4,15 +4,13 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation';
 import Stage from '@/components/render/Stage';
 import PageStrip from './PageStrip';
-import Inspector, { DeckSettings, AddFromImage } from './Inspector';
 import Presence from './Presence';
-import WizardWidget from './WizardWidget';
 import NotesWidget from './NotesWidget';
 import HistoryWidget from './HistoryWidget';
-import AssetsPanel from './AssetsPanel';
-import BrandPanel from './BrandPanel';
-import AddPanel from './AddPanel';
 import { brandLook } from '@/components/v2/brandLook';
+import { remapSlots } from '@/lib/model/remap';
+import Assistant from '@/components/editor/Assistant';
+import { applyDeckOps, type Applied } from '@/lib/ingest/sidekick';
 import Brandmark from '@/components/ui/Brandmark';
 import AddPageModal from './AddPageModal';
 import SharePanel from './SharePanel';
@@ -75,39 +73,6 @@ function defaultBlock(type: BlockType, role?: string): Block {
   }
 }
 
-/** Swapping a layout carries the content across instead of throwing it away. */
-function remapSlots(page: Page, newTemplateId: string): Record<string, Block[]> {
-  const from = getTemplate(page.templateId);
-  const to = getTemplate(newTemplateId);
-  const next: Record<string, Block[]> = {};
-  to.slots.forEach((s) => (next[s.key] = []));
-
-  const pool: Block[] = [];
-  from.slots.forEach((s) => {
-    const blocks = page.slots[s.key] || [];
-    const target = to.slots.find((x) => x.key === s.key);
-    if (target) {
-      const ok = blocks.filter((b) => target.accepts.includes(b.type));
-      next[target.key] = ok.slice(0, target.max);
-      pool.push(...blocks.filter((b) => !ok.includes(b)));
-    } else {
-      pool.push(...blocks);
-    }
-  });
-
-  pool.forEach((b) => {
-    const target = to.slots.find((s) => s.accepts.includes(b.type) && next[s.key].length < s.max);
-    if (target) next[target.key].push(b);
-  });
-
-  // fill anything still empty with the template's own seed content
-  const seed = to.seed();
-  to.slots.forEach((s) => {
-    if (next[s.key].length === 0 && seed[s.key]) next[s.key] = seed[s.key];
-  });
-  return next;
-}
-
 export default function Editor({ id }: { id: string }) {
   const router = useRouter();
   const [pres, setPres] = useState<Presentation | null>(null);
@@ -118,6 +83,8 @@ export default function Editor({ id }: { id: string }) {
   const [activeSlot, setActiveSlot] = useState<string | null>(null);
   const [adding, setAdding] = useState<null | { afterIndex: number }>(null);
   const [sharing, setSharing] = useState(false);
+  const [view, setView] = useState<'assistant' | 'notes' | 'history'>('assistant');
+  const [prefill, setPrefill] = useState<string | null>(null);
   const [saved, setSaved] = useState<'saved' | 'saving' | 'error'>('saved');
   const [conflict, setConflict] = useState<{ message: string; latest: Presentation } | null>(null);
   const timer = useRef<any>(null);
@@ -260,7 +227,6 @@ export default function Editor({ id }: { id: string }) {
    * them so the top-bar buttons can show what is open. One at a time — they
    * occupy the same place, and two feeds stacked over the panel would bury
    * the panel. */
-  const [companion, setCompanion] = useState<null | 'notes' | 'wizard' | 'history'>(null);
   /* How far the slide is pulled in from the widest the window allows. 0 is the
    * default and the normal state; two steps is as far out as it goes, because
    * a slide any smaller than that is a thumbnail, and there is a whole strip
@@ -645,29 +611,6 @@ export default function Editor({ id }: { id: string }) {
             pageId={page?.id}
             pageTitleFor={(pid) => pres.pages.find((x) => x.id === pid)?.sectionStart || undefined}
           />
-          {/* The deck's companions: one group, one open at a time. */}
-          <div className="ed-tools" role="group" aria-label="Companion panels">
-            {(
-              [
-                ['wizard', 'Refine with AI', 'Ask for changes to this page'],
-                ['notes', 'Notes', 'Notes on this deck'],
-                ['history', 'History', 'Saved versions of this deck'],
-              ] as const
-            ).map(([id, label, hint]) => (
-              <button
-                key={id}
-                className={companion === id ? 'on' : ''}
-                aria-pressed={companion === id}
-                title={hint}
-                onClick={() => setCompanion(companion === id ? null : id)}
-              >
-                {id === 'wizard' && (
-                  <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5v3M8 11.5v3M1.5 8h3M11.5 8h3M3.4 3.4l2 2M10.6 10.6l2 2M3.4 12.6l2-2M10.6 5.4l2-2" /></svg>
-                )}
-                {label}
-              </button>
-            ))}
-          </div>
           {/* A new tab, not this one: the print sheet opens a dialog on load,
               and taking someone's editor away to do it would lose their place. */}
           <button
@@ -751,7 +694,7 @@ export default function Editor({ id }: { id: string }) {
                 retailer={pres.retailer}
                 page={page}
                 brand={pres.brand}
-                editable={!pres.locked}
+                editable={false}
                 selectedId={selected?.blockId}
                 onSelectBlock={(blockId, slotKey) => setSelected({ blockId, slotKey })}
                 onSelectSlot={(slotKey) => setActiveSlot(slotKey)}
@@ -865,7 +808,10 @@ export default function Editor({ id }: { id: string }) {
                 }
               })
             }
-            onAddAfter={(i) => setAdding({ afterIndex: i })}
+            onAddAfter={(i) => {
+              setView('assistant');
+              setPrefill(`Add a page after page ${i + 1} about `);
+            }}
             onRenameSection={(i, name) =>
               update((d) => {
                 d.pages[i].sectionStart = name === undefined ? undefined : name;
@@ -876,169 +822,81 @@ export default function Editor({ id }: { id: string }) {
         </div>
 
         <div className="ed-right" onMouseDown={(e) => e.stopPropagation()}>
-          {/* The companions sit ABOVE the module, in the same column. They are
-              about the deck; the module below describes one page of it. */}
-          {companion === 'wizard' && (
-            <WizardWidget
+          {/* V2: no design controls. The panel is the assistant; Notes and
+              History are the other two things worth having beside the deck. */}
+          <div className="ed-panelnav" role="tablist" aria-label="Panel">
+            {(
+              [
+                ['assistant', 'Assistant'],
+                ['notes', 'Notes'],
+                ['history', 'History'],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                role="tab"
+                aria-selected={view === id}
+                className={view === id ? 'on' : ''}
+                onClick={() => setView(id)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="ed-panelbody" hidden={view !== 'assistant'}>
+            <Assistant
+              presentation={pres}
               page={page}
-              brand={(page.brandOverride || pres.brand) as any}
-              presentationId={pres.id}
-              onClose={() => setCompanion(null)}
-              onApply={(mutate) =>
+              locked={!!pres.locked}
+              warnings={warnings.map((w) => w.text)}
+              prefill={prefill}
+              onPrefillUsed={() => setPrefill(null)}
+              beforeEdit={async (label) => {
+                await flushSave();
+                await fetch(`/api/presentations/${pres.id}/versions`, {
+                  method: 'POST',
+                  headers: { 'content-type': 'application/json' },
+                  body: JSON.stringify({ label, reason: 'ai-accept' }),
+                }).catch(() => {});
+              }}
+              onApply={(ops, material) => {
+                let result: Applied | undefined;
                 update((d) => {
-                  const p = d.pages.find((x) => x.id === page.id);
-                  if (p) mutate(p);
+                  result = applyDeckOps(d, ops, material);
+                });
+                return result;
+              }}
+              onRestore={(snap) =>
+                update((d) => {
+                  const keep = (d as any).version;
+                  Object.assign(d, clone(snap));
+                  (d as any).version = keep;
+                  if (!d.pages.some((x) => x.id === currentId)) setTimeout(() => setCurrentId(d.pages[0].id), 0);
                 })
               }
-              onSwapTemplate={(id) => swapTemplate(id)}
+              onFocusPage={(pid) => {
+                setCurrentId(pid);
+                setSelected(null);
+              }}
             />
+          </div>
+          {view === 'history' && (
+            <HistoryWidget presentationId={pres.id} onClose={() => setView('assistant')} beforeRestore={flushSave} />
           )}
-          {companion === 'history' && (
-            <HistoryWidget presentationId={pres.id} onClose={() => setCompanion(null)} beforeRestore={flushSave} />
-          )}
-          {companion === 'notes' && (
+          {view === 'notes' && (
             <NotesWidget
               presentationId={pres.id}
               pageId={page.id}
               pageTitles={Object.fromEntries(
                 pres.pages.map((p, i) => [p.id, i + 1 + '. ' + (p.sectionStart || getTemplate(p.templateId).name)])
               )}
-              onClose={() => setCompanion(null)}
+              onClose={() => setView('assistant')}
               onGoToPage={(pid) => {
                 setCurrentId(pid);
                 setSelected(null);
               }}
             />
           )}
-          {/* THE MODULE — everything that describes this one page. It is the
-              scroll container and the positioning context, so the layout sheet
-              covers the module and nothing above it, and a long panel cannot
-              make the sheet taller than the screen. */}
-          <div className="ed-module">
-          {/* Page guidance sits above the tabs, so it holds one position
-              whichever tab is open rather than appearing only under Pages. */}
-          {warnings.length > 0 && (
-            <div className="panel-notices">
-              {warnings.slice(0, 3).map((w) => (
-                <div
-                  className={'warn' + (w.tone === 'warn' ? ' hard' : '') + (leaving === page.id + ':' + w.id ? ' leaving' : '')}
-                  key={w.id}
-                >
-                  <span className="warn-i">{w.tone === 'warn' ? '△' : 'ⓘ'}</span>
-                  <span className="warn-t">{w.text}</span>
-                  <button className="warn-x" onClick={() => dismiss(w.id)} aria-label="Dismiss" title="Dismiss">
-                    ✕
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* The bar, not the track, is what sticks — it needs an opaque
-              background spanning the panel's full width, or content scrolls
-              visibly through the tabs. */}
-          <div className="ed-tabsbar">
-            <div className="ed-tabs">
-              {(['pages', 'add', 'assets', 'brand'] as Tab[]).map((t) => (
-                <button key={t} className={'tabbtn' + (tab === t ? ' on' : '')} onClick={() => setTab(t)}>
-                  {t[0].toUpperCase() + t.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {tab === 'pages' && (
-            <Inspector
-              presentation={pres}
-              page={page}
-              selected={selected}
-              onChangeDeck={(patch) =>
-                update((d) => {
-                  Object.assign(d, patch);
-                })
-              }
-              onDeselect={() => setSelected(null)}
-              onInsertPage={(np) =>
-                update((d) => {
-                  const at = d.pages.findIndex((x) => x.id === page.id);
-                  d.pages.splice(at + 1, 0, np);
-                  setTimeout(() => setCurrentId(np.id), 0);
-                })
-              }
-              onChangeBlock={(bid, patch) =>
-                update((d) => {
-                  const p = d.pages.find((x) => x.id === page.id);
-                  if (!p) return;
-                  Object.keys(p.slots).forEach((k) =>
-                    p.slots[k].forEach((b, idx) => {
-                      if (b.id === bid) p.slots[k][idx] = { ...b, ...patch };
-                    })
-                  );
-                })
-              }
-              onDeleteBlock={(bid) => {
-                update((d) => {
-                  const p = d.pages.find((x) => x.id === page.id);
-                  if (!p) return;
-                  Object.keys(p.slots).forEach((k) => (p.slots[k] = p.slots[k].filter((b) => b.id !== bid)));
-                });
-                setSelected(null);
-              }}
-              onChangePage={(patch) =>
-                update((d) => {
-                  const i = d.pages.findIndex((x) => x.id === page.id);
-                  if (i >= 0) d.pages[i] = { ...d.pages[i], ...patch };
-                })
-              }
-              onSwapTemplate={swapTemplate}
-            />
-          )}
-          {tab === 'add' && (
-            <>
-              <AddFromImage
-                onInsert={(np) =>
-                  update((d) => {
-                    const at = d.pages.findIndex((x) => x.id === page.id);
-                    d.pages.splice(at + 1, 0, np);
-                    setTimeout(() => setCurrentId(np.id), 0);
-                  })
-                }
-              />
-            </>
-          )}
-
-          {tab === 'add' && (
-            <AddPanel
-              page={page}
-              activeSlot={activeSlot}
-              onAddPage={() => setAdding({ afterIndex: pageIndex })}
-              onAddBlock={addBlock}
-              onInsertBlock={insertBlock}
-            />
-          )}
-          {tab === 'assets' && <AssetsPanel brand={pres.brand} onUse={useAsset} />}
-          {tab === 'brand' && (
-            <DeckSettings
-              presentation={pres}
-              onChangeDeck={(patch) =>
-                update((d) => {
-                  Object.assign(d, patch);
-                })
-              }
-            />
-          )}
-
-          {tab === 'brand' && (
-            <BrandPanel
-              brand={pres.brand}
-              onChangeBrand={(b: BrandId) =>
-                update((d) => {
-                  d.brand = b;
-                })
-              }
-            />
-          )}
-          </div>
         </div>
       </div>
 

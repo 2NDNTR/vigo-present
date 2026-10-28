@@ -2782,3 +2782,77 @@ body:has(.pchrome2.idle) .preview-controls { opacity: 0; pointer-events: none; }
 .prail button::after { box-shadow: 0 0 0 1px rgba(0,0,0,.18), 0 1px 4px rgba(0,0,0,.25); }
 .preview-controls button:focus:not(:focus-visible), .pdock button:focus:not(:focus-visible) { outline: none; box-shadow: none; }
 .preview-controls button:focus-visible { outline: 2px solid #ff5634; outline-offset: 2px; }
+
+/* ===================================================== assistant panel (V2)
+   The editor's right side is a conversation. No design controls live here. */
+.ed-right { width: 360px; display: flex; flex-direction: column; overflow: hidden; }
+.ed-panelnav { flex: none; display: flex; gap: 18px; padding: 0 16px; border-bottom: 1px solid #ecebe7; }
+.ed-panelnav button {
+  height: 44px; border: 0; background: none; padding: 0; font: inherit; font-size: 13px; color: #777b86; cursor: pointer;
+  box-shadow: inset 0 -2px 0 transparent;
+}
+.ed-panelnav button:hover { color: #000; }
+.ed-panelnav button.on { color: #000; font-weight: 600; box-shadow: inset 0 -2px 0 #000; }
+.ed-panelnav button:focus-visible { outline: 2px solid #ff5634; outline-offset: -2px; }
+.ed-panelbody { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.ed-panelbody[hidden] { display: none; }
+.ed-right > .wgt { flex: 1 1 auto; max-height: none; margin: 12px; }
+
+.asst { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; position: relative; }
+.asst.drag::after {
+  content: 'Drop an image to build from it'; position: absolute; inset: 8px; border: 2px dashed #000; border-radius: 12px;
+  background: rgba(247,247,244,.92); display: grid; place-items: center; font-size: 14px; font-weight: 600; z-index: 5;
+}
+.asst-feed { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 18px 16px 8px; display: flex; flex-direction: column; gap: 14px; }
+
+.asst-empty h3 { margin: 6px 0 6px; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; color: #000; }
+.asst-empty p { margin: 0 0 16px; font-size: 13px; line-height: 1.55; color: #5d6069; }
+.asst-empty ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.asst-empty li { font-size: 13px; color: #3b3e45; padding: 9px 12px; border-radius: 10px; background: #f4f3ef; }
+
+.asst-turn { display: flex; flex-direction: column; gap: 6px; }
+.asst-turn.you { align-items: flex-end; }
+.asst-bubble { font-size: 13.5px; line-height: 1.5; color: #000; white-space: pre-wrap; }
+.asst-turn.you .asst-bubble { max-width: 88%; padding: 9px 12px; border-radius: 14px 14px 4px 14px; background: #f1f0ec; }
+.asst-turn.ai .asst-bubble { padding: 2px 2px 0; }
+.asst-turn.failed .asst-bubble { color: #b3261e; }
+.asst-bubble.pending { color: #777b86; }
+.asst-bubble.pending::after { content: ''; display: inline-block; width: 6px; height: 6px; margin-left: 8px; border-radius: 50%; background: #000; animation: savepulse 900ms ease-in-out infinite; vertical-align: middle; }
+.asst-thumbs { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.asst-thumbs img { width: 84px; height: 60px; object-fit: cover; border-radius: 8px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
+
+.asst-changes { border: 1px solid #e6e4df; border-radius: 10px; overflow: hidden; }
+.asst-changes ul { margin: 0; padding: 4px 0; list-style: none; }
+.asst-changes li { font-size: 12.5px; line-height: 1.4; }
+.asst-changes li button, .asst-changes li span { display: block; width: 100%; text-align: left; padding: 6px 12px; border: 0; background: none; font: inherit; color: #000; }
+.asst-changes li button { cursor: pointer; }
+.asst-changes li button:hover { background: #f4f3ef; }
+.asst-changes li.caution button, .asst-changes li.caution span { background: #f6ebe2; }
+.asst-changes.undone li span { color: #777b86; text-decoration: line-through; }
+.asst-note { margin: 0; padding: 6px 12px 8px; font-size: 12px; color: #777b86; border-top: 1px solid #efeee9; }
+.asst-undo { display: block; width: 100%; padding: 8px 12px; border: 0; border-top: 1px solid #efeee9; background: #fbfbf9; text-align: left; font: inherit; font-size: 12.5px; font-weight: 550; cursor: pointer; color: #000; }
+.asst-undo:hover { background: #f1f0ec; }
+
+.asst-foot { flex: none; padding: 8px 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+.asst-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.asst-chips button { border: 1px solid #e3e1dc; background: #fff; border-radius: 999px; padding: 6px 11px; font: inherit; font-size: 12px; color: #3b3e45; cursor: pointer; text-align: left; }
+.asst-chips button:hover { border-color: #000; color: #000; }
+.asst-compose { border: 1px solid #dcdad4; border-radius: 14px; background: #fff; transition: border-color 120ms, box-shadow 120ms; }
+.asst-compose:focus-within { border-color: #000; box-shadow: 0 0 0 3px rgba(0,0,0,.06); }
+.asst-compose textarea { display: block; width: 100%; border: 0; outline: none; resize: none; background: transparent; padding: 12px 14px 4px; font: inherit; font-size: 13.5px; line-height: 1.45; color: #000; min-height: 44px; }
+.asst-compose textarea::placeholder { color: #9a9da5; }
+.asst-attached { display: flex; gap: 6px; padding: 10px 10px 0; flex-wrap: wrap; }
+.asst-attached span { position: relative; }
+.asst-attached img { width: 64px; height: 48px; object-fit: cover; border-radius: 8px; display: block; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
+.asst-attached button { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%; border: 0; background: #000; color: #fff; font-size: 9px; cursor: pointer; display: grid; place-items: center; }
+.asst-actions { display: flex; align-items: center; justify-content: space-between; padding: 4px 6px 6px 8px; }
+.asst-attach { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border: 0; border-radius: 8px; background: none; font: inherit; font-size: 12.5px; color: #3b3e45; cursor: pointer; }
+.asst-attach:hover:not(:disabled) { background: #f1f0ec; color: #000; }
+.asst-attach svg, .asst-send svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.asst-send { width: 32px; height: 32px; border-radius: 50%; border: 0; background: #000; color: #fff; cursor: pointer; display: grid; place-items: center; }
+.asst-send:disabled { background: #d9d7d1; cursor: default; }
+.asst-attach:disabled { opacity: .4; cursor: default; }
+.asst button:focus-visible { outline: 2px solid #ff5634; outline-offset: 2px; }
+
+/* the canvas is read-only in V2: no edit affordances on hover */
+.editor .canvas-shell { cursor: default; }
