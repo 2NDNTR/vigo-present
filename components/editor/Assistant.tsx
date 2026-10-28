@@ -243,6 +243,19 @@ export default function Assistant({
     };
 
     try {
+      // it looks before it works: the open page, or the whole deck when the request is about the deck
+      let before_shots: { pageId: string; dataUrl: string }[] = [];
+      try {
+        const wide = /\b(deck|presentation|all pages|every page|whole|everything|all of it)\b/i.test(request);
+        const look = wide ? presentation.pages.slice(0, 8) : page ? [page] : [];
+        if (look.length) {
+          steps.push(wide ? `Looking at ${look.length} pages` : 'Looking at this page');
+          patch(aiId, { steps: [...steps] });
+          before_shots = await snapshotPages(look, deckBrand, presentation.retailer as any);
+        }
+      } catch {
+        /* it can still work from the words */
+      }
       let done: any;
       try {
         done = await call({
@@ -250,6 +263,7 @@ export default function Assistant({
           openPageId: page?.id || '',
           request,
           photos,
+          shots: before_shots,
           images: sent.map((a) => ({ id: a.id, dataUrl: a.dataUrl })),
           history,
         });
@@ -305,6 +319,7 @@ export default function Assistant({
             request,
             photos,
             shots,
+            review: true,
             history: [...history, { role: 'you', text: request }, { role: 'ai', text: done.reply || '' }],
           });
           if (review.lines?.length) {

@@ -130,6 +130,7 @@ export async function POST(req: Request) {
             history,
             images,
             shots,
+            review: !!body?.review,
             photos,
             layouts: layoutsForModel(),
             apiKey: key,
