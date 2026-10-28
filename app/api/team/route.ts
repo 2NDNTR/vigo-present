@@ -19,7 +19,9 @@ export async function GET() {
 export async function POST(req: Request) {
   const me = await currentUser();
   if (!me) return unauthorized();
-  const { email, name } = await req.json().catch(() => ({}));
+  if (!me.platform_admin) return NextResponse.json({ error: 'Only an administrator can add people.' }, { status: 403 });
+  const body = await req.json().catch(() => ({}));
+  const { email, name } = body || {};
   const addr = String(email || '').trim().toLowerCase();
   if (!addr || !addr.includes('@')) {
     return NextResponse.json({ error: 'Enter a valid email address.' }, { status: 400 });
@@ -29,6 +31,15 @@ export async function POST(req: Request) {
      values ($1, $2, $3, 'editor', $4)
      on conflict (email) do nothing`,
     [newId('usr'), addr, String(name || '').trim(), Date.now()]
+  );
+  // Brand access: what the admin chose, or editor on every brand (V1's behaviour).
+  const role = ['brand_admin', 'editor', 'viewer'].includes(body?.role) ? body.role : 'editor';
+  await q(
+    `insert into memberships (user_id, brand_id, role, created_at)
+     select u.id, b.id, $2, $3 from users u, brands b
+     where u.email = $1 and ($4::text[] is null or b.id = any($4)) and not b.archived
+     on conflict do nothing`,
+    [addr, role, Date.now(), Array.isArray(body?.brands) ? body.brands : null]
   );
   return NextResponse.json({ ok: true });
 }
@@ -44,7 +55,7 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
   const me = await currentUser();
   if (!me) return unauthorized();
-  if (me.role !== 'admin') {
+  if (!me.platform_admin) {
     return NextResponse.json({ error: 'Only an administrator can reset a password.' }, { status: 403 });
   }
   const { id } = await req.json().catch(() => ({}));
@@ -57,6 +68,7 @@ export async function PATCH(req: Request) {
 export async function DELETE(req: Request) {
   const me = await currentUser();
   if (!me) return unauthorized();
+  if (!me.platform_admin) return NextResponse.json({ error: 'Only an administrator can remove people.' }, { status: 403 });
   const { id } = await req.json().catch(() => ({}));
   if (!id || id === me.id) {
     return NextResponse.json({ error: 'You cannot remove your own account.' }, { status: 400 });

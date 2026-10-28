@@ -26,6 +26,7 @@ export interface SessionUser {
   email: string;
   name: string;
   role: string;
+  platform_admin?: boolean;
 }
 
 /* ------------------------------------------------------------- passwords */
@@ -79,7 +80,7 @@ export async function currentUser(): Promise<SessionUser | null> {
     const jar = await cookies();
     const userId = readToken(jar.get(COOKIE)?.value);
     if (!userId) return null;
-    const r = await q('select id, email, name, role from users where id = $1', [userId]);
+    const r = await q('select id, email, name, role, platform_admin from users where id = $1', [userId]);
     return r.rows[0] || null;
   } catch {
     return null;

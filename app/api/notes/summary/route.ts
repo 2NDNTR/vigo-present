@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { q } from '@/lib/server/db';
 import { currentUser, unauthorized } from '@/lib/server/auth';
+import { accessFor, deckGuard } from '@/lib/server/access';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -67,6 +68,10 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
   const deck = String(body?.presentationId || '');
   if (!deck) return NextResponse.json({ error: 'Missing presentation' }, { status: 400 });
+  {
+    const denied = await deckGuard(await accessFor(me), deck, 'view');
+    if (denied) return denied;
+  }
 
   const r = await q(
     `select n.*, u.name, u.email from notes n

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { handleUpload } from '@vercel/blob/client';
 import { currentUser } from '@/lib/server/auth';
+import { accessFor } from '@/lib/server/access';
 import { hasBlob } from '@/lib/server/db';
 
 export const dynamic = 'force-dynamic';
@@ -25,6 +26,10 @@ export async function POST(req: Request) {
       onBeforeGenerateToken: async () => {
         const me = await currentUser();
         if (!me) throw new Error('Not signed in');
+        const a = await accessFor(me);
+        // the record is checked per brand when it is registered; here, only
+        // people who can edit some brand may upload at all
+        if (!a.platformAdmin && !Object.values(a.brands).some((r) => r !== 'viewer')) throw new Error('Not allowed');
         return {
           allowedContentTypes: ['image/*', 'video/*'],
           maximumSizeInBytes: 200 * 1024 * 1024,

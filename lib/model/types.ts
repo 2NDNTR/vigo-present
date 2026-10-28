@@ -200,7 +200,8 @@ export interface Page {
 
 export type PresentationStatus = 'draft' | 'published' | 'unpublished';
 export type ShareAccess = 'public' | 'password' | 'internal';
-export type PresentationMode = 'scroll' | 'slide';
+/** scroll = vertical, horizontal = sideways scroll, slide = click-through (V1) */
+export type PresentationMode = 'scroll' | 'horizontal' | 'slide';
 
 export interface ShareSettings {
   slug: string;

@@ -17,6 +17,9 @@ export default function SharePanel({
   onSetLocked?: (v: boolean) => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [pw, setPw] = useState('');
+  const [pwState, setPwState] = useState<'' | 'saving' | 'saved' | string>('');
+  const [revoking, setRevoking] = useState(false);
   const locked = !!presentation.locked;
   // the static build is hash-routed; the Next app uses real paths
   const hashRouted = typeof window !== 'undefined' && window.location.hash.startsWith('#/');
@@ -81,11 +84,56 @@ export default function SharePanel({
           <div className="seg" style={{ marginBottom: 10 }}>
             {(['public', 'password', 'internal'] as const).map((a) => (
               <button key={a} disabled={locked} className={share.access === a ? 'on' : ''} onClick={() => setShare({ access: a })}>
-                {a === 'public' ? 'Public' : a === 'password' ? 'Password' : 'Internal'}
+                {a === 'public' ? 'Anyone with the link' : a === 'password' ? 'Password' : 'Team only'}
               </button>
             ))}
           </div>
-          {share.access === 'password' && (
+          {share.access === 'password' && backend === 'api' && (
+            <div style={{ marginBottom: 18 }}>
+              {/* The password goes to the server once, is hashed there, and is
+                  never stored in the deck or shown again. */}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  className="field"
+                  type="password"
+                  placeholder="Set a new password (6+ characters)"
+                  value={pw}
+                  disabled={locked}
+                  onChange={(e) => {
+                    setPw(e.target.value);
+                    setPwState('');
+                  }}
+                />
+                <button
+                  className="btn sm"
+                  disabled={locked || pw.length < 6 || pwState === 'saving'}
+                  onClick={async () => {
+                    setPwState('saving');
+                    const r = await fetch(`/api/presentations/${presentation.id}/share`, {
+                      method: 'PUT',
+                      headers: { 'content-type': 'application/json' },
+                      body: JSON.stringify({ access: 'password', password: pw }),
+                    });
+                    const j = await r.json().catch(() => ({}));
+                    if (r.ok) {
+                      setPw('');
+                      setPwState('saved');
+                    } else setPwState(j.error || 'Could not save the password.');
+                  }}
+                >
+                  Set
+                </button>
+              </div>
+              <p className="tiny" style={{ marginTop: 6 }}>
+                {pwState === 'saved'
+                  ? 'Password set. Send it separately from the link.'
+                  : pwState && pwState !== 'saving'
+                    ? pwState
+                    : 'Until a password is set, this link stays closed to everyone.'}
+              </p>
+            </div>
+          )}
+          {share.access === 'password' && backend !== 'api' && (
             <input
               className="field"
               style={{ marginBottom: 18 }}
@@ -95,18 +143,45 @@ export default function SharePanel({
             />
           )}
 
-          <div className="label" style={{ margin: '8px 0 6px' }}>Presentation mode</div>
+          <div className="label" style={{ margin: '8px 0 6px' }}>How it scrolls</div>
           <div className="seg">
-            {(['scroll', 'slide'] as const).map((m) => (
-              <button key={m} disabled={locked} className={share.mode === m ? 'on' : ''} onClick={() => setShare({ mode: m })}>
-                {m === 'scroll' ? 'Scroll' : 'Slides'}
+            {(['scroll', 'horizontal'] as const).map((m) => (
+              <button
+                key={m}
+                disabled={locked}
+                // V1 "slide" decks are shown as horizontal: the sideways one
+                className={(share.mode === 'slide' ? 'horizontal' : share.mode) === m ? 'on' : ''}
+                onClick={() => setShare({ mode: m })}
+              >
+                {m === 'scroll' ? 'Vertical' : 'Horizontal'}
               </button>
             ))}
           </div>
           <p className="tiny" style={{ marginTop: 8 }}>
-            Scroll reads like a premium web story. Slides behave like a traditional deck. Both are
-            fully responsive on phones.
+            The link opens one page that scrolls through the deck. Nothing else: no menus, no way into
+            Vigo Presents. On phones every deck stacks vertically.
           </p>
+
+          {backend === 'api' && (
+            <>
+              <div className="label" style={{ margin: '18px 0 6px' }}>Revoke</div>
+              <button
+                className="btn sm ghost"
+                disabled={locked || revoking}
+                onClick={async () => {
+                  if (!confirm('The current link will stop working for everyone, immediately. A new link replaces it. Continue?')) return;
+                  setRevoking(true);
+                  const r = await fetch(`/api/presentations/${presentation.id}/share`, { method: 'DELETE' });
+                  const j = await r.json().catch(() => ({}));
+                  setRevoking(false);
+                  // the server bumped the deck's version; reloading picks up the new slug cleanly
+                  if (r.ok && j.slug) window.location.reload();
+                }}
+              >
+                {revoking ? 'Revoking…' : 'Revoke this link and make a new one'}
+              </button>
+            </>
+          )}
 
           {backend !== 'api' && (
             <div className="banner" style={{ marginTop: 18, marginBottom: 0 }}>

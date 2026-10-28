@@ -1,14 +1,22 @@
 import { NextResponse } from 'next/server';
 import { q } from '@/lib/server/db';
 import { currentUser, unauthorized } from '@/lib/server/auth';
+import { accessFor, can, forbidden, visibleBrands } from '@/lib/server/access';
 
 export const dynamic = 'force-dynamic';
 
 /** The shared library. Same shape the client registry already expects. */
 export async function GET() {
+  // The library is for members. A shared deck never needs it: the shared-link
+  // route resolves every picture to its URL before the page is sent.
+  const me = await currentUser();
+  if (!me) return unauthorized();
+  const brands = visibleBrands(await accessFor(me));
   const r = await q(
-    `select id, brand, category, name, url as path, kind, width, height
-     from assets order by brand, category, name`
+    `select id, brand, category, name, url as path, kind, width, height, tags
+     from assets where ($1::text[] is null or brand = any($1))
+     order by brand, category, name`,
+    [brands === 'all' ? null : brands]
   );
   return NextResponse.json({ assets: r.rows });
 }
@@ -28,6 +36,7 @@ export async function POST(req: Request) {
   if (!a?.id || !a?.url) {
     return NextResponse.json({ error: 'Missing asset' }, { status: 400 });
   }
+  if (!can(await accessFor(me), a.brand, 'edit')) return forbidden('You cannot add media to this brand.');
   await q(
     `insert into assets (id, brand, category, name, file_name, url, kind, width, height, size, uploaded_by, created_at)
      values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)

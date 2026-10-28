@@ -4,58 +4,104 @@ import { useEffect, useState } from 'react';
 import Presenter from '@/components/present/Presenter';
 import { getStore } from '@/lib/store';
 import type { Presentation } from '@/lib/model/types';
+import type { PublicDeck, SharedResult } from '@/lib/server/shared';
 
-export default function PublicClient({ slug }: { slug: string }) {
-  const [p, setP] = useState<Presentation | null>(null);
-  const [state, setState] = useState<'loading' | 'ok' | 'missing' | 'locked' | 'unpublished'>('loading');
-  const [pw, setPw] = useState('');
+/**
+ * A view-only page: the deck and nothing else. No navigation, no links, no
+ * way into the app. Everything about who may see it was settled on the server.
+ */
+export default function PublicClient({ slug, initial = null }: { slug: string; initial?: SharedResult | null }) {
+  const [local, setLocal] = useState<Presentation | null | 'loading'>(initial ? null : 'loading');
 
+  // No database: a local copy of the app keeps decks in this browser.
   useEffect(() => {
+    if (initial) return;
     getStore()
       .then((s) => s.getBySlug(slug))
-      .then((res) => {
-        if (!res) return setState('missing');
-        setP(res);
-        if (res.status !== 'published') return setState('unpublished');
-        if (res.share.access === 'password' && res.share.password) return setState('locked');
-        setState('ok');
-      })
-      .catch(() => setState('missing'));
-  }, [slug]);
+      .then((p) => setLocal(p && p.status === 'published' ? p : null))
+      .catch(() => setLocal(null));
+  }, [initial, slug]);
 
-  if (state === 'loading') return <Shell>Loading…</Shell>;
-  if (state === 'missing')
-    return (
-      <Shell>
-        <b style={{ display: 'block', marginBottom: 8 }}>This link isn&rsquo;t available.</b>
-        It may have been unpublished, or it lives in a different workspace.
-      </Shell>
-    );
-  if (state === 'unpublished')
-    return (
-      <Shell>
-        <b style={{ display: 'block', marginBottom: 8 }}>Not published yet.</b>
-        The owner needs to publish this presentation before the link goes live.
-      </Shell>
-    );
-  if (state === 'locked')
-    return (
-      <Shell>
-        <b style={{ display: 'block', marginBottom: 14 }}>This presentation is password protected.</b>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (pw === p?.share.password) setState('ok');
-          }}
-          style={{ display: 'flex', gap: 8 }}
-        >
-          <input className="field" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="Password" type="password" />
-          <button className="btn primary" type="submit">Enter</button>
-        </form>
-      </Shell>
-    );
+  if (!initial) {
+    if (local === 'loading') return <Shell>Loading…</Shell>;
+    if (!local) return <Missing />;
+    return <Presenter presentation={local} />;
+  }
+  if (initial.state === 'password') return <PasswordGate slug={slug} />;
+  if (initial.state === 'missing') return <Missing />;
+  return <Presenter presentation={asPresentation(initial.deck)} />;
+}
 
-  return <Presenter presentation={p!} />;
+/** The presenter's shape, built only from what the server chose to send. */
+function asPresentation(d: PublicDeck): Presentation {
+  return {
+    id: 'shared',
+    orgId: '',
+    title: d.title,
+    brand: d.brand as Presentation['brand'],
+    retailer: d.retailer as Presentation['retailer'],
+    status: 'published',
+    share: { slug: '', access: 'public', mode: d.layout === 'horizontal' ? 'horizontal' : 'scroll' },
+    pages: d.pages as Presentation['pages'],
+    createdBy: '',
+    createdAt: 0,
+    updatedAt: 0,
+  };
+}
+
+function PasswordGate({ slug }: { slug: string }) {
+  const [pw, setPw] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  return (
+    <Shell>
+      <b style={{ display: 'block', marginBottom: 14 }}>This presentation is password protected.</b>
+      <form
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setBusy(true);
+          setError('');
+          const r = await fetch('/api/public/' + encodeURIComponent(slug), {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ password: pw }),
+          });
+          if (r.ok) return window.location.reload();
+          const j = await r.json().catch(() => ({}));
+          setBusy(false);
+          setError(j.error || 'That password is not right.');
+        }}
+        style={{ display: 'flex', gap: 8 }}
+      >
+        <input
+          className="field"
+          value={pw}
+          onChange={(e) => setPw(e.target.value)}
+          placeholder="Password"
+          type="password"
+          autoFocus
+          aria-label="Password"
+        />
+        <button className="btn primary" type="submit" disabled={busy || !pw}>
+          {busy ? '…' : 'Open'}
+        </button>
+      </form>
+      {error && (
+        <div role="alert" style={{ marginTop: 10, color: '#ffb4a6' }}>
+          {error}
+        </div>
+      )}
+    </Shell>
+  );
+}
+
+function Missing() {
+  return (
+    <Shell>
+      <b style={{ display: 'block', marginBottom: 8 }}>This link isn&rsquo;t available.</b>
+      It may have been unpublished or replaced. Ask the person who sent it for a new one.
+    </Shell>
+  );
 }
 
 function Shell({ children }: { children: React.ReactNode }) {

@@ -8,9 +8,10 @@ import { getTheme } from '@/lib/brand/themes';
 
 /**
  * PRESENTATION MODE
- * Two experiences from the same structured data:
- *   SCROLL — a vertically scrolling web story
- *   SLIDES — traditional next / previous navigation
+ * Three experiences from the same structured data:
+ *   SCROLL      — a vertically scrolling web story
+ *   HORIZONTAL  — the same story scrolling sideways, a page per screen
+ *   SLIDES      — traditional next / previous navigation (V1 decks)
  * On phones both stack intelligently instead of shrinking a desktop slide.
  */
 export default function Presenter({
@@ -45,6 +46,17 @@ export default function Presenter({
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && onExit) onExit();
+      if (mode === 'horizontal' && !narrow && scroller.current) {
+        const el = scroller.current;
+        if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+          e.preventDefault();
+          el.scrollBy({ left: el.clientWidth, behavior: 'smooth' });
+        }
+        if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+          e.preventDefault();
+          el.scrollBy({ left: -el.clientWidth, behavior: 'smooth' });
+        }
+      }
       if (mode === 'slide' && !narrow) {
         if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
           e.preventDefault();
@@ -62,15 +74,27 @@ export default function Presenter({
 
   /* ------------------------------------------- track position in scroll */
   useEffect(() => {
-    if (mode !== 'scroll' || narrow) return;
+    if ((mode !== 'scroll' && mode !== 'horizontal') || narrow) return;
     const el = scroller.current;
     if (!el) return;
+    const across = mode === 'horizontal';
     const onScroll = () => {
-      const i = Math.round(el.scrollTop / el.clientHeight);
+      const i = across ? Math.round(el.scrollLeft / el.clientWidth) : Math.round(el.scrollTop / el.clientHeight);
       setIndex(Math.max(0, Math.min(pages.length - 1, i)));
     };
+    /* A mouse wheel only moves up and down. Sideways, the wheel turns the
+     * pages, so nobody has to find a trackpad gesture to read the deck. */
+    const onWheel = (e: WheelEvent) => {
+      if (!across || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+      e.preventDefault();
+      el.scrollBy({ left: e.deltaY, behavior: 'auto' });
+    };
     el.addEventListener('scroll', onScroll, { passive: true });
-    return () => el.removeEventListener('scroll', onScroll);
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      el.removeEventListener('wheel', onWheel);
+    };
   }, [mode, narrow, pages.length]);
 
   /* ------------------------------------------------------ entrance motion
@@ -85,6 +109,9 @@ export default function Presenter({
     setIndex(i);
     if (mode === 'scroll' && !narrow && scroller.current) {
       scroller.current.scrollTo({ top: i * scroller.current.clientHeight, behavior: 'smooth' });
+    }
+    if (mode === 'horizontal' && !narrow && scroller.current) {
+      scroller.current.scrollTo({ left: i * scroller.current.clientWidth, behavior: 'smooth' });
     }
   };
 
@@ -150,6 +177,22 @@ export default function Presenter({
         <button className="parrow right" onClick={() => goto(Math.min(pages.length - 1, index + 1))} aria-label="Next">
           ›
         </button>
+        {chrome}
+      </div>
+    );
+  }
+
+  /* -------------------------------------------------------- horizontal */
+  if (mode === 'horizontal') {
+    return (
+      <div className="present-root" ref={root}>
+        <div className="hscrollmode hide-scroll" ref={scroller}>
+          {pages.map((p) => (
+            <section key={p.id}>
+              <Stage page={p} brand={presentation.brand} retailer={presentation.retailer} mode="fill" />
+            </section>
+          ))}
+        </div>
         {chrome}
       </div>
     );

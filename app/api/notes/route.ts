@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { q } from '@/lib/server/db';
 import { currentUser, unauthorized } from '@/lib/server/auth';
+import { accessFor, deckGuard } from '@/lib/server/access';
 import { uid } from '@/lib/model/types';
 
 export const dynamic = 'force-dynamic';
@@ -23,6 +24,10 @@ export async function GET(req: Request) {
 
   const deck = new URL(req.url).searchParams.get('presentationId') || '';
   if (!deck) return NextResponse.json({ error: 'Missing presentation' }, { status: 400 });
+  {
+    const denied = await deckGuard(await accessFor(me), deck, 'view');
+    if (denied) return denied;
+  }
 
   const r = await q(
     `select n.*, u.name, u.email

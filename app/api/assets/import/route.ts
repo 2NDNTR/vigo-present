@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { del, put } from '@vercel/blob';
 import { q, hasBlob } from '@/lib/server/db';
 import { currentUser, unauthorized } from '@/lib/server/auth';
+import { accessFor, can, forbidden } from '@/lib/server/access';
 // NOT from '@/lib/assets/uploads' — that module is 'use client' (it owns the
 // IndexedDB store), so importing it here builds fine and then 500s at request
 // time. The naming helpers live in ./paths precisely so both sides share them.
@@ -60,6 +61,7 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
   const store: string = (body?.store || '').trim().replace(/\/+$/, '');
   const brand: string = body?.brand || 'alessi';
+  if (!can(await accessFor(me), brand, 'edit')) return forbidden('You cannot add media to this brand.');
   const category: AssetCategory = body?.category || 'Product Photography';
   const skip: number = Number(body?.skip || 0);
   const limit: number = Math.min(Number(body?.limit || 25), 50);

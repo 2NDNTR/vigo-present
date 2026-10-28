@@ -1156,6 +1156,8 @@ textarea.field { height: auto; padding: 12px 14px; resize: vertical; line-height
 .present-root { background: #08080a; min-height: 100vh; }
 .scrollmode { scroll-snap-type: y mandatory; height: 100vh; overflow-y: auto; }
 .scrollmode > section { scroll-snap-align: start; }
+.hscrollmode { display: flex; height: 100vh; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; }
+.hscrollmode > section { flex: 0 0 100vw; height: 100vh; scroll-snap-align: start; }
 .slidewrap { height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 
 .pnav {
