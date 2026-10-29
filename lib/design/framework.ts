@@ -101,6 +101,14 @@ export function budgetFor(templateId: string, role: TypeRole): number {
 
 const roleOf = (b: Block): TypeRole | undefined => b.style?.role as TypeRole | undefined;
 
+/** The title size a layout designs for an area (or for the page), from its own sample. */
+export function designedTitleRole(templateId: string, slotKey: string): TypeRole | undefined {
+  const seed = getTemplate(templateId).seed();
+  const inSlot = (seed[slotKey] || []).find((b) => b.type === 'text' && TITLE.includes(roleOf(b) as TypeRole));
+  const anywhere = Object.values(seed).flat().find((b) => b.type === 'text' && TITLE.includes(roleOf(b) as TypeRole));
+  return roleOf((inSlot || anywhere) as Block) as TypeRole | undefined;
+}
+
 /** How many title-level lines a layout is designed to carry (most carry one). */
 function titlesAllowed(templateId: string): number {
   const seed = getTemplate(templateId).seed();
@@ -158,8 +166,13 @@ export function enforcePage(page: Page): string[] {
           set(len > (BUDGET.subhead || 140) ? 'body' : 'subhead', `a second title, "${short(b.text)}", now reads as supporting copy`);
           continue;
         }
-        if (role === 'display' && len > budgetFor(page.templateId, 'display')) set('headline', `"${short(b.text)}" was too long for display type and steps down to a headline`);
-        else if (role === 'headline' && len > budgetFor(page.templateId, 'headline') * 1.5) set('subhead', `"${short(b.text)}" was too long for a headline and steps down`);
+        // UNIFORMITY: a title is the size its layout designs it to be, on every page that uses the
+        // layout (every cover title the same display size). Long titles are flagged for shorter
+        // words, never shrunk; only a paragraph standing in for a title (2.5x over) steps down.
+        const designed = designedTitleRole(page.templateId, slot.key) || role;
+        if (len > budgetFor(page.templateId, designed) * 2.5) {
+          if (role !== 'subhead') set('subhead', `"${short(b.text)}" is a paragraph, not a title, and reads as supporting copy`);
+        } else if (role !== designed) set(designed, `"${short(b.text)}" is back to the layout's title size`);
       } else if (role === 'eyebrow') {
         eyebrows++;
         if (eyebrows > 1 || len > (BUDGET.eyebrow || 42)) set('body', `"${short(b.text)}" reads as body copy rather than a small label`);
@@ -259,7 +272,7 @@ function short(s?: string, n = 40) {
 export const RULES_TEXT = `THE DESIGN FRAMEWORK (the app enforces the mechanical parts; you handle the judgement)
 Type
 - One title per page. Below it: at most one small eyebrow label above, then supporting copy. Never two titles.
-- Every role has a length it can carry: display about ${BUDGET.display} characters, headline about ${BUDGET.headline}, subhead about ${BUDGET.subhead}, body about ${BUDGET.body}, eyebrow about ${BUDGET.eyebrow}. Over that, shorten the words; the app steps type down when it must, but short words in big type is the goal.
+- Every role has a length it can carry: display about ${BUDGET.display} characters, headline about ${BUDGET.headline}, subhead about ${BUDGET.subhead}, body about ${BUDGET.body}, eyebrow about ${BUDGET.eyebrow}. Over that, shorten the words. Titles are never made smaller to fit: every page using a layout has the same title size, and every cover title is the same display size, so a long title must be rewritten shorter.
 - Covers: the title is the product or the story in a few words. Sizes, pack counts and SKU detail are not titles; they go in a supporting line or on a product page.
 Layout
 - The layout decides positions, sizes and spacing. Pick the layout whose composition fits the content: cards for 3 parallel ideas, metrics for figures, split image/text for one idea with one picture, quote for one voice.

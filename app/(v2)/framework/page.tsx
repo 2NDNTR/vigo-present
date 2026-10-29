@@ -15,7 +15,7 @@ import { BUDGET } from '@/lib/design/framework';
 
 const PRINCIPLES: { title: string; body: string }[] = [
   { title: 'One title per page', body: 'Each page makes one point, carried by one title. An eyebrow can sit above it and supporting copy below; a second title is demoted automatically.' },
-  { title: 'Type fits its size', body: 'Every level of type has a length it can carry. Long lines step down a size rather than spilling; short words in big type is the goal.' },
+  { title: 'Titles are uniform', body: 'A title is the size its layout designs: every cover title the same display size, every page title in a layout the same size. Each level of type has a length it can carry; a title that runs long gets shorter words, never smaller type.' },
   { title: 'The layout decides', body: 'Positions, sizes and spacing come from the approved layouts. Choose the layout that fits the content: cards for parallel ideas, metrics for figures, split for one idea and one picture.' },
   { title: 'Colour is an accent', body: 'Light pages are the default. Dark and photo pages mark openings, section breaks and closings. A coloured page is never next to another, and about one in four at most.' },
   { title: 'Pictures match', body: 'Items in a row share one kind of picture: all dishes, all products, or none. Logos are never photographs; they live on covers and logo pages.' },
