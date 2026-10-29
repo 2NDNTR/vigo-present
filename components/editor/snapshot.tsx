@@ -79,8 +79,17 @@ async function settle(el: HTMLElement) {
   }
   const imgs = Array.from(el.querySelectorAll('img'));
   await Promise.race([
-    Promise.all(imgs.map((i) => (i.complete ? null : new Promise((ok) => ((i.onload = ok), (i.onerror = ok)))))),
-    new Promise((ok) => setTimeout(ok, 4000)),
+    Promise.all(
+      imgs.map(async (i) => {
+        if (!i.complete) await new Promise((ok) => ((i.onload = ok), (i.onerror = ok)));
+        try {
+          await i.decode();
+        } catch {
+          /* a broken picture stays broken; the rest still render */
+        }
+      })
+    ),
+    new Promise((ok) => setTimeout(ok, 9000)),
   ]);
   await new Promise((ok) => setTimeout(ok, 250));
 }
@@ -103,6 +112,9 @@ export async function snapshotPages(
       const root = createRoot(box);
       root.render(<Stage page={p} brand={brand} retailer={retailer as any} mode="fixed" />);
       await new Promise((ok) => setTimeout(ok, 80));
+      await bringHome(box);
+      await settle(box);
+      // the page may have redrawn a picture from its stored address while loading; point it home again
       await bringHome(box);
       await settle(box);
       try {

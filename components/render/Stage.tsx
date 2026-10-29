@@ -118,12 +118,15 @@ export default function Stage(props: StageProps) {
    * white, so on any other surface they sit in visible white boxes. A page in
    * the Products layouts, or any page showing a product shot, is drawn on
    * white whatever colour it was given — unless it is a full-bleed photo. */
-  const productPage =
-    !hasMedia &&
-    (template.category === 'Products' ||
-      Object.values(page.slots || {}).some((list) =>
-        (list || []).some((b) => (b.type === 'card' ? b.showImage !== false : b.type === 'image') && isProductShot(b.media))
-      ));
+  /* A row of pictures is shown ONE way: product shots boxed on white only when
+   * every picture in the row is a product shot; otherwise every frame is a
+   * photograph frame. Deciding per picture gave rows of mismatched boxes. */
+  const rowMode: Record<string, 'product' | 'photo' | undefined> = {};
+  Object.entries(page.slots || {}).forEach(([key, list]) => {
+    const pics = (list || []).filter((b) => (b.type === 'card' ? b.showImage !== false : b.type === 'image') && mediaUrl(b.media));
+    if (pics.length) rowMode[key] = pics.every((b) => isProductShot(b.media)) ? 'product' : 'photo';
+  });
+  const productPage = !hasMedia && (template.category === 'Products' || Object.values(rowMode).includes('product'));
   if (productPage) {
     pageBg = theme.colors.white;
     pageInk = theme.colors[theme.surface.ink];
@@ -566,7 +569,8 @@ export default function Stage(props: StageProps) {
                       editable,
                       onDark,
                       selectedId: props.selectedId,
-                      siblings: Math.max(1, blocks.filter((x) => x.type === 'metric').length),
+                      siblings: Math.max(1, blocks.filter((x) => x.type === b.type).length),
+                      pictureMode: rowMode[slot.key],
                       solo: soloOnPage,
                       onSelect: (id) => props.onSelectBlock && props.onSelectBlock(id, slot.key),
                       onChange: props.onChangeBlock,

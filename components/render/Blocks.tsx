@@ -18,6 +18,8 @@ export interface RenderCtx {
   onChange?: (blockId: string, patch: Partial<Block>) => void;
   /** number of sibling blocks in a horizontal slot — used for auto-sizing */
   siblings?: number;
+  /** how pictures in this row are shown: decided for the whole row, so every frame matches */
+  pictureMode?: 'product' | 'photo';
   /** true when this block is the only one on the page — the Single Metric case */
   solo?: boolean;
   /** true when this page's surface is dark — drives the automatic logo variant */
@@ -179,7 +181,7 @@ export default function BlockView({ block, ctx }: { block: Block; ctx: RenderCtx
     /* -------------------------------------------------------------- media */
     case 'image':
     case 'video':
-      return <MediaBlock block={block} wrapProps={wrapProps} editable={!!ctx.editable} />;
+      return <MediaBlock block={block} wrapProps={wrapProps} editable={!!ctx.editable} mode={ctx.pictureMode} />;
 
     /* --------------------------------------------------------------- logo */
     case 'logo': {
@@ -625,7 +627,7 @@ export default function BlockView({ block, ctx }: { block: Block; ctx: RenderCtx
           <div className={'card-el' + (showImage && (mediaUrl(block.media) || ctx.editable) ? '' : ' textonly') + (block.text ? '' : ' untitled')}>
             {/* an empty picture frame is an editing prompt: never drawn where nobody can fill it */}
             {showImage && (mediaUrl(block.media) || ctx.editable) ? (
-              <div className={'cimg ' + pictureTreatment(block.media)}>
+              <div className={'cimg ' + (ctx.pictureMode || pictureTreatment(block.media))}>
                 {mediaUrl(block.media) ? (
                   <img
                     src={mediaUrl(block.media)}
@@ -759,9 +761,11 @@ function MediaBlock({
   block,
   wrapProps,
   editable,
+  mode,
 }: {
   block: Block;
   editable?: boolean;
+  mode?: 'product' | 'photo';
   wrapProps: { className: string; onMouseDown?: () => void; style: React.CSSProperties };
 }) {
   const m = block.media;
@@ -811,7 +815,7 @@ function MediaBlock({
   const [rw, rh] = cropped ? m!.crop!.split(':').map(Number) : [0, 0];
   const media = (
     <div
-      className={'media-el ' + pictureTreatment(m)}
+      className={'media-el ' + (mode || pictureTreatment(m))}
       style={
         cropped
           ? { width: `min(100cqw, calc(100cqh * ${rw} / ${rh}))`, height: 'auto', aspectRatio: `${rw} / ${rh}` }
