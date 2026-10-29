@@ -4,6 +4,7 @@ import { currentUser, unauthorized } from '@/lib/server/auth';
 import { accessFor, can } from '@/lib/server/access';
 import { hasDatabase, q } from '@/lib/server/db';
 import { catalogue, DECK_SYSTEM, DECK_SCHEMA, toPresentation } from '@/lib/ingest/deck';
+import { enforcePage, RULES_TEXT } from '@/lib/design/framework';
 import type { BrandId } from '@/lib/brand/themes';
 
 export const dynamic = 'force-dynamic';
@@ -103,7 +104,7 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         model: await pickModel(key),
         max_tokens: 8000,
-        system: DECK_SYSTEM,
+        system: DECK_SYSTEM + '\n\n' + RULES_TEXT,
         tools: [{ name: 'deck_plan', description: 'Return the planned deck.', input_schema: DECK_SCHEMA }],
         tool_choice: { type: 'tool', name: 'deck_plan' },
         messages: [
@@ -154,6 +155,8 @@ export async function POST(req: Request) {
   }
 
   const presentation = toPresentation(tool.input, brand, 'vigo-importing', me.id);
+  // generated decks are saved already following the design framework
+  presentation.pages.forEach((pg) => enforcePage(pg));
   await finishJob('done', { presentationId: presentation.id, model: j.model, usage: j.usage });
   return NextResponse.json({ presentation, approach: tool.input.approach || null, pages: presentation.pages.length });
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { CSSProperties, useEffect, useRef, useState } from 'react';
+import React, { CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 import type { Block, Page } from '@/lib/model/types';
 import type { BrandId } from '@/lib/brand/themes';
 import BlockBar from '@/components/render/BlockBar';
@@ -8,6 +8,7 @@ import type { RetailerRef } from '@/lib/brand/retailers';
 import { retailerSrc } from '@/lib/brand/retailers';
 import { getTheme, themeVars } from '@/lib/brand/themes';
 import { getTemplate } from '@/lib/templates/registry';
+import { enforcePage } from '@/lib/design/framework';
 import { collapseLayout } from '@/lib/templates/collapse';
 import BlockView from './Blocks';
 import { isProductShot, mediaUrl, useAssetRegistry } from '@/lib/assets/registry';
@@ -67,7 +68,20 @@ export interface StageProps {
 }
 
 export default function Stage(props: StageProps) {
-  const { page, brand, retailer, mode = 'fixed', editable } = props;
+  const { brand, retailer, mode = 'fixed', editable } = props;
+  /* The design framework applies to what is DRAWN, whatever made the page — a
+   * person, the assistant, generation or an import — so no deck can display
+   * in breach of it. The stored page is not changed; reformatting writes the
+   * same result back. */
+  const page = useMemo(() => {
+    const copy = JSON.parse(JSON.stringify(props.page)) as Page;
+    try {
+      enforcePage(copy);
+    } catch {
+      return props.page;
+    }
+    return copy;
+  }, [props.page]);
   const [ref, w] = useWidth<HTMLDivElement>();
   const [dropSlot, setDropSlot] = useState<string | null>(null);
   /* Which picture is being repositioned. It ends when the selection moves,

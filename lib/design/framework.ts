@@ -124,6 +124,23 @@ export function enforcePage(page: Page): string[] {
   const allowed = titlesAllowed(page.templateId);
   let titles = 0;
 
+  /* Upside-down titles: a sentence set as the title, with the real title in a
+   * short line beside it. Swap them: the short line becomes the title, the long
+   * one supporting copy. (Generated decks do this; so do some V1 pages.) */
+  for (const slot of t.slots) {
+    const texts = (page.slots[slot.key] || []).filter((b) => b.type === 'text');
+    const title = texts.find((b) => TITLE.includes(roleOf(b) as TypeRole));
+    if (!title) continue;
+    const role = roleOf(title)!;
+    const len = (title.text || '').trim().length;
+    if (len <= budgetFor(page.templateId, role) * 1.5) continue;
+    const short_ = texts.find((b) => b !== title && !TITLE.includes(roleOf(b) as TypeRole) && (b.text || '').trim().length >= 8 && (b.text || '').trim().length <= budgetFor(page.templateId, 'headline'));
+    if (!short_) continue;
+    short_.style = { ...(short_.style || {}), role } as Block['style'];
+    title.style = { ...(title.style || {}), role: len > (BUDGET.subhead || 140) ? 'body' : 'subhead' } as Block['style'];
+    fixes.push(`"${short(short_.text)}" is now the title, and the long line "${short(title.text)}" supporting copy`);
+  }
+
   for (const slot of t.slots) {
     let eyebrows = 0;
     for (const b of page.slots[slot.key] || []) {
