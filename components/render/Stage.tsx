@@ -8,10 +8,10 @@ import type { RetailerRef } from '@/lib/brand/retailers';
 import { retailerSrc } from '@/lib/brand/retailers';
 import { getTheme, themeVars } from '@/lib/brand/themes';
 import { getTemplate } from '@/lib/templates/registry';
-import { enforcePage } from '@/lib/design/framework';
+import { enforcePage, polishPage } from '@/lib/design/framework';
 import { collapseLayout } from '@/lib/templates/collapse';
 import BlockView from './Blocks';
-import { isProductShot, mediaUrl, useAssetRegistry } from '@/lib/assets/registry';
+import { isLogoPicture, isProductShot, mediaUrl, useAssetRegistry } from '@/lib/assets/registry';
 
 const REF_FIXED = 1600;
 const REF_STACKED = 920;
@@ -73,15 +73,18 @@ export default function Stage(props: StageProps) {
    * person, the assistant, generation or an import — so no deck can display
    * in breach of it. The stored page is not changed; reformatting writes the
    * same result back. */
+  const { ready: libraryReady } = useAssetRegistry();
   const page = useMemo(() => {
     const copy = JSON.parse(JSON.stringify(props.page)) as Page;
     try {
       enforcePage(copy);
+      polishPage(copy, isLogoPicture);
     } catch {
       return props.page;
     }
     return copy;
-  }, [props.page]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.page, libraryReady]);
   const [ref, w] = useWidth<HTMLDivElement>();
   const [dropSlot, setDropSlot] = useState<string | null>(null);
   /* Which picture is being repositioned. It ends when the selection moves,

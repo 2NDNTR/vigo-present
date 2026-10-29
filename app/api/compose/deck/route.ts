@@ -4,7 +4,7 @@ import { currentUser, unauthorized } from '@/lib/server/auth';
 import { accessFor, can } from '@/lib/server/access';
 import { hasDatabase, q } from '@/lib/server/db';
 import { catalogue, DECK_SYSTEM, DECK_SCHEMA, toPresentation } from '@/lib/ingest/deck';
-import { enforcePage, RULES_TEXT } from '@/lib/design/framework';
+import { COPY_BUDGET_TEXT, enforcePage, RULES_TEXT } from '@/lib/design/framework';
 import type { BrandId } from '@/lib/brand/themes';
 
 export const dynamic = 'force-dynamic';
@@ -104,7 +104,7 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         model: await pickModel(key),
         max_tokens: 8000,
-        system: DECK_SYSTEM + '\n\n' + RULES_TEXT,
+        system: DECK_SYSTEM + '\n\n' + RULES_TEXT + '\n\n' + COPY_BUDGET_TEXT,
         tools: [{ name: 'deck_plan', description: 'Return the planned deck.', input_schema: DECK_SCHEMA }],
         tool_choice: { type: 'tool', name: 'deck_plan' },
         messages: [

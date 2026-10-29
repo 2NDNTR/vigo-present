@@ -4,7 +4,7 @@ import type { MediaRef, Presentation } from '@/lib/model/types';
 import { q } from '@/lib/server/db';
 import { visibleBrands, type Access } from '@/lib/server/access';
 import { colorLabel, getTheme, type BrandId } from '@/lib/brand/themes';
-import { RULES_TEXT, reviewDeck, type PictureKind } from '@/lib/design/framework';
+import { COPY_BUDGET_TEXT, RULES_TEXT, reviewDeck, type PictureKind } from '@/lib/design/framework';
 import { applyDeckOps, DECK_SCHEMA, deckForModel, type Applied, type DeckOp } from '@/lib/ingest/sidekick';
 
 /**
@@ -86,6 +86,8 @@ Operations for edit_deck:
 Attachments: a screenshot of a slide or chart is a reference — rebuild it with the same structure and figures in an approved layout. A product or lifestyle photo is material — place it.
 
 ${RULES_TEXT}
+
+${COPY_BUDGET_TEXT}
 
 What "clean and consistent" means here, so reformat requests get finished, not half-done:
 - One idea per page and one title per page. A cover has one title (plus at most an eyebrow and a line); remove a second title.

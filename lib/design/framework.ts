@@ -173,7 +173,7 @@ export function enforcePage(page: Page): string[] {
 
 export interface Issue {
   pageId: string;
-  rule: 'placeholder' | 'too-long' | 'duplicate-page' | 'logo-as-photo' | 'mixed-pictures' | 'colour-rhythm' | 'empty-picture';
+  rule: 'placeholder' | 'too-long' | 'card-title' | 'jammed-list' | 'repeated-label' | 'duplicate-page' | 'logo-as-photo' | 'mixed-pictures' | 'colour-rhythm' | 'empty-picture';
   text: string;
 }
 
@@ -206,6 +206,14 @@ export function reviewDeck(deck: Presentation, kind?: PictureKind): Issue[] {
         [b.text, b.support, b.label, ...(b.items || [])].forEach((s) => {
           if (isPlaceholder(s)) out.push({ pageId: p.id, rule: 'placeholder', text: `Page ${n} still has the layout's sample words "${short(s)}".` });
         });
+        if (b.type === 'card' && (b.text || '').length > 40)
+          out.push({ pageId: p.id, rule: 'card-title', text: `Page ${n}: the card title "${short(b.text)}" is a sentence. Card titles are 2 to 5 words; put the sentence in the card text.` });
+        if ((b.type === 'checklist' || b.type === 'bullets') && (b.items || []).some((s) => /\n/.test(s)))
+          out.push({ pageId: p.id, rule: 'jammed-list', text: `Page ${n}: several points are written as one list item. Make each point its own item.` });
+        if (b.type === 'text' && roleOf(b) === 'eyebrow') {
+          const same = Object.values(p.slots).flat().some((x) => x !== b && x.type === 'text' && TITLE.includes(roleOf(x) as TypeRole) && (x.text || '').trim().toLowerCase() === (b.text || '').trim().toLowerCase());
+          if (same) out.push({ pageId: p.id, rule: 'repeated-label', text: `Page ${n}: the small label repeats the title. Remove it or make it say something else.` });
+        }
         const role = roleOf(b);
         const budget = role && budgetFor(p.templateId, role);
         if (b.type === 'text' && budget && (b.text || '').length > budget * 1.15)
@@ -266,3 +274,69 @@ Pictures
 Copy
 - No sample words left from the layout, no duplicate pages, no "First point".
 - Specific beats clever, one idea per block, plain words.`;
+
+/* ------------------------------------------------------------- polish */
+
+/**
+ * Presentation-quality fixes applied to what is DRAWN (Stage), for content that
+ * arrives in the wrong shape — from generation, imports or quick edits. Nothing
+ * here invents words; it hides leftovers, splits what was jammed together, and
+ * steps type down to the size the words actually need.
+ *
+ *  - a small label that repeats the title is not drawn;
+ *  - sample text left from a layout is not drawn once the block has real copy;
+ *  - list items written as several lines become separate points;
+ *  - long list items and long card titles read as body copy, not display caps;
+ *  - a card whose "title" is really a paragraph shows it as the card's text;
+ *  - a logo used as a picture inside a page is not drawn (the page mark carries
+ *    the brand), except on the cover.
+ */
+export function polishPage(page: Page, isLogoPicture?: (m: MediaRef) => boolean): void {
+  const t = getTemplate(page.templateId);
+  const norm = (s?: string) => (s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  const titles = Object.values(page.slots)
+    .flat()
+    .filter((b) => b.type === 'text' && TITLE.includes(roleOf(b) as TypeRole))
+    .map((b) => norm(b.text));
+
+  for (const slot of t.slots) {
+    let list = page.slots[slot.key] || [];
+    list = list.filter((b) => {
+      if (b.type === 'text' && roleOf(b) === 'eyebrow' && titles.includes(norm(b.text))) return false;
+      if (t.id !== 'cover' && (b.type === 'image' || b.type === 'card') && b.media?.url && isLogoPicture?.(b.media)) {
+        if (b.type === 'card') {
+          b.showImage = false;
+          return true;
+        }
+        return false;
+      }
+      return true;
+    });
+    list.forEach((b) => {
+      const real = (s?: string) => !!s && !isPlaceholder(s);
+      if (isPlaceholder(b.support) && (real(b.text) || real(b.label) || real(b.value))) b.support = '';
+      if (b.type === 'checklist' || b.type === 'bullets') {
+        const items = (b.items || []).flatMap((it) => String(it).split(/\n+/)).map((s) => s.trim()).filter(Boolean);
+        b.items = items;
+        if (items.some((s) => s.length > 44)) b.style = { ...(b.style || {}), role: 'body' } as Block['style'];
+      }
+      if (b.type === 'card') {
+        const len = (b.text || '').trim().length;
+        if (len > 64 && !(b.support || '').trim()) {
+          b.support = b.text;
+          b.text = '';
+        } else if (len > 40) b.style = { ...(b.style || {}), role: 'body' } as Block['style'];
+      }
+    });
+    page.slots[slot.key] = list;
+  }
+}
+
+/** The size every element is written to, for whoever writes the copy. */
+export const COPY_BUDGET_TEXT = `COPY BUDGETS (write to these; longer copy is shrunk or hidden, never shown at full size)
+- Page title (headline/display): 3 to 8 words, under 50 characters. Never a full sentence of explanation.
+- Small label above a title (eyebrow): 1 to 4 words, under 30 characters, and never the same words as the title.
+- Card title: 2 to 5 words, under 32 characters. Card text: one sentence, under 110 characters. Fill both; never leave a layout's sample text.
+- Bullet or checklist point: one point per item, under 60 characters. Four points are four items, never one item with line breaks.
+- Metric: the figure alone ("+38%", "$24.8M"); label 1 to 4 words.
+- Body copy on a page: two sentences at most.`;

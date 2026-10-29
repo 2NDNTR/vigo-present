@@ -2896,3 +2896,35 @@ body:has(.pchrome2.idle) .preview-controls { opacity: 0; pointer-events: none; }
   pointer-events: none;
 }
 .page-mark .logo-img { display: block; }
+
+/* ============================================================ motion (V2)
+   Simple, slow and deliberate: it reads as finish, never as effect.
+   - Photography settles: full-bleed and bleed photos start a touch larger and
+     drift to rest over nine seconds as the page arrives (the entrance hook adds
+     .in). The `scale` property is used, not transform, so a photo's own
+     framing is never disturbed.
+   - Slides cross-fade and rise slightly, so each page arrives rather than cuts.
+   - The staggered type entrance and count-up figures are in Motion.tsx.
+   All of it is off for anyone who asks their system for reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .present-root.motion .stage .stage-bg img,
+  .present-root.motion .stage .stage-bg video,
+  .present-root.motion .stage .slot.bleed .media-el img {
+    scale: 1.07;
+    transition: scale 9s cubic-bezier(.2, .6, .2, 1);
+  }
+  .present-root.motion .stage.in .stage-bg img,
+  .present-root.motion .stage.in .stage-bg video,
+  .present-root.motion .stage.in .slot.bleed .media-el img { scale: 1; }
+
+  .slidewrap .slide-in { animation: slide-in 620ms cubic-bezier(.2, .7, .2, 1) both; }
+  @keyframes slide-in {
+    from { opacity: 0; transform: translateY(10px) scale(.995); }
+    to { opacity: 1; transform: none; }
+  }
+}
+
+/* A row of cards without pictures reads as editorial columns: a short rule
+   above each, and the words given room (design framework). */
+.card-el.textonly { border-top: calc(var(--u) * 3px) solid var(--rule-color, currentColor); padding-top: calc(var(--u) * 26px); }
+.card-el.textonly .card-body { gap: calc(var(--u) * 16px); }

@@ -204,6 +204,14 @@ export function isProductShot(m?: { assetId?: string; url?: string }): boolean {
   return rec?.category === 'Product Photography' || (rec?.category as string) === 'Packaging';
 }
 
+/** A logo filed in the library (used to keep logos out of page content). */
+export function isLogoPicture(m?: { assetId?: string; url?: string }): boolean {
+  if (!m || (!m.assetId && !m.url)) return false;
+  let rec = m.assetId ? byId[m.assetId] : undefined;
+  if (!rec && m.url) rec = Object.values(byId).find((r) => r.path === m.url);
+  return rec?.category === 'Logos';
+}
+
 export function isPlaceholderLibrary(): boolean {
   return usingPlaceholders;
 }

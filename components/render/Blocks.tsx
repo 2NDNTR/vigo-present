@@ -179,7 +179,7 @@ export default function BlockView({ block, ctx }: { block: Block; ctx: RenderCtx
     /* -------------------------------------------------------------- media */
     case 'image':
     case 'video':
-      return <MediaBlock block={block} wrapProps={wrapProps} />;
+      return <MediaBlock block={block} wrapProps={wrapProps} editable={!!ctx.editable} />;
 
     /* --------------------------------------------------------------- logo */
     case 'logo': {
@@ -622,8 +622,9 @@ export default function BlockView({ block, ctx }: { block: Block; ctx: RenderCtx
       const hasPrice = !!(block.wholesale || block.msrp) || (ctx.editable && selected);
       return (
         <div {...wrapProps} style={{ ...wrapProps.style, height: '100%' }}>
-          <div className="card-el">
-            {showImage ? (
+          <div className={'card-el' + (showImage && (mediaUrl(block.media) || ctx.editable) ? '' : ' textonly') + (block.text ? '' : ' untitled')}>
+            {/* an empty picture frame is an editing prompt: never drawn where nobody can fill it */}
+            {showImage && (mediaUrl(block.media) || ctx.editable) ? (
               <div className={'cimg ' + pictureTreatment(block.media)}>
                 {mediaUrl(block.media) ? (
                   <img
@@ -640,17 +641,19 @@ export default function BlockView({ block, ctx }: { block: Block; ctx: RenderCtx
             ) : null}
 
             <div className="card-body">
+              {block.text || ctx.editable ? (
+                <EditableText
+                  className="tt"
+                  style={{ ...typeVars(role, cardScale), textAlign: alignFor(block) }}
+                  value={block.text || ''}
+                  editable={ctx.editable}
+                  placeholder="Product or card name"
+                  onChange={(v) => set({ text: v })}
+                />
+              ) : null}
               <EditableText
                 className="tt"
-                style={{ ...typeVars(role, cardScale), textAlign: alignFor(block) }}
-                value={block.text || ''}
-                editable={ctx.editable}
-                placeholder="Product or card name"
-                onChange={(v) => set({ text: v })}
-              />
-              <EditableText
-                className="tt"
-                style={{ ...typeVars('body', 0.86 * cardScale), opacity: 0.78, textAlign: alignFor(block) }}
+                style={{ ...typeVars('body', (block.text ? 0.86 : 1.08) * cardScale), opacity: block.text ? 0.78 : 0.92, textAlign: alignFor(block) }}
                 value={block.support || ''}
                 editable={ctx.editable}
                 placeholder="A sentence of supporting copy"
@@ -755,8 +758,10 @@ export default function BlockView({ block, ctx }: { block: Block; ctx: RenderCtx
 function MediaBlock({
   block,
   wrapProps,
+  editable,
 }: {
   block: Block;
+  editable?: boolean;
   wrapProps: { className: string; onMouseDown?: () => void; style: React.CSSProperties };
 }) {
   const m = block.media;
@@ -765,6 +770,8 @@ function MediaBlock({
   const [failed, setFailed] = useState<string | null>(null);
   const broken = !resolved || failed === resolved;
 
+  // where nobody can fill it, a missing picture leaves a quiet empty frame, never an instruction
+  if (broken && !editable) return <div {...wrapProps} style={{ ...wrapProps.style, height: '100%' }} className={wrapProps.className + ' media-missing'} />;
   if (broken) {
     const wasSomething = !!(m?.url || m?.assetId);
     return (

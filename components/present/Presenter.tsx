@@ -214,7 +214,7 @@ export default function Presenter({
     return (
       <div className="present-root" ref={root} style={{ height: '100vh', overflow: 'hidden' }}>
         <div className="slidewrap">
-          <div style={{ width: 'min(100vw, calc(100vh * 16 / 9))' }}>
+          <div key={pages[index]?.id} className="slide-in" style={{ width: 'min(100vw, calc(100vh * 16 / 9))' }}>
             <Stage page={pages[index]} brand={presentation.brand} retailer={presentation.retailer} mode="fixed" />
           </div>
         </div>
