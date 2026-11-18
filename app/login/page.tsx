@@ -194,8 +194,7 @@ export default function LoginPage() {
         ) : (
           <>
             <p className="tiny" style={{ marginTop: 16 }}>
-              No account? Ask whoever set this up to add your email — it takes a moment and needs no
-              invitation email.
+              No account? Ask an administrator to add you. They&rsquo;ll send you an invite link to set your password.
             </p>
             <button
               className="btn ghost sm"
