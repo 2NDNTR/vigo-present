@@ -1,4 +1,5 @@
-import type { Block, Page, Presentation } from '@/lib/model/types';
+import type { Block, MediaRef, Page, Presentation } from '@/lib/model/types';
+import { placeImage } from '@/lib/ingest/sidekick';
 import { uid, slugify } from '@/lib/model/types';
 import { TEMPLATES, getTemplate, createPage } from '@/lib/templates/registry';
 import type { BrandId } from '@/lib/brand/themes';
@@ -29,6 +30,8 @@ export interface PlannedPage {
   section?: string;
   /** slot key -> the lines that go in it, in order */
   content?: Record<string, string[]>;
+  /** 1-based numbers of the photos the person attached, to put on this page */
+  photos?: number[];
 }
 
 export interface DeckPlan {
@@ -80,6 +83,12 @@ export const DECK_SCHEMA = {
             description: 'Slot key to an ordered list of lines for that slot. One string per block.',
             additionalProperties: { type: 'array', items: { type: 'string' } },
           },
+          photos: {
+            type: 'array',
+            items: { type: 'integer' },
+            description:
+              'Numbers of the attached photos (1 = the first) to show on this page. Only on layouts with picture areas; each photo at most once in the deck. Leave out when nothing was attached.',
+          },
         },
         required: ['templateId'],
       },
@@ -94,8 +103,15 @@ export const DECK_SCHEMA = {
  * does not exist, or eleven lines in a slot that holds six cannot produce
  * anything but a correct page.
  */
-export function toPresentation(plan: DeckPlan, brand: BrandId, orgId: string, userId: string): Presentation {
+export function toPresentation(
+  plan: DeckPlan,
+  brand: BrandId,
+  orgId: string,
+  userId: string,
+  photos: MediaRef[] = []
+): Presentation {
   const pages: Page[] = [];
+  const usedPhotos = new Set<number>();
 
   (plan.pages || []).forEach((planned) => {
     if (!TEMPLATES.some((t) => t.id === planned.templateId)) return;
@@ -135,6 +151,18 @@ export function toPresentation(plan: DeckPlan, brand: BrandId, orgId: string, us
       /* A slot given fewer lines than it holds keeps the seeded blocks for the
        * rest — an empty card in the right place is a prompt to fill it, and it
        * keeps the composition intact. */
+    });
+
+    /* The person's own photos, where the plan put them: into the page's
+     * picture areas in order (cards first-come), then the page background. */
+    (planned.photos || []).forEach((n) => {
+      const i = Math.round(Number(n)) - 1;
+      const media = photos[i];
+      if (!media || usedPhotos.has(i)) return;
+      const empty = Object.values(page.slots)
+        .flat()
+        .find((b) => (b.type === 'image' || b.type === 'card') && !(b as Block).media?.url?.startsWith('http'));
+      if (placeImage(page, { ...media }, empty?.id)) usedPhotos.add(i);
     });
 
     pages.push(page);

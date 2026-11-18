@@ -3,7 +3,8 @@
 import React, { CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 import type { Block, Page } from '@/lib/model/types';
 import type { BrandId } from '@/lib/brand/themes';
-import BlockBar from '@/components/render/BlockBar';
+import ItemBar from '@/components/render/ItemBar';
+import Portal from '@/components/ui/Portal';
 import type { RetailerRef } from '@/lib/brand/retailers';
 import { retailerSrc } from '@/lib/brand/retailers';
 import { getTheme, themeVars } from '@/lib/brand/themes';
@@ -56,6 +57,8 @@ export interface StageProps {
   onSelectBlock?: (blockId: string, slotKey: string) => void;
   onSelectSlot?: (slotKey: string) => void;
   onChangeBlock?: (blockId: string, patch: Partial<Block>) => void;
+  /** open the photo library for this item */
+  onSwapPhoto?: (blockId: string) => void;
   /** remove a block from the canvas, without a trip to the panel */
   onDeleteBlock?: (blockId: string) => void;
   /** add another block of the same kind after this one, within the slot's rules */
@@ -94,10 +97,56 @@ export default function Stage(props: StageProps) {
     setMoveId(null);
   }, [props.selectedId]);
   const [dragBlock, setDragBlock] = useState<{ slot: string; index: number } | null>(null);
+  /* snapping guides while an item is moved: the slide's centre lines and the item's own home */
+  const [guides, setGuides] = useState<{ v?: boolean; h?: boolean; home?: boolean } | null>(null);
+  /* where the selected item is on screen. The toolbar and handles are drawn in
+   * a layer above everything (a layout's picture frame clips its contents, so
+   * they cannot live inside the item) and follow it every frame. */
+  const [selRect, setSelRect] = useState<{ l: number; t: number; w: number; h: number; top: number } | null>(null);
+  const selId = editable && props.onDeleteBlock ? props.selectedId : undefined;
+  useEffect(() => {
+    if (!selId) {
+      setSelRect(null);
+      return;
+    }
+    let raf = 0;
+    let last = '';
+    const tick = () => {
+      const root = ref.current as HTMLElement | null;
+      const el = root?.querySelector(`[data-bid="${selId}"]`) as HTMLElement | null;
+      if (el && root) {
+        const r = el.getBoundingClientRect();
+        const sr = root.getBoundingClientRect();
+        const key = [r.left, r.top, r.width, r.height, sr.top].map(Math.round).join(',');
+        if (key !== last) {
+          last = key;
+          setSelRect({ l: r.left, t: r.top, w: r.width, h: r.height, top: sr.top });
+        }
+      } else if (last) {
+        last = '';
+        setSelRect(null);
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [selId]);
   useAssetRegistry();
 
   const theme = getTheme(page.brandOverride || brand);
   const template = getTemplate(page.templateId);
+  const selBlock = useMemo(() => {
+    if (!selId) return null;
+    for (const k of Object.keys(page.slots || {})) {
+      const list = page.slots[k] || [];
+      const i = list.findIndex((x) => x.id === selId);
+      if (i >= 0) {
+        const slot = template.slots.find((sl) => sl.key === k);
+        return { b: list[i], slotKey: k, index: i, max: slot?.max ?? 99, count: list.length };
+      }
+    }
+    return null;
+  }, [selId, page, template]);
   const bg = page.background || { kind: 'theme', overlay: 'none' };
 
   // ---- resolve the page surface and the ink that sits on it
@@ -133,6 +182,125 @@ export default function Stage(props: StageProps) {
   }
 
   const unit = (mode === 'stacked' ? w / REF_STACKED : w / REF_FIXED) || 0.0001;
+
+  /* LIGHT FREE EDITING. An item can be moved and resized by hand. The offset is
+   * kept in page units from where the layout puts it (so it scales with the
+   * slide and survives any screen), it snaps to its home, to the slide's
+   * centre lines and to a 10-unit grid, and it cannot leave the slide. */
+  const nudged = (b: Block, base: CSSProperties | undefined): CSSProperties | undefined => {
+    const n = b.nudge;
+    if (!n || (!n.x && !n.y && (!n.s || n.s === 1))) return base;
+    return {
+      ...(base || {}),
+      transform: `translate(calc(var(--u) * ${n.x || 0}px), calc(var(--u) * ${n.y || 0}px)) scale(${n.s || 1})`,
+      transformOrigin: 'left top',
+      position: 'relative',
+      zIndex: 3,
+    };
+  };
+
+  const startNudge = (e: React.PointerEvent, b: Block, fromGrip = false) => {
+    const t = e.target as HTMLElement;
+    // typing stays typing: a press inside editable words or on a control is not a move
+    if (!fromGrip && (t.closest('[contenteditable="true"]') || t.closest('button, input, textarea'))) return;
+    const stageEl = ref.current as HTMLElement | null;
+    const slotEl = stageEl?.querySelector(`[data-bid="${b.id}"]`) as HTMLElement | null;
+    if (!slotEl || !stageEl || !props.onChangeBlock) return;
+    const r0 = slotEl.getBoundingClientRect();
+    const sr = stageEl.getBoundingClientRect();
+    const x0 = b.nudge?.x || 0;
+    const y0 = b.nudge?.y || 0;
+    const s0 = b.nudge?.s || 1;
+    const sx = e.clientX;
+    const sy = e.clientY;
+    let started = fromGrip;
+    const target = e.currentTarget as HTMLElement;
+    target.setPointerCapture(e.pointerId);
+    if (fromGrip) e.preventDefault();
+    e.stopPropagation();
+    const SNAP = 7;
+    const move = (ev: PointerEvent) => {
+      const dxPx = ev.clientX - sx;
+      const dyPx = ev.clientY - sy;
+      if (!started && Math.hypot(dxPx, dyPx) < 4) return;
+      started = true;
+      let nx = x0 + dxPx / unit;
+      let ny = y0 + dyPx / unit;
+      // keep it on the slide
+      nx = Math.min(x0 + (sr.right - r0.right) / unit, Math.max(x0 - (r0.left - sr.left) / unit, nx));
+      ny = Math.min(y0 + (sr.bottom - r0.bottom) / unit, Math.max(y0 - (r0.top - sr.top) / unit, ny));
+      const cx = (r0.left + r0.width / 2 - sr.left) / unit + (nx - x0);
+      const cy = (r0.top + r0.height / 2 - sr.top) / unit + (ny - y0);
+      const midX = sr.width / 2 / unit;
+      const midY = sr.height / 2 / unit;
+      const g: { v?: boolean; h?: boolean; home?: boolean } = {};
+      if (Math.abs(nx) < SNAP && Math.abs(ny) < SNAP) {
+        nx = 0;
+        ny = 0;
+        g.home = true;
+      } else {
+        if (Math.abs(cx - midX) < SNAP) {
+          nx += midX - cx;
+          g.v = true;
+        } else nx = Math.round(nx / 10) * 10;
+        if (Math.abs(cy - midY) < SNAP) {
+          ny += midY - cy;
+          g.h = true;
+        } else ny = Math.round(ny / 10) * 10;
+      }
+      setGuides(g);
+      props.onChangeBlock!(b.id, { nudge: nx === 0 && ny === 0 && s0 === 1 ? undefined : { x: Math.round(nx), y: Math.round(ny), ...(s0 !== 1 ? { s: s0 } : {}) } });
+    };
+    const up = () => {
+      setGuides(null);
+      document.body.classList.remove('nudging');
+      target.removeEventListener('pointermove', move);
+      target.removeEventListener('pointerup', up);
+      target.removeEventListener('pointercancel', up);
+    };
+    document.body.classList.add('nudging');
+    target.addEventListener('pointermove', move);
+    target.addEventListener('pointerup', up);
+    target.addEventListener('pointercancel', up);
+  };
+
+  const startResize = (e: React.PointerEvent, b: Block) => {
+    const slotEl = (ref.current as HTMLElement | null)?.querySelector(`[data-bid="${b.id}"]`) as HTMLElement | null;
+    if (!slotEl || !props.onChangeBlock) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const r0 = slotEl.getBoundingClientRect();
+    const sr = (ref.current as HTMLElement).getBoundingClientRect();
+    const s0 = b.nudge?.s || 1;
+    const baseW = r0.width / s0;
+    const baseH = r0.height / s0;
+    // it grows from its top-left corner, so the handle stays under the pointer, and stops at the slide's edge
+    const maxS = Math.max(1, Math.min(1.6, (sr.right - r0.left) / baseW, (sr.bottom - r0.top) / baseH));
+    const sx = e.clientX;
+    const sy = e.clientY;
+    const target = e.currentTarget as HTMLElement;
+    target.setPointerCapture(e.pointerId);
+    const move = (ev: PointerEvent) => {
+      const wantW = r0.width + (ev.clientX - sx);
+      const wantH = r0.height + (ev.clientY - sy);
+      let s = Math.min(maxS, Math.max(0.6, (wantW / baseW + wantH / baseH) / 2));
+      if (Math.abs(s - 1) < 0.04) s = 1;
+      s = Math.round(s * 100) / 100;
+      const x = b.nudge?.x || 0;
+      const y = b.nudge?.y || 0;
+      props.onChangeBlock!(b.id, { nudge: !x && !y && s === 1 ? undefined : { x, y, s } });
+    };
+    const up = () => {
+      document.body.classList.remove('nudging');
+      target.removeEventListener('pointermove', move);
+      target.removeEventListener('pointerup', up);
+      target.removeEventListener('pointercancel', up);
+    };
+    document.body.classList.add('nudging');
+    target.addEventListener('pointermove', move);
+    target.addEventListener('pointerup', up);
+    target.addEventListener('pointercancel', up);
+  };
   const sizing =
     mode === 'fixed' ? { aspectRatio: '16 / 9' } : mode === 'fill' ? { height: '100%' } : {};
 
@@ -187,6 +355,55 @@ export default function Stage(props: StageProps) {
       }
       style={{ ...vars, ...sizing, ...(props.style || {}) }}
     >
+      {guides ? (
+        <div className={'snapguides' + (guides.home ? ' home' : '')} aria-hidden="true">
+          {guides.v ? <span className="sg-v" /> : null}
+          {guides.h ? <span className="sg-h" /> : null}
+        </div>
+      ) : null}
+      {selRect && selBlock ? (
+        <Portal>
+          <div
+            className="itemlayer"
+            style={{ left: selRect.l, top: selRect.t, width: selRect.w, height: selRect.h }}
+          >
+            <div className={'itemframe' + (moveId === selBlock.b.id ? ' reframing' : '')} />
+            <div className={'itembar-anchor' + (selRect.t - selRect.top < 56 ? ' below' : '')}>
+              <ItemBar
+                block={selBlock.b}
+                moved={!!selBlock.b.nudge}
+                focusing={moveId === selBlock.b.id}
+                canDuplicate={!!props.onAddLike && selBlock.count < selBlock.max}
+                onSwap={props.onSwapPhoto ? () => props.onSwapPhoto!(selBlock.b.id) : undefined}
+                onFocus={() => setMoveId(moveId === selBlock.b.id ? null : selBlock.b.id)}
+                onDuplicate={() => props.onAddLike && props.onAddLike(selBlock.slotKey, selBlock.index)}
+                onReset={() => props.onChangeBlock && props.onChangeBlock(selBlock.b.id, { nudge: undefined })}
+                onDelete={() => props.onDeleteBlock!(selBlock.b.id)}
+              />
+            </div>
+            {moveId !== selBlock.b.id ? (
+              <>
+                <span
+                  className="movegrip"
+                  title="Drag to move"
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => startNudge(e, selBlock.b, true)}
+                >
+                  <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5v13M1.5 8h13M6 3.5 8 1.5l2 2M6 12.5l2 2 2-2M3.5 6 1.5 8l2 2M12.5 6l2 2-2 2" /></svg>
+                </span>
+                {selBlock.b.type !== 'text' ? (
+                <span
+                  className="resizer"
+                  title="Drag to resize"
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => startResize(e, selBlock.b)}
+                />
+                ) : null}
+              </>
+            ) : null}
+          </div>
+        </Portal>
+      ) : null}
       {/* background layer */}
       {hasMedia ? (
         <div className="stage-bg">
@@ -418,10 +635,13 @@ export default function Stage(props: StageProps) {
               {blocks.map((b, bi) => (
                 <div
                   key={b.id}
+                  data-bid={b.id}
                   className={
                     'blockslot' +
                     (dragBlock && dragBlock.slot === slot.key && dragBlock.index === bi ? ' dragging' : '') +
-                    (moveId === b.id ? ' moving' : '')
+                    (moveId === b.id ? ' moving' : '') +
+                    (editable && props.selectedId === b.id ? ' picked' : '') +
+                    (b.nudge && (b.nudge.x || b.nudge.y || (b.nudge.s && b.nudge.s !== 1)) ? ' nudged' : '')
                   }
                   /* Dragging a picture inside its frame moves the focal point,
                    * which is what object-position reads. Pointer capture rather
@@ -429,7 +649,9 @@ export default function Stage(props: StageProps) {
                    * mid-drag is normal — you are pushing content past an edge —
                    * and without capture the drag would end there. */
                   onPointerDown={
-                    moveId === b.id && props.onChangeBlock
+                    editable && props.selectedId === b.id && moveId !== b.id && props.onChangeBlock
+                      ? (e) => startNudge(e, b)
+                      : moveId === b.id && props.onChangeBlock
                       ? (e) => {
                           const el = e.currentTarget as HTMLElement;
                           const r = el.getBoundingClientRect();
@@ -465,7 +687,7 @@ export default function Stage(props: StageProps) {
                         }
                       : undefined
                   }
-                  style={
+                  style={nudged(b,
                     horizontal
                       ? { flex: 1, minWidth: 0, ...(b.type === 'card' ? { alignSelf: 'stretch' } : {}) }
                       : slot.frame === 'square' || slot.frame === 'reel'
@@ -479,7 +701,7 @@ export default function Stage(props: StageProps) {
                       : b.type === 'card'
                       ? { width: '100%', flex: 1, minHeight: 0 }
                       : { width: '100%' }
-                  }
+                  )}
                   onDragOver={
                     editable && dragBlock && dragBlock.slot === slot.key
                       ? (e) => {
@@ -513,55 +735,6 @@ export default function Stage(props: StageProps) {
                   {/* The bar belongs to the selected block only; the bare −
                       stays on hover so tidying does not require selecting
                       first. */}
-                  {editable && props.selectedId === b.id && props.onDeleteBlock ? (
-                    <BlockBar
-                      block={b}
-                      theme={theme}
-                      onDark={onDark}
-                      moving={moveId === b.id}
-                      onMove={() => setMoveId(moveId === b.id ? null : b.id)}
-                      onCrop={(crop) =>
-                        props.onChangeBlock &&
-                        props.onChangeBlock(b.id, { media: { ...(b.media || { url: '' }), crop } })
-                      }
-                      canAdd={!!props.onAddLike && blocks.length < slot.max}
-                      onColor={(role) =>
-                        props.onChangeBlock &&
-                        props.onChangeBlock(b.id, { style: { ...(b.style || {}), color: role } })
-                      }
-                      onAdd={() => props.onAddLike && props.onAddLike(slot.key, bi)}
-                      onDelete={() => props.onDeleteBlock!(b.id)}
-                    />
-                  ) : null}
-                  {editable && props.onDeleteBlock ? (
-                    <button
-                      className="bdel"
-                      title="Remove this element"
-                      aria-label="Remove this element"
-                      onMouseDown={(e) => e.stopPropagation()}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        props.onDeleteBlock!(b.id);
-                      }}
-                    >
-                      −
-                    </button>
-                  ) : null}
-                  {editable && blocks.length > 1 ? (
-                    <span
-                      className="grip"
-                      title="Drag to reorder"
-                      draggable
-                      onDragStart={(e) => {
-                        e.dataTransfer.effectAllowed = 'move';
-                        e.dataTransfer.setData('application/x-vigo-block', b.id);
-                        setDragBlock({ slot: slot.key, index: bi });
-                      }}
-                      onDragEnd={() => setDragBlock(null)}
-                    >
-                      ⠿
-                    </span>
-                  ) : null}
                   <BlockView
                     block={b}
                     ctx={{

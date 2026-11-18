@@ -46,6 +46,8 @@ export function useFit(root: HTMLElement | null, key: unknown): Overflow[] {
     const measure = () => {
       const found: Overflow[] = [];
       root.querySelectorAll<HTMLElement>('.stage .slot').forEach((el) => {
+        // an item placed by hand is kept on the slide by the editor itself
+        if (el.querySelector(':scope > .blockslot.nudged')) return;
         const by = el.scrollHeight - el.clientHeight;
         if (by > SLOP) {
           /* The slot's own key is the only name available in the DOM; the

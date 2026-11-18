@@ -280,7 +280,7 @@ function setWords(b: Block, src: Partial<Fill>, m: Material, out: Applied, pageN
   if (changes.length) out.lines.push({ pageId, text: `Page ${pageNo}, ${blockName(b)}: rewrote ${changes.join(', ')}` });
 }
 
-function placeImage(page: Page, media: MediaRef, blockId?: string): boolean {
+export function placeImage(page: Page, media: MediaRef, blockId?: string): boolean {
   const t = getTemplate(page.templateId);
   const all = Object.values(page.slots).flat();
   const target = blockId ? all.find((b) => b.id === blockId) : undefined;

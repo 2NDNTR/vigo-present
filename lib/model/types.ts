@@ -129,6 +129,8 @@ export interface Block {
   id: string;
   type: BlockType;
   style?: BlockStyle;
+  /** moved or resized by hand on the slide, in page units from where the layout puts it; reformatting clears it */
+  nudge?: { x: number; y: number; s?: number };
   // text
   text?: string;
   // metric

@@ -41,6 +41,11 @@ export function tidyPage(page: Page): number {
     const fromEnd = slot.key === 'head' || /head/i.test(slot.label);
 
     blocks.forEach((b) => {
+      // a reformat puts everything back on the layout
+      if (b.nudge) {
+        delete b.nudge;
+        changed++;
+      }
       let want: Block['style'] | undefined;
       if (b.type === 'text') {
         const i = texts.indexOf(b);

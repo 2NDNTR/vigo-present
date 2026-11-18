@@ -6,23 +6,12 @@ import DeckGrid, { useDecks } from '@/components/v2/DeckGrid';
 import BrandTiles from '@/components/v2/BrandTiles';
 import { useApp } from '@/components/v2/Shell';
 
-function greeting() {
-  const h = new Date().getHours();
-  return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
-}
-
 export default function Overview() {
-  const { user, brands } = useApp();
+  const { brands } = useApp();
   const { decks, reload } = useDecks();
-  const first = (user?.name || '').split(' ')[0];
 
   return (
     <>
-      <p className="t-small" style={{ marginBottom: 14 }}>
-        {greeting()}
-        {first && first !== 'Administrator' ? ', ' + first : ''}
-      </p>
-
       <Composer />
 
       <section className="v2-section" aria-labelledby="brands-h">

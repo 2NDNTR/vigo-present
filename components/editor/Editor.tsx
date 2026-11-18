@@ -3,7 +3,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Stage from '@/components/render/Stage';
-import PageStrip from './PageStrip';
+import SlideRail from './SlideRail';
+import PhotoPicker from './PhotoPicker';
 import Presence from './Presence';
 import NotesWidget from './NotesWidget';
 import HistoryWidget from './HistoryWidget';
@@ -84,6 +85,21 @@ export default function Editor({ id }: { id: string }) {
   const [sharing, setSharing] = useState(false);
   const [view, setView] = useState<'assistant' | 'notes' | 'history'>('assistant');
   const [prefill, setPrefill] = useState<string | null>(null);
+  /* the item whose photo is being swapped from the library */
+  const [picking, setPicking] = useState<string | null>(null);
+  /* the assistant panel can be put away to give the slide the room */
+  const [panelOpen, setPanelOpenState] = useState(true);
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem('vigo.panel') === 'closed') setPanelOpenState(false);
+    } catch {}
+  }, []);
+  const setPanelOpen = (v: boolean) => {
+    setPanelOpenState(v);
+    try {
+      window.localStorage.setItem('vigo.panel', v ? 'open' : 'closed');
+    } catch {}
+  };
   const [saved, setSaved] = useState<'saved' | 'saving' | 'error'>('saved');
   const [conflict, setConflict] = useState<{ message: string; latest: Presentation } | null>(null);
   const timer = useRef<any>(null);
@@ -491,6 +507,44 @@ export default function Editor({ id }: { id: string }) {
       if (el?.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
       if (!pres) return;
 
+      /* A selected item: Delete removes it, the arrows move it (10 points, or 1 with Shift). */
+      if (selected && !pres.locked) {
+        const sel = selected.blockId;
+        if (e.key === 'Delete' || e.key === 'Backspace') {
+          e.preventDefault();
+          update((d) => {
+            const p = d.pages.find((x) => x.id === currentId);
+            if (!p) return;
+            Object.keys(p.slots).forEach((k) => (p.slots[k] = p.slots[k].filter((b) => b.id !== sel)));
+          });
+          setSelected(null);
+          return;
+        }
+        const step = e.shiftKey ? 1 : 10;
+        const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
+        const dy = e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0;
+        if (dx || dy) {
+          e.preventDefault();
+          update(
+            (d) => {
+              const p = d.pages.find((x) => x.id === currentId);
+              if (!p) return;
+              Object.keys(p.slots).forEach((k) =>
+                p.slots[k].forEach((b, i) => {
+                  if (b.id !== sel) return;
+                  const n = b.nudge || { x: 0, y: 0 };
+                  const x = (n.x || 0) + dx;
+                  const y = (n.y || 0) + dy;
+                  p.slots[k][i] = { ...b, nudge: !x && !y && (!n.s || n.s === 1) ? undefined : { ...n, x, y } };
+                })
+              );
+            },
+            { coalesce: true }
+          );
+          return;
+        }
+      }
+
       /* The pages run left to right along the bottom now, so the arrows that
        * move between them are left and right. Up and down still work, and so
        * do the page keys, which is what a presenter remote sends. */
@@ -509,7 +563,7 @@ export default function Editor({ id }: { id: string }) {
     };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
-  }, [pres, currentId, undo, redo]);
+  }, [pres, currentId, undo, redo, selected]);
 
   /* Measured above the early returns, because a hook cannot be called after
    * one: the first render of this component happens while the deck is still
@@ -564,16 +618,8 @@ export default function Editor({ id }: { id: string }) {
               product logo in a top-left corner already means. The bare ← stays
               beside it: the logo is the habit, the arrow is the label for
               anyone who has not learned it yet. */}
-          <button
-            className="ed-home"
-            onClick={() => router.push('/')}
-            title="All presentations"
-            aria-label="All presentations"
-          >
-            <Brandmark size="sm" />
-          </button>
-          <button className="btn ghost sm" onClick={() => router.push('/')} title="All presentations">
-            ←
+          <button className="ed-back" onClick={() => router.push('/')} title="All presentations" aria-label="All presentations">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" /></svg>
           </button>
           {/* data-value drives the width: the wrapper's ::after renders the
               same string invisibly, so the field is exactly as wide as its
@@ -643,10 +689,55 @@ export default function Editor({ id }: { id: string }) {
           <button className="btn sm primary" onClick={() => setSharing(true)}>
             Share
           </button>
+          <button
+            className={'ed-icon ed-paneltoggle' + (panelOpen ? ' on' : '')}
+            onClick={() => setPanelOpen(!panelOpen)}
+            title={panelOpen ? 'Hide the assistant' : 'Show the assistant'}
+            aria-label={panelOpen ? 'Hide the assistant' : 'Show the assistant'}
+            aria-pressed={panelOpen}
+          >
+            <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="2" /><path d="M10 2.5v11" /></svg>
+          </button>
         </div>
       </div>
 
-      <div className="ed-body">
+      <div className={'ed-body' + (panelOpen ? '' : ' nopanel')}>
+        <SlideRail
+          pages={pres.pages}
+          brand={pres.brand}
+          currentId={currentId}
+          onSelect={(pid) => {
+            setCurrentId(pid);
+            setSelected(null);
+          }}
+          onReorder={(from, to) =>
+            update((d) => {
+              const [m] = d.pages.splice(from, 1);
+              d.pages.splice(to, 0, m);
+            })
+          }
+          onDuplicate={(i) =>
+            update((d) => {
+              const copy = clone(d.pages[i]);
+              copy.id = uid('pg');
+              copy.sectionStart = undefined;
+              Object.keys(copy.slots).forEach((k) => copy.slots[k].forEach((b) => (b.id = uid('b'))));
+              d.pages.splice(i + 1, 0, copy);
+              setTimeout(() => setCurrentId(copy.id), 0);
+            })
+          }
+          onDelete={(i) =>
+            update((d) => {
+              if (d.pages.length === 1) return;
+              const removed = d.pages.splice(i, 1)[0];
+              if (removed.id === currentId) {
+                const n = d.pages[Math.max(0, i - 1)];
+                setTimeout(() => setCurrentId(n.id), 0);
+              }
+            })
+          }
+          onAdd={(i) => setAdding({ afterIndex: i })}
+        />
         <div className="ed-center" data-zoom={zoom} onMouseDown={() => setSelected(null)}>
           {conflict ? (
             <div className="lockbar" style={{ background: '#fdf6e6', borderColor: '#f0dfae', color: '#6a5209' }}>
@@ -712,8 +803,9 @@ export default function Editor({ id }: { id: string }) {
                 retailer={pres.retailer}
                 page={page}
                 brand={pres.brand}
-                editable={false}
+                editable={!pres.locked}
                 selectedId={selected?.blockId}
+                onSwapPhoto={(bid) => setPicking(bid)}
                 onSelectBlock={(blockId, slotKey) => setSelected({ blockId, slotKey })}
                 onSelectSlot={(slotKey) => setActiveSlot(slotKey)}
                 onChangeBlock={(bid, patch) =>
@@ -789,56 +881,10 @@ export default function Editor({ id }: { id: string }) {
             </div>
           </div>
 
-          {/* Directly under the slide, not across the foot of the window: the
-              strip belongs to the deck you are looking at, and the panel on
-              the right keeps its full height. */}
-  <PageStrip
-            pages={pres.pages}
-            brand={pres.brand}
-            currentId={currentId}
-            onSelect={(pid) => {
-              setCurrentId(pid);
-              setSelected(null);
-            }}
-            onReorder={(from, to) =>
-              update((d) => {
-                const [m] = d.pages.splice(from, 1);
-                d.pages.splice(to, 0, m);
-              })
-            }
-            onDuplicate={(i) =>
-              update((d) => {
-                const copy = clone(d.pages[i]);
-                copy.id = uid('pg');
-                copy.sectionStart = undefined;
-                Object.keys(copy.slots).forEach((k) => copy.slots[k].forEach((b) => (b.id = uid('b'))));
-                d.pages.splice(i + 1, 0, copy);
-                setTimeout(() => setCurrentId(copy.id), 0);
-              })
-            }
-            onDelete={(i) =>
-              update((d) => {
-                if (d.pages.length === 1) return;
-                const removed = d.pages.splice(i, 1)[0];
-                if (removed.id === currentId) {
-                  const n = d.pages[Math.max(0, i - 1)];
-                  setTimeout(() => setCurrentId(n.id), 0);
-                }
-              })
-            }
-            onAddAfter={(i) => {
-              setView('assistant');
-              setPrefill(`Add a page after page ${i + 1} about `);
-            }}
-            onRenameSection={(i, name) =>
-              update((d) => {
-                d.pages[i].sectionStart = name === undefined ? undefined : name;
-              })
-            }
-          />
           </div>
         </div>
 
+        {panelOpen ? (
         <div className="ed-right" onMouseDown={(e) => e.stopPropagation()}>
           {/* V2: no design controls. The panel is the assistant; Notes and
               History are the other two things worth having beside the deck. */}
@@ -914,7 +960,42 @@ export default function Editor({ id }: { id: string }) {
             />
           )}
         </div>
+        ) : null}
       </div>
+
+      {picking && (
+        <PhotoPicker
+          brand={page.brandOverride || pres.brand}
+          allowVideo
+          onClose={() => setPicking(null)}
+          onPick={(a) => {
+            const bid = picking;
+            setPicking(null);
+            update((d) => {
+              const p = d.pages.find((x) => x.id === page.id);
+              if (!p) return;
+              Object.keys(p.slots).forEach((k) =>
+                p.slots[k].forEach((b, i) => {
+                  if (b.id !== bid) return;
+                  const media = {
+                    url: a.path,
+                    assetId: a.id,
+                    width: a.width || 1200,
+                    height: a.height || 800,
+                    focalX: 0.5,
+                    focalY: 0.5,
+                    zoom: 1,
+                    ...(b.media?.crop ? { crop: b.media.crop } : {}),
+                  };
+                  if (b.type === 'card') p.slots[k][i] = { ...b, showImage: true, media };
+                  else if (a.kind === 'video') p.slots[k][i] = { ...b, type: 'video', media: { ...media, autoplay: true, loop: true, muted: true } as any };
+                  else p.slots[k][i] = { ...b, type: b.type === 'video' ? 'image' : b.type, media };
+                })
+              );
+            });
+          }}
+        />
+      )}
 
       {adding && (
         <AddPageModal
