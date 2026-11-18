@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Stage from '@/components/render/Stage';
 import SlideRail from './SlideRail';
 import PhotoPicker from './PhotoPicker';
+import QuickLayout from './QuickLayout';
 import Presence from './Presence';
 import NotesWidget from './NotesWidget';
 import HistoryWidget from './HistoryWidget';
@@ -87,6 +88,8 @@ export default function Editor({ id }: { id: string }) {
   const [prefill, setPrefill] = useState<string | null>(null);
   /* the item whose photo is being swapped from the library */
   const [picking, setPicking] = useState<string | null>(null);
+  /* quick format: alternate layouts for the slide in view; 'all' opens the full gallery */
+  const [quick, setQuick] = useState<false | 'alts' | 'all'>(false);
   /* the assistant panel can be put away to give the slide the room */
   const [panelOpen, setPanelOpenState] = useState(true);
   useEffect(() => {
@@ -291,6 +294,8 @@ export default function Editor({ id }: { id: string }) {
       const i = d.pages.findIndex((x) => x.id === page?.id);
       if (i < 0) return;
       const nextSlots = remapSlots(d.pages[i], tid);
+      // hand placements belong to the old layout
+      Object.values(nextSlots).forEach((list) => list.forEach((b) => delete b.nudge));
       const t = getTemplate(tid);
       d.pages[i] = {
         ...d.pages[i],
@@ -506,6 +511,12 @@ export default function Editor({ id }: { id: string }) {
       const tag = el?.tagName;
       if (el?.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
       if (!pres) return;
+
+      if ((e.key === 'l' || e.key === 'L') && !e.metaKey && !e.ctrlKey && !e.altKey && !pres.locked) {
+        e.preventDefault();
+        setQuick((q) => (q ? false : 'alts'));
+        return;
+      }
 
       /* A selected item: Delete removes it, the arrows move it (10 points, or 1 with Shift). */
       if (selected && !pres.locked) {
@@ -737,6 +748,15 @@ export default function Editor({ id }: { id: string }) {
             })
           }
           onAdd={(i) => setAdding({ afterIndex: i })}
+          onLayout={
+            pres.locked
+              ? undefined
+              : (pid) => {
+                  setCurrentId(pid);
+                  setSelected(null);
+                  setTimeout(() => setQuick('alts'), 0);
+                }
+          }
         />
         <div className="ed-center" data-zoom={zoom} onMouseDown={() => setSelected(null)}>
           {conflict ? (
@@ -793,9 +813,37 @@ export default function Editor({ id }: { id: string }) {
                 <b>{pageIndex + 1}</b> of {pres.pages.length}
                 <em>{page.sectionStart ? page.sectionStart + ', ' : ''}{getTemplate(page.templateId).name}</em>
               </span>
-              <span className="canvas-brand">
-                <i style={{ background: brandLook(page.brandOverride || pres.brand).swatch }} />
-                {getTheme(page.brandOverride || pres.brand).name}
+              <span className="canvas-tools">
+                <span className="canvas-brand">
+                  <i style={{ background: brandLook(page.brandOverride || pres.brand).swatch }} />
+                  {getTheme(page.brandOverride || pres.brand).name}
+                </span>
+                {!pres.locked ? (
+                  <span className="ql-anchor">
+                    <button
+                      className={'ql-trigger' + (quick === 'alts' ? ' on' : '')}
+                      onClick={() => setQuick(quick === 'alts' ? false : 'alts')}
+                      title="Try this slide in another layout (L)"
+                      aria-expanded={quick === 'alts'}
+                    >
+                      <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2.5" width="5" height="11" rx="1.2" /><rect x="9" y="2.5" width="5" height="5" rx="1.2" /><rect x="9" y="9.5" width="5" height="4" rx="1.2" /></svg>
+                      Layout
+                    </button>
+                    {quick === 'alts' ? (
+                      <QuickLayout
+                        page={page}
+                        brand={page.brandOverride || pres.brand}
+                        onPick={(tid) => {
+                          swapTemplate(tid);
+                          setSelected(null);
+                          setQuick(false);
+                        }}
+                        onBrowse={() => setQuick('all')}
+                        onClose={() => setQuick(false)}
+                      />
+                    ) : null}
+                  </span>
+                ) : null}
               </span>
             </div>
             <div className="canvas-shell">
@@ -993,6 +1041,19 @@ export default function Editor({ id }: { id: string }) {
                 })
               );
             });
+          }}
+        />
+      )}
+
+      {quick === 'all' && (
+        <AddPageModal
+          brand={page.brandOverride || pres.brand}
+          title="Change this slide's layout"
+          sub="Your words and pictures carry across to the layout you pick. Undo puts it back."
+          onClose={() => setQuick(false)}
+          onPick={(tid) => {
+            if (tid !== page.templateId) swapTemplate(tid);
+            setQuick(false);
           }}
         />
       )}

@@ -14,7 +14,11 @@ export default function AddPageModal({
   brand,
   onClose,
   onPick,
+  title = 'Add a page',
+  sub = 'Every layout is already designed. Pick one and replace the content.',
 }: {
+  title?: string;
+  sub?: string;
   brand: BrandId;
   onClose: () => void;
   onPick: (templateId: string) => void;
@@ -36,8 +40,8 @@ export default function AddPageModal({
     <div className="scrim-modal" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal wide">
         <div className="modal-head" style={{ paddingBottom: 18 }}>
-          <h2>Add a page</h2>
-          <p className="sub">Every layout is already designed. Pick one and replace the content.</p>
+          <h2>{title}</h2>
+          <p className="sub">{sub}</p>
         </div>
         <div className="modal-body" style={{ paddingTop: 0 }}>
           <div className="catbar">

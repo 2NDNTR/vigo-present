@@ -3074,3 +3074,37 @@ body.nudging, body.nudging * { user-select: none !important; -webkit-user-select
 
 /* a moved or resized item is allowed past its layout cell; it is still kept on the slide */
 .stage .slot:has(> .blockslot.nudged) { overflow: visible; z-index: 2; }
+
+/* ---------- quick format: alternate layouts for this slide ---------- */
+.canvas-tools { display: inline-flex; align-items: center; gap: 12px; }
+.ql-anchor { position: relative; }
+.ql-trigger {
+  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 8px;
+  border: 1px solid #E2E1DC; background: #fff; color: #2a2a2a; font: inherit; font-size: 12.5px; font-weight: 500; cursor: pointer;
+}
+.ql-trigger:hover { border-color: #BDBCB6; color: #000; }
+.ql-trigger.on { background: #141414; border-color: #141414; color: #fff; }
+.ql-trigger svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.4; }
+.ql-trigger:focus-visible { outline: 2px solid #FF5634; outline-offset: 2px; }
+.ql {
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 50; width: min(560px, calc(100vw - 40px));
+  background: #fff; color: #141414; border: 1px solid #E2E1DC; border-radius: 14px;
+  box-shadow: 0 18px 50px rgba(0,0,0,.16), 0 2px 6px rgba(0,0,0,.06);
+  padding: 14px; text-align: left;
+}
+.ql-head { display: flex; flex-direction: column; gap: 2px; padding: 0 2px 12px; }
+.ql-head b { font-size: 14px; font-weight: 600; }
+.ql-head span { font-size: 12.5px; color: #8a8a85; }
+.ql-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; max-height: min(60vh, 520px); overflow-y: auto; padding: 2px; }
+.ql-item { border: 0; padding: 0; background: none; font: inherit; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 5px; }
+.ql-thumb { border-radius: 8px; overflow: hidden; box-shadow: 0 0 0 1px #E7E6E1; aspect-ratio: 16 / 9; background: #fff; transition: box-shadow 120ms; }
+.ql-item:hover .ql-thumb { box-shadow: 0 0 0 2px #141414; }
+.ql-item:focus-visible { outline: none; }
+.ql-item:focus-visible .ql-thumb { box-shadow: 0 0 0 2px #FF5634; }
+.ql-stage { pointer-events: none; width: 100%; height: 100%; }
+.ql-name { font-size: 12.5px; font-weight: 500; color: #2a2a2a; }
+.ql-note { font-size: 11.5px; color: #b45309; margin-top: -3px; }
+.ql-empty { font-size: 13px; color: #6b6b66; margin: 4px 2px 10px; }
+.ql-foot { display: flex; justify-content: flex-end; padding-top: 12px; margin-top: 10px; border-top: 1px solid #EEEDE8; }
+.ql-all { border: 0; background: transparent; font: inherit; font-size: 13px; color: #2a2a2a; padding: 6px 10px; border-radius: 8px; cursor: pointer; }
+.ql-all:hover { background: #F2F2EE; color: #000; }

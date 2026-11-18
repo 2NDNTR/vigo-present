@@ -19,6 +19,7 @@ export default function SlideRail({
   onDuplicate,
   onDelete,
   onAdd,
+  onLayout,
 }: {
   pages: Page[];
   brand: BrandId;
@@ -28,6 +29,7 @@ export default function SlideRail({
   onDuplicate: (i: number) => void;
   onDelete: (i: number) => void;
   onAdd: (afterIndex: number) => void;
+  onLayout?: (id: string) => void;
 }) {
   const [drag, setDrag] = useState<number | null>(null);
   const [over, setOver] = useState<{ i: number; half: 'top' | 'bottom' } | null>(null);
@@ -120,6 +122,7 @@ export default function SlideRail({
                 {menu === i ? (
                   <div className="menu rail-menu" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
                     <button onClick={() => { onAdd(i); setMenu(null); }}>New slide after</button>
+                    {onLayout ? <button onClick={() => { onLayout(p.id); setMenu(null); }}>Change layout</button> : null}
                     <button onClick={() => { onDuplicate(i); setMenu(null); }}>Duplicate</button>
                     {pages.length > 1 ? (
                       <button className="danger" onClick={() => { onDelete(i); setMenu(null); }}>Delete</button>
