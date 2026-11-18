@@ -293,4 +293,14 @@ export const MIGRATIONS: Migration[] = [
         on conflict do nothing;
     `,
   },
+  {
+    id: '0006_invites',
+    sql: `
+      -- Joining is by invite link only. The link carries a random token; only
+      -- its hash is stored, it expires, and it works once.
+      alter table users add column if not exists invite_hash text;
+      alter table users add column if not exists invite_expires bigint;
+      create index if not exists users_invite_hash on users (invite_hash);
+    `,
+  },
 ];

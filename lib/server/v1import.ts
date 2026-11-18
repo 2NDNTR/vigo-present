@@ -16,7 +16,11 @@ import type { AssetCategory, Presentation } from '@/lib/model/types';
  * Everything is idempotent: ids are kept, so a second run skips what is here.
  */
 
-export const V1 = 'https://vigopresents.com';
+/* Where the live (V1) app answers. After the switch-over vigopresents.com is
+ * V2 itself, so a final sync then must point V1_ORIGIN at the old project's
+ * own address (e.g. its vercel.app URL). */
+export const V1 = (process.env.V1_ORIGIN || 'https://vigopresents.com').replace(/\/$/, '');
+const V1_HOST = new URL(V1).host;
 const V1_BLOB = 'iqaxvlc63ef0zefa.public.blob.vercel-storage.com';
 
 export interface PlanItem {
@@ -51,7 +55,7 @@ function file(a: V1Asset): PlanItem | null {
   } catch {
     return null;
   }
-  if (host !== V1_BLOB && host !== 'vigopresents.com') return null;
+  if (host !== V1_BLOB && host !== 'vigopresents.com' && host !== V1_HOST) return null;
   const kind: 'image' | 'video' = a.kind === 'video' || /\.(mp4|mov|webm)$/i.test(a.path) ? 'video' : 'image';
   const name = String(a.name || '').trim() || a.id;
   const lower = name.toLowerCase();
@@ -214,7 +218,7 @@ export async function importDecks(decks: Presentation[], userId: string) {
     return v;
   };
 
-  const out: { title: string; result: 'imported' | 'already here' | 'skipped'; reason?: string }[] = [];
+  const out: { title: string; result: 'imported' | 'already here' | 'updated' | 'kept yours' | 'skipped'; reason?: string }[] = [];
   for (const raw of decks) {
     const title = String(raw?.title || 'Untitled');
     try {
@@ -222,14 +226,53 @@ export async function importDecks(decks: Presentation[], userId: string) {
         out.push({ title, result: 'skipped', reason: 'not a presentation' });
         continue;
       }
-      const exists = await q('select 1 from presentations where id = $1', [raw.id]);
-      if (exists.rows.length) {
-        out.push({ title, result: 'already here' });
-        continue;
-      }
       const doc: any = remap(JSON.parse(JSON.stringify(raw)));
       delete doc.version;
       delete doc.archivedAt;
+      const v1Updated = Number(raw.updatedAt) || 0;
+      doc.importedV1At = v1Updated;
+
+      /* Already here: bring over what changed on the live site since the last
+       * import. A copy nobody has touched in V2 is refreshed in place. A copy
+       * edited in BOTH places keeps the V2 edits, and the live site's version
+       * goes into its history so it can be restored. Nothing is overwritten
+       * silently and no share link changes. */
+      const existing = await q('select version, doc from presentations where id = $1', [raw.id]);
+      if (existing.rows.length) {
+        const cur = existing.rows[0];
+        const curDoc = typeof cur.doc === 'string' ? JSON.parse(cur.doc) : cur.doc || {};
+        let lastV1 = Number(curDoc.importedV1At) || 0;
+        if (!lastV1) {
+          const first = await q('select snapshot from presentation_versions where id = $1', ['ver_' + raw.id + '_1']);
+          const snap = first.rows[0]?.snapshot;
+          lastV1 = Number((typeof snap === 'string' ? JSON.parse(snap) : snap || {}).updatedAt) || 0;
+        }
+        if (!v1Updated || v1Updated <= lastV1) {
+          out.push({ title, result: 'already here' });
+          continue;
+        }
+        if (doc.share) delete doc.share.password;
+        const next = await q('select coalesce(max(n), 0) + 1 as n from presentation_versions where presentation_id = $1', [raw.id]);
+        const n = Number(next.rows[0].n);
+        const now = Date.now();
+        await q(
+          `insert into presentation_versions (id, presentation_id, n, label, reason, snapshot, author_id, created_at)
+           values ($1, $2, $3, $4, 'checkpoint', $5, $6, $7) on conflict do nothing`,
+          ['ver_' + raw.id + '_v1_' + v1Updated, raw.id, n, 'Live site version, ' + new Date(v1Updated).toISOString().slice(0, 10), JSON.stringify(doc), userId, now]
+        );
+        if (Number(cur.version) <= 1) {
+          // untouched in V2: take the live site's version, keep V2's own share settings
+          const keep = { ...doc, share: curDoc.share ?? doc.share, brand: ['corporate', 'vigo', 'alessi'].includes(doc.brand) ? doc.brand : 'corporate' };
+          await q('update presentations set title = $2, doc = $3, updated_at = $4 where id = $1', [raw.id, title, JSON.stringify(keep), v1Updated || now]);
+          out.push({ title, result: 'updated' });
+        } else {
+          // edited here too: keep V2's, remember which live version we have seen
+          curDoc.importedV1At = v1Updated;
+          await q('update presentations set doc = $2 where id = $1', [raw.id, JSON.stringify(curDoc)]);
+          out.push({ title, result: 'kept yours', reason: 'edited in both places; the live site version is in its History' });
+        }
+        continue;
+      }
       const brand = ['corporate', 'vigo', 'alessi'].includes(doc.brand) ? doc.brand : 'corporate';
       doc.brand = brand;
       const password = doc.share?.password ? String(doc.share.password) : '';

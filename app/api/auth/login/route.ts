@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { q } from '@/lib/server/db';
 import { hashPassword, setSession, verifyPassword } from '@/lib/server/auth';
+import { stillBootstrapping } from '@/lib/server/invites';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,7 +25,15 @@ export async function POST(req: Request) {
   }
 
   if (!user.password_hash) {
-    // First sign-in: the password they choose here becomes their password.
+    /* An account with no password is set up through its invite link. The one
+     * exception is a brand-new install where nobody has a password yet, so the
+     * first administrator can get in. */
+    if (!(await stillBootstrapping())) {
+      return NextResponse.json(
+        { error: 'This account has not been set up yet. Open the invite link an administrator sent you, or ask them for a new one.' },
+        { status: 401 }
+      );
+    }
     await q('update users set password_hash = $1, last_seen = $2 where id = $3', [
       hashPassword(pass),
       Date.now(),

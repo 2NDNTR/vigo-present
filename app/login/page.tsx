@@ -56,7 +56,11 @@ export default function LoginPage() {
         setKey('');
         setPassword('');
         setStuck(false);
-        setNote('Password cleared. Type the password you want from now on and sign in.');
+        if (j.invite) {
+          window.location.href = j.invite;
+          return;
+        }
+        setNote('Password cleared. Ask an administrator for an invite link to set a new one.');
       }
     } catch {
       setError('Could not reach the server.');
@@ -100,7 +104,7 @@ export default function LoginPage() {
       <div className="signin-form">
         <h1>Sign in</h1>
         <p className="signin-help">
-          Use your work email. The first time you sign in, the password you choose becomes your password.
+          Use your work email and password. New to the team? Open the invite link an administrator sent you.
         </p>
 
         {missing.length > 0 && (

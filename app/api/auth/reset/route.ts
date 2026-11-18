@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { q } from '@/lib/server/db';
+import { inviteUrl, makeInvite } from '@/lib/server/invites';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,5 +77,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'No account here uses that email address.' }, { status: 404 });
   }
 
-  return NextResponse.json({ ok: true });
+  // The recovery key holder gets a one-time link to set the new password.
+  const token = await makeInvite(r.rows[0].id);
+  return NextResponse.json({ ok: true, invite: inviteUrl(req, token) });
 }

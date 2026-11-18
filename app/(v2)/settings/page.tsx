@@ -10,6 +10,7 @@ interface Member {
   name: string;
   role: string;
   active: boolean;
+  invited?: boolean;
   last_seen: number | null;
 }
 
@@ -20,6 +21,18 @@ export default function Settings() {
   const [people, setPeople] = useState<Member[] | null>(null);
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
+  /* the invite link just made, shown once so it can be copied and sent */
+  const [link, setLink] = useState<{ email: string; url: string } | null>(null);
+
+  const share = async (who: string, url: string) => {
+    setLink({ email: who, url });
+    try {
+      await navigator.clipboard.writeText(url);
+      toast('Invite link copied. Send it to ' + who + '.');
+    } catch {
+      toast('Copy the invite link below and send it to ' + who + '.');
+    }
+  };
 
   const load = () =>
     fetch('/api/team', { cache: 'no-store' })
@@ -38,20 +51,36 @@ export default function Settings() {
     });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) return toast(j.error || 'Could not add that person.');
+    const who = email;
     setEmail('');
     setName('');
-    toast('Added. Their first sign-in sets their password.');
+    if (j.invite) await share(who, j.invite);
+    else toast('They already have an account.');
     load();
   };
 
   const reset = async (m: Member) => {
-    if (!confirm(`Clear ${m.email}'s password? Their next sign-in sets a new one.`)) return;
+    if (!confirm(`Reset ${m.email}'s password? Their current password stops working, and you get a link for them to set a new one.`)) return;
     const r = await fetch('/api/team', {
       method: 'PATCH',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ id: m.id }),
     });
-    toast(r.ok ? 'Password cleared' : 'Could not clear that password.');
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) toast(j.error || 'Could not reset that password.');
+    else await share(m.email, j.invite);
+    load();
+  };
+
+  const reinvite = async (m: Member) => {
+    const r = await fetch('/api/team', {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ id: m.id, invite: true }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) toast(j.error || 'Could not make an invite link.');
+    else await share(m.email, j.invite);
     load();
   };
 
@@ -69,8 +98,8 @@ export default function Settings() {
           People
         </h2>
         <p className="t-small" style={{ marginBottom: 18 }}>
-          New people can edit every brand until an administrator narrows it. No invitation email is sent: tell them to
-          sign in with their email, and the password they choose becomes theirs.
+          Add someone and you get an invite link to send them. It works once and expires after 7 days. New people can
+          edit every brand until an administrator narrows it.
         </p>
 
         {isAdmin && (
@@ -90,6 +119,15 @@ export default function Settings() {
           </div>
         )}
 
+        {link && (
+          <div className="banner" style={{ marginBottom: 18, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span>Invite link for {link.email}:</span>
+            <code style={{ wordBreak: 'break-all', flex: '1 1 320px' }}>{link.url}</code>
+            <button className="btn2 quiet" onClick={() => share(link.email, link.url)}>Copy</button>
+            <button className="btn2 quiet" onClick={() => setLink(null)}>Done</button>
+          </div>
+        )}
+
         {people === null ? (
           <p className="t-small">Loading…</p>
         ) : (
@@ -101,12 +139,19 @@ export default function Settings() {
                   <code>{m.email}</code>
                 </div>
                 <span className="t-small">
-                  {m.role === 'admin' ? 'Administrator' : 'Editor'}, {m.active ? 'signed in before' : 'not signed in yet'}
+                  {m.role === 'admin' ? 'Administrator' : 'Editor'},{' '}
+                  {m.active ? 'joined' : m.invited ? 'invited, not joined yet' : 'not invited yet'}
                 </span>
                 {isAdmin && m.id !== user?.id ? (
-                  <button className="btn2 quiet" onClick={() => reset(m)}>
-                    Clear password
-                  </button>
+                  m.active ? (
+                    <button className="btn2 quiet" onClick={() => reset(m)}>
+                      Reset password
+                    </button>
+                  ) : (
+                    <button className="btn2 quiet" onClick={() => reinvite(m)}>
+                      Copy invite link
+                    </button>
+                  )
                 ) : (
                   <span />
                 )}
